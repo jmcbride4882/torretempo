@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Torre Tempo | Setup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">TT</div>
+          <div>
+            <div class="brand-title">Torre Tempo</div>
+            <div class="brand-subtitle" data-i18n="app.subtitle">Registro de jornada y cumplimiento</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="lang-picker">
+            <label for="lang" data-i18n="app.language">Idioma</label>
+            <select id="lang" aria-label="Language">
+              <option value="es-ES">es-ES</option>
+              <option value="ca-ES">ca-ES</option>
+              <option value="eu-ES">eu-ES</option>
+              <option value="gl-ES">gl-ES</option>
+              <option value="en-US">en-US</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="view active">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="setup.title">First-time setup</h2>
+              <p data-i18n="setup.subtitle">Create the admin account and company profile.</p>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="setup.adminName">Admin name</span>
+                  <input id="setup-admin-name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="setup.adminEmail">Admin email</span>
+                  <input id="setup-admin-email" type="email" />
+                </label>
+                <label>
+                  <span data-i18n="setup.adminPassword">Admin password</span>
+                  <input id="setup-admin-password" type="password" />
+                </label>
+                <label>
+                  <span data-i18n="setup.adminLocation">Default location</span>
+                  <input id="setup-admin-location" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="setup.adminDepartment">Default department</span>
+                  <input id="setup-admin-department" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="setup.companyName">Company legal name</span>
+                  <input id="setup-company-name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="setup.companyCif">CIF</span>
+                  <input id="setup-company-cif" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="setup.companyAddress">Address</span>
+                  <input id="setup-company-address" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="setup.companyEmail">Contact email</span>
+                  <input id="setup-company-email" type="email" />
+                </label>
+                <label>
+                  <span data-i18n="setup.companyPhone">Contact phone</span>
+                  <input id="setup-company-phone" type="text" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn primary" id="setup-complete" data-i18n="setup.complete">Complete setup</button>
+              </div>
+              <div id="setup-message" class="reset-message"></div>
+            </div>
+
+            <div class="card">
+              <h2 data-i18n="setup.importTitle">Import existing database</h2>
+              <p data-i18n="setup.importHint">Upload a backup to restore data on this server.</p>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="setup.importFile">Database file</span>
+                  <input id="setup-import-file" type="file" accept=".sqlite,.db" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="setup-import" data-i18n="setup.importButton">Upload database</button>
+              </div>
+              <div id="import-message" class="reset-message"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        &copy; Lakeside La Torre (Murcia) Group SL  CIF:B70822366. Developed and Designed by John McBride.
+      </footer>
+    </div>
+
+    <script src="translations.js"></script>
+    <script src="setup.js"></script>
+  </body>
+</html>

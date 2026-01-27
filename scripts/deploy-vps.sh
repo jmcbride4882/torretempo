@@ -22,14 +22,22 @@ else
   git -C "$APP_DIR" pull
 fi
 
+if [ -f "$APP_DIR/scripts/self-update.sh" ]; then
+  chmod +x "$APP_DIR/scripts/self-update.sh"
+fi
+
 if [ ! -f "$APP_DIR/.env" ]; then
   cat > "$APP_DIR/.env" <<EOF
 ADMIN_EMAIL=${ADMIN_EMAIL:-admin@torretempo.local}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-change-me}
 ADMIN_NAME=${ADMIN_NAME:-Admin}
+AUTO_SEED_ADMIN=${AUTO_SEED_ADMIN:-false}
 JWT_SECRET=${JWT_SECRET:-change-me-strong}
 PORT=4000
-RESET_URL_BASE=${RESET_URL_BASE:-https://your-domain/reset.html}
+DB_MIGRATIONS_ENABLED=${DB_MIGRATIONS_ENABLED:-false}
+DB_IMPORT_PATH=${DB_IMPORT_PATH:-/data/torre-tempo.sqlite.import}
+UPDATE_SCRIPT_PATH=${UPDATE_SCRIPT_PATH:-/repo/scripts/self-update.sh}
+RESET_URL_BASE=${RESET_URL_BASE:-https://time.lsltgroup.es/reset.html}
 SMTP_HOST=${SMTP_HOST:-smtp.example.com}
 SMTP_PORT=${SMTP_PORT:-587}
 SMTP_SECURE=${SMTP_SECURE:-false}

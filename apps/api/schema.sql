@@ -13,6 +13,13 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS user_scopes (
+  user_id TEXT NOT NULL,
+  location TEXT NOT NULL,
+  department TEXT NOT NULL,
+  PRIMARY KEY (user_id, location, department)
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   id INTEGER PRIMARY KEY CHECK (id = 1),
   data TEXT NOT NULL

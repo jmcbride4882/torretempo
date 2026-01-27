@@ -78,6 +78,13 @@ const defaultSettings = {
     checkout_lead_minutes: 15,
     scheduler_interval_minutes: 5
   },
+  system: {
+    updates_enabled: false,
+    update_token: "",
+    update_script_path: "/repo/scripts/self-update.sh",
+    setup_complete: false,
+    setup_completed_at: ""
+  },
   exports: {
     inspectorate_export_format: "pdf_csv",
     export_signature_method: "hash_checksum",
@@ -237,6 +244,11 @@ function logout() {
 }
 
 async function bootstrap() {
+  const status = await fetch(`${API_BASE}/setup/status`).then((res) => res.json()).catch(() => null);
+  if (status && status.needs_setup && window.location.pathname.indexOf("setup.html") === -1) {
+    window.location.href = "/setup.html";
+    return;
+  }
   if (!state.token) {
     showAuthModal(true);
     updateUserUI();
@@ -592,6 +604,8 @@ function hydrateAdminForm() {
       input.value = value === undefined || value === null ? "" : value;
     }
   });
+  const updateToken = document.getElementById("update-token");
+  if (updateToken) updateToken.value = "";
 }
 
 function bindAdminForm() {
@@ -630,6 +644,10 @@ function parseInputValue(input) {
 
 async function saveSettings() {
   try {
+    const updateToken = document.getElementById("update-token");
+    if (updateToken && updateToken.value) {
+      state.settings.system.update_token = updateToken.value;
+    }
     await apiFetch("/settings", {
       method: "PUT",
       body: JSON.stringify(state.settings)
@@ -668,6 +686,10 @@ function initActions() {
   document.getElementById("generate-user-password").addEventListener("click", generateUserPassword);
   document.getElementById("create-user").addEventListener("click", createUser);
   document.getElementById("upload-cert").addEventListener("click", uploadCertificate);
+  document.getElementById("generate-update-token").addEventListener("click", generateUpdateToken);
+  document.getElementById("run-update").addEventListener("click", runUpdate);
+  document.getElementById("export-db").addEventListener("click", exportDatabase);
+  document.getElementById("import-db").addEventListener("click", importDatabase);
   document.getElementById("rota-load").addEventListener("click", loadRota);
   document.getElementById("rota-add").addEventListener("click", addShift);
   document.getElementById("rota-publish").addEventListener("click", publishRota);
@@ -702,12 +724,15 @@ function prefillRotaScope() {
   if (!state.user) return;
   const locationInput = document.getElementById("rota-location-filter");
   const departmentInput = document.getElementById("rota-department-filter");
-  const locked = state.user.role !== "admin";
+  const scopes = state.user.scopes || [];
+  const primary = scopes[0] || { location: state.user.location || "", department: state.user.department || "" };
+  const allowPick = state.user.role !== "admin" && scopes.length > 1;
+  const locked = state.user.role !== "admin" && !allowPick;
   if (locationInput && !locationInput.value) {
-    locationInput.value = state.user.location || "";
+    locationInput.value = primary.location || "";
   }
   if (departmentInput && !departmentInput.value) {
-    departmentInput.value = state.user.department || "";
+    departmentInput.value = primary.department || "";
   }
   if (locationInput) locationInput.disabled = locked;
   if (departmentInput) departmentInput.disabled = locked;
@@ -758,11 +783,7 @@ function renderStaffList() {
   container.innerHTML = "";
   const locationFilter = document.getElementById("rota-location-filter").value.trim();
   const departmentFilter = document.getElementById("rota-department-filter").value.trim();
-  const filtered = state.staff.filter((user) => {
-    if (locationFilter && user.location !== locationFilter) return false;
-    if (departmentFilter && user.department !== departmentFilter) return false;
-    return true;
-  });
+  const filtered = state.staff.filter((user) => userMatchesScope(user, locationFilter, departmentFilter));
   if (!filtered.length) {
     container.textContent = "--";
     return;
@@ -902,16 +923,23 @@ function populateAssignDropdown() {
   empty.textContent = "Unassigned";
   select.appendChild(empty);
   state.staff
-    .filter((user) => {
-      if (locationFilter && user.location !== locationFilter) return false;
-      if (departmentFilter && user.department !== departmentFilter) return false;
-      return true;
-    })
+    .filter((user) => userMatchesScope(user, locationFilter, departmentFilter))
     .forEach((user) => {
-    const option = document.createElement("option");
-    option.value = user.id;
-    option.textContent = `${user.name || user.email} (${user.role}) ${user.location || ""} ${user.department || ""}`.trim();
-    select.appendChild(option);
+      const option = document.createElement("option");
+      option.value = user.id;
+      option.textContent = `${user.name || user.email} (${user.role}) ${user.location || ""} ${user.department || ""}`.trim();
+      select.appendChild(option);
+    });
+}
+
+function userMatchesScope(user, locationFilter, departmentFilter) {
+  const scopes = user.scopes && user.scopes.length
+    ? user.scopes
+    : [{ location: user.location, department: user.department }];
+  return scopes.some((scope) => {
+    if (locationFilter && scope.location !== locationFilter) return false;
+    if (departmentFilter && scope.department !== departmentFilter) return false;
+    return true;
   });
 }
 
@@ -927,6 +955,9 @@ async function addShift() {
   const notes = document.getElementById("rota-notes").value;
   const assigned = document.getElementById("rota-assign").value;
   if (!date || !start || !end) return alert("Date, start, and end are required.");
+  if (state.user && state.user.role === "admin" && (!locationScope || !departmentScope)) {
+    return alert("Select location and department.");
+  }
   try {
     await apiFetch("/rota/shifts", {
       method: "POST",
@@ -1232,8 +1263,15 @@ function renderUserList() {
     const item = document.createElement("div");
     item.className = "list-item";
     const header = document.createElement("div");
+    const scopes = (user.scopes || []).map((scope) => `${scope.location}/${scope.department}`).join(", ");
     header.textContent = `${user.name || ""} ${user.email} | ${user.role} | ${user.location || "-"} / ${user.department || "-"} | ${user.is_active ? "Active" : "Archived"}`;
     item.appendChild(header);
+    if (scopes) {
+      const scopeLine = document.createElement("div");
+      scopeLine.className = "hint";
+      scopeLine.textContent = `Scopes: ${scopes}`;
+      item.appendChild(scopeLine);
+    }
     const actions = document.createElement("div");
     actions.className = "button-row";
     const toggle = document.createElement("button");
@@ -1257,13 +1295,18 @@ async function createUser() {
   const email = document.getElementById("user-email").value.trim();
   const location = document.getElementById("user-location").value.trim();
   const department = document.getElementById("user-department").value.trim();
+  const scopesText = document.getElementById("user-scopes").value.trim();
+  const scopes = parseScopesFromText(scopesText);
   const role = document.getElementById("user-role").value;
   const password = document.getElementById("user-password").value.trim();
   if (!email || !password) return alert("Email and password are required.");
+  if ((role === "manager" || role === "employee") && !scopes.length && (!location || !department)) {
+    return alert("Location and department are required for staff.");
+  }
   try {
     await apiFetch("/users", {
       method: "POST",
-      body: JSON.stringify({ name, email, role, password, location, department })
+      body: JSON.stringify({ name, email, role, password, location, department, scopes })
     });
     state.users = await apiFetch("/users");
     renderUserList();
@@ -1271,6 +1314,7 @@ async function createUser() {
     document.getElementById("user-email").value = "";
     document.getElementById("user-location").value = "";
     document.getElementById("user-department").value = "";
+    document.getElementById("user-scopes").value = "";
     document.getElementById("user-password").value = "";
   } catch (err) {
     alert(err.message);
@@ -1289,6 +1333,79 @@ function generateRandomSecret(length) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+function generateUpdateToken() {
+  const token = generateRandomSecret(24);
+  const input = document.getElementById("update-token");
+  if (input) input.value = token;
+}
+
+async function runUpdate() {
+  const tokenInput = document.getElementById("update-token");
+  const token = tokenInput ? tokenInput.value.trim() : "";
+  const status = document.getElementById("update-status");
+  try {
+    const result = await apiFetch("/admin/update", {
+      method: "POST",
+      body: JSON.stringify({ token })
+    });
+    if (status) status.textContent = result.message || "Update triggered.";
+  } catch (err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
+async function exportDatabase() {
+  const status = document.getElementById("update-status");
+  try {
+    const blob = await apiFetchBlob("/admin/db/export", { method: "GET" });
+    downloadBlob("torre-tempo.sqlite", blob);
+    if (status) status.textContent = "Database exported.";
+  } catch (err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
+async function importDatabase() {
+  const status = document.getElementById("update-status");
+  const fileInput = document.getElementById("db-import-file");
+  if (!fileInput || !fileInput.files[0]) {
+    if (status) status.textContent = "Select a database file.";
+    return;
+  }
+  const form = new FormData();
+  form.append("database", fileInput.files[0]);
+  try {
+    const response = await fetch(`${API_BASE}/admin/db/import`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${state.token}` },
+      body: form
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Import failed" }));
+      throw new Error(error.error || "Import failed");
+    }
+    if (status) status.textContent = "Import staged. Restart server to apply.";
+    fileInput.value = "";
+  } catch (err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
+function parseScopesFromText(text) {
+  if (!text) return [];
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.includes("|") ? line.split("|") : line.split(",");
+      const location = (parts[0] || "").trim();
+      const department = (parts[1] || "").trim();
+      return { location, department };
+    })
+    .filter((scope) => scope.location && scope.department);
 }
 
 async function uploadCertificate() {

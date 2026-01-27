@@ -13,4 +13,8 @@ services:
     env_file: .env
     volumes:
       - ./data:/data
+      - ./:/repo
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - REPO_PATH=/repo
     restart: unless-stopped

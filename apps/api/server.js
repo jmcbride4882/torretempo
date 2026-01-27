@@ -7,6 +7,7 @@ const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const { execFile } = require("child_process");
 const SignPdf = require("node-signpdf").default;
 const { plainAddPlaceholder } = require("node-signpdf/dist/helpers");
 const bcrypt = require("bcryptjs");
@@ -20,9 +21,15 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change";
 const CERT_P12_PATH = process.env.CERT_P12_PATH || "";
 const CERT_P12_PASSWORD = process.env.CERT_P12_PASSWORD || "";
 const CERT_STORAGE_DIR = process.env.CERT_STORAGE_DIR || "/data/certs";
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, "data", "torre-tempo.sqlite");
+const DB_IMPORT_PATH = process.env.DB_IMPORT_PATH || path.join(__dirname, "data", "torre-tempo.sqlite.import");
+const DB_IMPORT_DIR = path.dirname(DB_IMPORT_PATH);
 
 if (!fs.existsSync(CERT_STORAGE_DIR)) {
   fs.mkdirSync(CERT_STORAGE_DIR, { recursive: true });
+}
+if (!fs.existsSync(DB_IMPORT_DIR)) {
+  fs.mkdirSync(DB_IMPORT_DIR, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -36,6 +43,11 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+const dbUpload = multer({
+  dest: DB_IMPORT_DIR,
+  limits: { fileSize: 100 * 1024 * 1024 }
 });
 
 app.use(helmet());
@@ -54,6 +66,9 @@ function seedSettings() {
 }
 
 function seedAdmin() {
+  if (process.env.AUTO_SEED_ADMIN !== "true") {
+    return;
+  }
   const existing = db.prepare("SELECT id FROM users LIMIT 1").get();
   if (existing) return;
   const email = process.env.ADMIN_EMAIL || "admin@torretempo.local";
@@ -82,12 +97,14 @@ function requireAuth(req, res, next) {
       .prepare("SELECT id, email, role, is_active, location, department FROM users WHERE id = ?")
       .get(decoded.id);
     if (!user || user.is_active === 0) return res.status(401).json({ error: "User inactive" });
+    const scopes = getUserScopes(user.id);
     req.user = {
       id: user.id,
       email: user.email,
       role: user.role,
       location: user.location || "default",
-      department: user.department || "general"
+      department: user.department || "general",
+      scopes
     };
     return next();
   } catch (err) {
@@ -102,6 +119,81 @@ function requireRole(roles) {
     }
     return next();
   };
+}
+
+function getUserScopes(userId) {
+  return db.prepare("SELECT location, department FROM user_scopes WHERE user_id = ?").all(userId);
+}
+
+function setUserScopes(userId, scopes) {
+  db.prepare("DELETE FROM user_scopes WHERE user_id = ?").run(userId);
+  const stmt = db.prepare("INSERT INTO user_scopes (user_id, location, department) VALUES (?, ?, ?)");
+  scopes.forEach((scope) => {
+    stmt.run(userId, scope.location, scope.department);
+  });
+}
+
+function normalizeScopes(body) {
+  const scopes = [];
+  if (Array.isArray(body.scopes)) {
+    body.scopes.forEach((scope) => {
+      if (!scope) return;
+      const location = String(scope.location || "").trim();
+      const department = String(scope.department || "").trim();
+      if (location && department) scopes.push({ location, department });
+    });
+  }
+  const locations = Array.isArray(body.locations)
+    ? body.locations.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+  const departments = Array.isArray(body.departments)
+    ? body.departments.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+  if (locations.length && departments.length) {
+    locations.forEach((location) => {
+      departments.forEach((department) => {
+        scopes.push({ location, department });
+      });
+    });
+  }
+  if (!scopes.length && body.location && body.department) {
+    scopes.push({ location: String(body.location).trim(), department: String(body.department).trim() });
+  }
+  const seen = new Set();
+  return scopes.filter((scope) => {
+    const key = `${scope.location}::${scope.department}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function getUserScopesMap(userIds) {
+  if (!userIds.length) return {};
+  const placeholders = userIds.map(() => "?").join(",");
+  const rows = db
+    .prepare(`SELECT user_id, location, department FROM user_scopes WHERE user_id IN (${placeholders})`)
+    .all(...userIds);
+  return rows.reduce((acc, row) => {
+    if (!acc[row.user_id]) acc[row.user_id] = [];
+    acc[row.user_id].push({ location: row.location, department: row.department });
+    return acc;
+  }, {});
+}
+
+function stageDatabaseImport(tempPath) {
+  const backupPath = `${DB_PATH}.bak-${Date.now()}`;
+  if (fs.existsSync(DB_PATH)) {
+    fs.copyFileSync(DB_PATH, backupPath);
+  }
+  fs.copyFileSync(tempPath, DB_IMPORT_PATH);
+  fs.unlinkSync(tempPath);
+}
+
+function attachScopesToUsers(users) {
+  const ids = users.map((user) => user.id);
+  const map = getUserScopesMap(ids);
+  return users.map((user) => ({ ...user, scopes: map[user.id] || [] }));
 }
 
 function getSettings() {
@@ -124,6 +216,9 @@ function sanitizeSettings(settings, role) {
   if (clone.exports) {
     clone.exports.cert_path = "";
     clone.exports.cert_password = "";
+  }
+  if (clone.system) {
+    clone.system.update_token = "";
   }
   return clone;
 }
@@ -217,6 +312,7 @@ app.post("/api/auth/login", (req, res) => {
     expiresIn: "12h"
   });
   logAudit(user.id, "login", "user", user.id, {});
+  const scopes = getUserScopes(user.id);
   res.json({
     token,
     user: {
@@ -225,7 +321,8 @@ app.post("/api/auth/login", (req, res) => {
       name: user.name,
       role: user.role,
       location: user.location || "",
-      department: user.department || ""
+      department: user.department || "",
+      scopes
     }
   });
 });
@@ -288,6 +385,84 @@ app.get("/api/settings", requireAuth, (req, res) => {
   res.json(sanitizeSettings(getSettings(), req.user.role));
 });
 
+app.get("/api/setup/status", (req, res) => {
+  const settings = getSettings();
+  const users = db.prepare("SELECT COUNT(*) as count FROM users").get();
+  res.json({
+    needs_setup: !settings.system.setup_complete,
+    has_users: users.count > 0
+  });
+});
+
+app.post("/api/setup/complete", (req, res) => {
+  const settings = getSettings();
+  const users = db.prepare("SELECT COUNT(*) as count FROM users").get();
+  if (settings.system.setup_complete) {
+    return res.status(400).json({ error: "Setup already completed" });
+  }
+  if (users.count > 0) {
+    return res.status(400).json({ error: "Users already exist" });
+  }
+  const admin = req.body.admin || {};
+  if (!admin.email || !admin.password) {
+    return res.status(400).json({ error: "Admin email and password required" });
+  }
+  const hash = bcrypt.hashSync(admin.password, 10);
+  const adminUser = {
+    id: nanoid(),
+    email: admin.email,
+    password_hash: hash,
+    name: admin.name || "Admin",
+    role: "admin",
+    is_active: 1,
+    archived_at: null,
+    location: admin.location || "default",
+    department: admin.department || "general",
+    created_at: new Date().toISOString()
+  };
+  db.prepare(
+    "INSERT INTO users (id, email, password_hash, name, role, is_active, archived_at, location, department, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(
+    adminUser.id,
+    adminUser.email,
+    adminUser.password_hash,
+    adminUser.name,
+    adminUser.role,
+    adminUser.is_active,
+    adminUser.archived_at,
+    adminUser.location,
+    adminUser.department,
+    adminUser.created_at
+  );
+  setUserScopes(adminUser.id, [{ location: adminUser.location, department: adminUser.department }]);
+
+  const updated = mergeSettings(settings, req.body.settings || {});
+  updated.company = { ...updated.company, ...(req.body.company || {}) };
+  updated.representatives = {
+    ...updated.representatives,
+    has_worker_reps: false,
+    no_reps_statement: updated.representatives.no_reps_statement || "No worker representatives",
+    recording_method_version: updated.representatives.recording_method_version || "setup-v1",
+    recording_method_effective_date:
+      updated.representatives.recording_method_effective_date || new Date().toISOString().split("T")[0]
+  };
+  updated.system.setup_complete = true;
+  updated.system.setup_completed_at = new Date().toISOString();
+  setSettings(updated);
+  logAudit(adminUser.id, "setup_completed", "system", "setup", {});
+  res.json({ ok: true });
+});
+
+app.post("/api/setup/import", dbUpload.single("database"), (req, res) => {
+  const settings = getSettings();
+  if (settings.system.setup_complete) {
+    return res.status(400).json({ error: "Setup already completed" });
+  }
+  if (!req.file) return res.status(400).json({ error: "No database file provided" });
+  stageDatabaseImport(req.file.path);
+  res.json({ ok: true, restart_required: true });
+});
+
 app.put("/api/settings", requireAuth, requireRole(["admin"]), (req, res) => {
   const existing = getSettings();
   const merged = mergeSettings(existing, req.body);
@@ -303,9 +478,26 @@ app.put("/api/settings", requireAuth, requireRole(["admin"]), (req, res) => {
     if (!req.body.exports.cert_uploaded_at)
       merged.exports.cert_uploaded_at = existing.exports.cert_uploaded_at || "";
   }
+  if (req.body.system) {
+    if (req.body.system.update_token === "") {
+      merged.system.update_token = existing.system.update_token || "";
+    }
+  }
   setSettings(merged);
   logAudit(req.user.id, "settings_update", "settings", "1", {});
   res.json({ ok: true });
+});
+
+app.get("/api/admin/db/export", requireAuth, requireRole(["admin"]), (req, res) => {
+  if (!fs.existsSync(DB_PATH)) return res.status(404).json({ error: "Database not found" });
+  const name = `torre-tempo-${new Date().toISOString().split("T")[0]}.sqlite`;
+  res.download(DB_PATH, name);
+});
+
+app.post("/api/admin/db/import", requireAuth, requireRole(["admin"]), dbUpload.single("database"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No database file provided" });
+  stageDatabaseImport(req.file.path);
+  res.json({ ok: true, restart_required: true });
 });
 
 app.post(
@@ -335,6 +527,26 @@ app.post(
   }
 );
 
+app.post("/api/admin/update", requireAuth, requireRole(["admin"]), (req, res) => {
+  const settings = getSettings();
+  if (!settings.system || !settings.system.updates_enabled) {
+    return res.status(403).json({ error: "Updates are disabled" });
+  }
+  if (settings.system.update_token && req.body.token !== settings.system.update_token) {
+    return res.status(403).json({ error: "Invalid update token" });
+  }
+  const scriptPath = settings.system.update_script_path || process.env.UPDATE_SCRIPT_PATH || "";
+  if (!scriptPath || !fs.existsSync(scriptPath)) {
+    return res.status(500).json({ error: "Update script not found" });
+  }
+  execFile("bash", [scriptPath], { cwd: process.env.REPO_PATH || "/repo" }, (err, stdout, stderr) => {
+    if (err) {
+      return res.status(500).json({ error: "Update failed", details: stderr || err.message });
+    }
+    return res.json({ ok: true, message: "Update started", output: stdout });
+  });
+});
+
 app.get("/api/compliance", requireAuth, (req, res) => {
   const settings = getSettings();
   const missing = getMissingFields(settings);
@@ -346,15 +558,27 @@ app.get("/api/staff", requireAuth, requireRole(["admin", "manager"]), (req, res)
   if (req.user.role === "manager") {
     users = db
       .prepare(
-        "SELECT id, email, name, role, is_active, location, department FROM users WHERE is_active = 1 AND location = ? AND department = ? ORDER BY name ASC"
+        "SELECT id, email, name, role, is_active, location, department FROM users WHERE is_active = 1 ORDER BY name ASC"
       )
-      .all(req.user.location, req.user.department);
+      .all();
+    const managerScopes = req.user.scopes && req.user.scopes.length
+      ? req.user.scopes
+      : [{ location: req.user.location, department: req.user.department }];
+    const scoped = attachScopesToUsers(users).filter((user) =>
+      user.scopes.some((scope) =>
+        managerScopes.some(
+          (managerScope) =>
+            scope.location === managerScope.location && scope.department === managerScope.department
+        )
+      )
+    );
+    return res.json(scoped);
   } else {
     users = db
       .prepare("SELECT id, email, name, role, is_active, location, department FROM users WHERE is_active = 1 ORDER BY name ASC")
       .all();
   }
-  res.json(users);
+  res.json(attachScopesToUsers(users));
 });
 
 app.get("/api/rota/weeks", requireAuth, (req, res) => {
@@ -817,13 +1041,18 @@ app.get("/api/users", requireAuth, requireRole(["admin"]), (req, res) => {
       "SELECT id, email, name, role, is_active, archived_at, location, department, created_at FROM users ORDER BY created_at DESC"
     )
     .all();
-  res.json(users);
+  res.json(attachScopesToUsers(users));
 });
 
 app.post("/api/users", requireAuth, requireRole(["admin"]), (req, res) => {
   const { email, password, name, role } = req.body || {};
   if (!email || !password || !role) return res.status(400).json({ error: "Missing fields" });
+  const scopes = normalizeScopes(req.body || {});
+  if ((role === "manager" || role === "employee") && scopes.length === 0) {
+    return res.status(400).json({ error: "Location and department required" });
+  }
   const hash = bcrypt.hashSync(password, 10);
+  const primary = scopes[0] || { location: req.body.location || "", department: req.body.department || "" };
   const user = {
     id: nanoid(),
     email,
@@ -832,8 +1061,8 @@ app.post("/api/users", requireAuth, requireRole(["admin"]), (req, res) => {
     role,
     is_active: 1,
     archived_at: null,
-    location: req.body.location || "",
-    department: req.body.department || "",
+    location: primary.location || "",
+    department: primary.department || "",
     created_at: new Date().toISOString()
   };
   db.prepare(
@@ -850,6 +1079,9 @@ app.post("/api/users", requireAuth, requireRole(["admin"]), (req, res) => {
     user.department,
     user.created_at
   );
+  if (scopes.length) {
+    setUserScopes(user.id, scopes);
+  }
   logAudit(req.user.id, "user_created", "user", user.id, { email, role });
   res.json({
     id: user.id,
@@ -860,6 +1092,7 @@ app.post("/api/users", requireAuth, requireRole(["admin"]), (req, res) => {
     archived_at: user.archived_at,
     location: user.location,
     department: user.department,
+    scopes,
     created_at: user.created_at
   });
 });
@@ -869,15 +1102,21 @@ app.patch("/api/users/:id", requireAuth, requireRole(["admin"]), (req, res) => {
   if (!user) return res.status(404).json({ error: "Not found" });
   const name = req.body.name !== undefined ? req.body.name : user.name;
   const role = req.body.role !== undefined ? req.body.role : user.role;
-  const location = req.body.location !== undefined ? req.body.location : user.location;
-  const department = req.body.department !== undefined ? req.body.department : user.department;
+  const scopes = normalizeScopes(req.body || {});
+  const primary = scopes[0] || {
+    location: req.body.location !== undefined ? req.body.location : user.location,
+    department: req.body.department !== undefined ? req.body.department : user.department
+  };
   db.prepare("UPDATE users SET name = ?, role = ?, location = ?, department = ? WHERE id = ?").run(
     name,
     role,
-    location,
-    department,
+    primary.location,
+    primary.department,
     user.id
   );
+  if (scopes.length) {
+    setUserScopes(user.id, scopes);
+  }
   if (req.body.password) {
     const hash = bcrypt.hashSync(req.body.password, 10);
     db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hash, user.id);
@@ -890,8 +1129,9 @@ app.patch("/api/users/:id", requireAuth, requireRole(["admin"]), (req, res) => {
     role,
     is_active: user.is_active,
     archived_at: user.archived_at,
-    location,
-    department
+    location: primary.location,
+    department: primary.department,
+    scopes
   });
 });
 
@@ -1008,18 +1248,25 @@ function getWeekStart(dateStr) {
 }
 
 function resolveScope(req, source) {
-  if (req.user.role !== "admin") {
-    return {
-      location: req.user.location || "default",
-      department: req.user.department || "general"
-    };
-  }
-  const location = source && source.location ? source.location : req.user.location;
-  const department = source && source.department ? source.department : req.user.department;
-  return {
-    location: location || "default",
-    department: department || "general"
+  const scopes = req.user.scopes && req.user.scopes.length
+    ? req.user.scopes
+    : [{ location: req.user.location || "default", department: req.user.department || "general" }];
+  const requested = {
+    location: source && source.location ? String(source.location).trim() : "",
+    department: source && source.department ? String(source.department).trim() : ""
   };
+  if (req.user.role === "admin") {
+    const location = requested.location || scopes[0].location || "default";
+    const department = requested.department || scopes[0].department || "general";
+    return { location, department };
+  }
+  if (requested.location && requested.department) {
+    const allowed = scopes.some(
+      (scope) => scope.location === requested.location && scope.department === requested.department
+    );
+    if (allowed) return requested;
+  }
+  return scopes[0];
 }
 
 async function sendRotaPublishNotifications(weekStart, scope) {

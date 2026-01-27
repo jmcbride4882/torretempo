@@ -90,6 +90,12 @@ Time tracking cannot be enabled until all required fields are completed and vali
 - cert_original_name (string, optional)
 - cert_uploaded_at (date, optional)
 
+### System updates
+- updates_enabled (boolean)
+- update_token (string)
+- update_script_path (string)
+- db import/export (admin actions)
+
 ## Validation rules
 - data_retention_years >= 4
 - geo_retention_years >= 4

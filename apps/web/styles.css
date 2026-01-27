@@ -379,6 +379,12 @@ textarea {
   text-decoration: none;
 }
 
+.footer {
+  margin-top: 32px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .rota-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

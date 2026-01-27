@@ -29,6 +29,10 @@ On the VPS:
 ## API
 The API runs on port 4000 inside Docker and is proxied by nginx at `/api`.
 
+## Database
+SQLite database is stored at `data/torre-tempo.sqlite` (persistent volume).
+Use Admin > System updates to export or import the database.
+
 Default admin user is set via `.env`:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
@@ -53,6 +57,12 @@ Signed PDF export requires:
 ## User management
 Log in as admin and add or archive staff from the Admin tab.
 Add location and department for each staff member to enable scoped rota views.
+Use scopes to allow staff to work across multiple locations and teams.
+
+## System updates
+- Admins can trigger updates from the Admin > System updates panel.
+- Requires docker socket and repo volume mount (already in docker-compose).
+- Set an update token in System updates before running.
 
 ## Rota
 - Drag staff onto shifts to assign.
@@ -62,6 +72,19 @@ Add location and department for each staff member to enable scoped rota views.
 
 Scheduled reminders
 - Configure lead times in Admin > Rota reminders.
+
+## Ubuntu install
+See `docs/ubuntu-install.md` for a fresh Ubuntu setup guide.
+
+## Setup UI
+On first install, visit `/setup.html` to create the admin account or import a database.
+
+## Database migrations
+Set `DB_MIGRATIONS_ENABLED=false` to prevent automatic schema changes on updates.
+
+## Copyright
+Copyright Lakeside La Torre (Murcia) Group SL  CIF:B70822366
+Developed and Designed by John McBride
 
 ## Password reset and deactivation
 - Admins can deactivate users and reset passwords from the Admin tab.

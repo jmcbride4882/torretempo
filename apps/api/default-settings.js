@@ -70,6 +70,13 @@ module.exports = {
     checkout_lead_minutes: 15,
     scheduler_interval_minutes: 5
   },
+  system: {
+    updates_enabled: false,
+    update_token: "",
+    update_script_path: "/repo/scripts/self-update.sh",
+    setup_complete: false,
+    setup_completed_at: ""
+  },
   exports: {
     inspectorate_export_format: "pdf_csv",
     export_signature_method: "hash_checksum",

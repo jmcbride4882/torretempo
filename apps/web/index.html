@@ -553,6 +553,38 @@
             </div>
 
             <div class="card form-card">
+              <h3 data-i18n="admin.systemSection">System updates</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.updatesEnabled">Enable updates</span>
+                  <select data-path="system.updates_enabled">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.updateToken">Update token</span>
+                  <input id="update-token" type="password" placeholder="Leave blank to keep" />
+                </label>
+                <label>
+                  <span data-i18n="admin.updateScript">Update script path</span>
+                  <input data-path="system.update_script_path" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.dbImport">Import database</span>
+                  <input id="db-import-file" type="file" accept=".sqlite,.db" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="generate-update-token" data-i18n="admin.generateToken">Generate token</button>
+                <button class="btn primary" id="run-update" data-i18n="admin.runUpdate">Pull updates</button>
+                <button class="btn" id="export-db" data-i18n="admin.exportDb">Export database</button>
+                <button class="btn" id="import-db" data-i18n="admin.importDb">Import database</button>
+              </div>
+              <div id="update-status" class="hint"></div>
+            </div>
+
+            <div class="card form-card">
               <h3 data-i18n="admin.audit">Exports and Audit</h3>
               <div class="form-grid">
                 <label>
@@ -609,6 +641,10 @@
                   <input id="user-department" type="text" />
                 </label>
                 <label>
+                  <span data-i18n="admin.userScopes">Location / Department scopes</span>
+                  <textarea id="user-scopes" rows="3" placeholder="Location | Department"></textarea>
+                </label>
+                <label>
                   <span data-i18n="admin.userRole">Role</span>
                   <select id="user-role">
                     <option value="employee">Employee</option>
@@ -630,6 +666,10 @@
           </div>
         </section>
       </main>
+
+      <footer class="footer">
+        &copy; Lakeside La Torre (Murcia) Group SL  CIF:B70822366. Developed and Designed by John McBride.
+      </footer>
     </div>
 
     <div class="auth-modal" id="auth-modal">
