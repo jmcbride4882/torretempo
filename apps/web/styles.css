@@ -443,6 +443,10 @@ textarea {
   flex-wrap: wrap;
 }
 
+select {
+  min-height: 40px;
+}
+
 .auth-modal {
   position: fixed;
   inset: 0;

@@ -33,6 +33,9 @@ The API runs on port 4000 inside Docker and is proxied by nginx at `/api`.
 SQLite database is stored at `data/torre-tempo.sqlite` (persistent volume).
 Use Admin > System updates to export or import the database.
 
+## Migration
+Run `docker compose exec api node /repo/scripts/migrate-scopes.js` to normalize existing users into location/department scopes.
+
 Default admin user is set via `.env`:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`

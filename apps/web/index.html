@@ -176,11 +176,11 @@
                 </label>
                 <label>
                   <span data-i18n="rota.location">Location</span>
-                  <input type="text" id="rota-location-filter" />
+                  <select id="rota-location-filter"></select>
                 </label>
                 <label>
                   <span data-i18n="rota.department">Department</span>
-                  <input type="text" id="rota-department-filter" />
+                  <select id="rota-department-filter"></select>
                 </label>
                 <button class="btn" id="rota-load" data-i18n="rota.load">Load</button>
                 <button class="btn primary" id="rota-publish" data-i18n="rota.publish">Publish</button>
@@ -214,7 +214,7 @@
                 </label>
                 <label>
                   <span data-i18n="rota.location">Location</span>
-                  <input id="rota-location" type="text" />
+                  <select id="rota-location"></select>
                 </label>
                 <label>
                   <span data-i18n="rota.notes">Notes</span>
@@ -491,6 +491,34 @@
             </div>
 
             <div class="card form-card">
+              <h3 data-i18n="admin.directories">Locations and Departments</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.newLocation">New location</span>
+                  <input id="dir-location" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.newDepartment">New department/team</span>
+                  <input id="dir-department" type="text" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="add-location" data-i18n="admin.addLocation">Add location</button>
+                <button class="btn" id="add-department" data-i18n="admin.addDepartment">Add department</button>
+              </div>
+              <div class="form-grid">
+                <div>
+                  <div class="hint" data-i18n="admin.locationList">Locations</div>
+                  <div id="location-list" class="list"></div>
+                </div>
+                <div>
+                  <div class="hint" data-i18n="admin.departmentList">Departments</div>
+                  <div id="department-list" class="list"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card form-card">
               <h3 data-i18n="admin.emailSection">Email and Reset</h3>
               <div class="form-grid">
                 <label>
@@ -634,11 +662,11 @@
                 </label>
                 <label>
                   <span data-i18n="admin.userLocation">Location</span>
-                  <input id="user-location" type="text" />
+                  <select id="user-location"></select>
                 </label>
                 <label>
                   <span data-i18n="admin.userDepartment">Department</span>
-                  <input id="user-department" type="text" />
+                  <select id="user-department"></select>
                 </label>
                 <label>
                   <span data-i18n="admin.userScopes">Location / Department scopes</span>

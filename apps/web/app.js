@@ -72,6 +72,10 @@ const defaultSettings = {
     smtp_pass: "",
     smtp_from: ""
   },
+  directories: {
+    locations: ["default"],
+    departments: ["general"]
+  },
   rota: {
     reminders_enabled: true,
     checkin_lead_minutes: 30,
@@ -261,6 +265,9 @@ async function bootstrap() {
 async function refreshData() {
   try {
     state.settings = await apiFetch("/settings");
+    if (!state.settings.directories) {
+      state.settings.directories = { locations: [], departments: [] };
+    }
     state.compliance = await apiFetch("/compliance");
     state.entries = await apiFetch("/time/entries");
     state.corrections = await apiFetch("/corrections");
@@ -271,6 +278,8 @@ async function refreshData() {
     hydrateAdminForm();
     renderUserList();
     renderCertStatus();
+    renderDirectories();
+    populateDirectoryOptions();
     prefillRotaScope();
     refreshUI();
   } catch (err) {
@@ -690,6 +699,8 @@ function initActions() {
   document.getElementById("run-update").addEventListener("click", runUpdate);
   document.getElementById("export-db").addEventListener("click", exportDatabase);
   document.getElementById("import-db").addEventListener("click", importDatabase);
+  document.getElementById("add-location").addEventListener("click", () => addDirectoryItem("locations"));
+  document.getElementById("add-department").addEventListener("click", () => addDirectoryItem("departments"));
   document.getElementById("rota-load").addEventListener("click", loadRota);
   document.getElementById("rota-add").addEventListener("click", addShift);
   document.getElementById("rota-publish").addEventListener("click", publishRota);
@@ -745,6 +756,9 @@ async function loadRota() {
   if (!weekStart) return alert("Select a week start.");
   if (state.user && state.user.role === "admin" && (!location || !department)) {
     return alert("Select location and department.");
+  }
+  if (!isScopeAllowed(location, department)) {
+    return alert("Selected scope not allowed.");
   }
   state.rota.weekStart = weekStart;
   try {
@@ -943,6 +957,15 @@ function userMatchesScope(user, locationFilter, departmentFilter) {
   });
 }
 
+function isScopeAllowed(location, department) {
+  if (!state.user) return false;
+  if (state.user.role === "admin") return true;
+  const scopes = state.user.scopes && state.user.scopes.length
+    ? state.user.scopes
+    : [{ location: state.user.location, department: state.user.department }];
+  return scopes.some((scope) => scope.location === location && scope.department === department);
+}
+
 async function addShift() {
   const date = document.getElementById("rota-date").value;
   const start = document.getElementById("rota-start").value;
@@ -957,6 +980,9 @@ async function addShift() {
   if (!date || !start || !end) return alert("Date, start, and end are required.");
   if (state.user && state.user.role === "admin" && (!locationScope || !departmentScope)) {
     return alert("Select location and department.");
+  }
+  if (!isScopeAllowed(locationScope || locationValue, departmentScope)) {
+    return alert("Selected scope not allowed.");
   }
   try {
     await apiFetch("/rota/shifts", {
@@ -1036,6 +1062,9 @@ async function publishRota() {
   if (state.user && state.user.role === "admin" && (!location || !department)) {
     return alert("Select location and department.");
   }
+  if (!isScopeAllowed(location, department)) {
+    return alert("Selected scope not allowed.");
+  }
   try {
     await apiFetch(`/rota/weeks/${weekStart}/publish`, {
       method: "POST",
@@ -1054,6 +1083,9 @@ async function unpublishRota() {
   if (!weekStart) return alert("Select a week start.");
   if (state.user && state.user.role === "admin" && (!location || !department)) {
     return alert("Select location and department.");
+  }
+  if (!isScopeAllowed(location, department)) {
+    return alert("Selected scope not allowed.");
   }
   try {
     await apiFetch(`/rota/weeks/${weekStart}/unpublish`, {
@@ -1074,6 +1106,9 @@ async function sendRotaReminder(type) {
   const department = document.getElementById("rota-department-filter").value.trim();
   if (state.user && state.user.role === "admin" && (!location || !department)) {
     return alert("Select location and department.");
+  }
+  if (!isScopeAllowed(location, department)) {
+    return alert("Selected scope not allowed.");
   }
   try {
     await apiFetch("/rota/reminders", {
@@ -1333,6 +1368,113 @@ function generateRandomSecret(length) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+function renderDirectories() {
+  renderDirectoryList("locations", "location-list");
+  renderDirectoryList("departments", "department-list");
+}
+
+function renderDirectoryList(type, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = "";
+  const items = (state.settings.directories && state.settings.directories[type]) || [];
+  if (!items.length) {
+    container.textContent = "--";
+    return;
+  }
+  items.forEach((value) => {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const label = document.createElement("div");
+    label.textContent = value;
+    const actions = document.createElement("div");
+    actions.className = "button-row";
+    const remove = document.createElement("button");
+    remove.className = "btn danger";
+    remove.textContent = translations[state.language]["rota.remove"] || "Remove";
+    remove.addEventListener("click", () => removeDirectoryItem(type, value));
+    actions.appendChild(remove);
+    item.appendChild(label);
+    item.appendChild(actions);
+    container.appendChild(item);
+  });
+}
+
+function addDirectoryItem(type) {
+  const inputId = type === "locations" ? "dir-location" : "dir-department";
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const value = input.value.trim();
+  if (!value) return;
+  const list = (state.settings.directories && state.settings.directories[type]) || [];
+  if (!list.includes(value)) {
+    list.push(value);
+  }
+  state.settings.directories[type] = list;
+  input.value = "";
+  renderDirectories();
+  populateDirectoryOptions();
+}
+
+function removeDirectoryItem(type, value) {
+  const list = (state.settings.directories && state.settings.directories[type]) || [];
+  state.settings.directories[type] = list.filter((item) => item !== value);
+  renderDirectories();
+  populateDirectoryOptions();
+}
+
+function populateDirectoryOptions() {
+  const locations = (state.settings.directories && state.settings.directories.locations) || [];
+  const departments = (state.settings.directories && state.settings.directories.departments) || [];
+  populateSelect("user-location", locations, true);
+  populateSelect("user-department", departments, true);
+  populateSelect("rota-location", locations, true);
+  populateSelect("rota-location-filter", getRotaLocations(locations), true);
+  populateSelect("rota-department-filter", getRotaDepartments(departments), true);
+}
+
+function populateSelect(id, options, includeBlank) {
+  const select = document.getElementById(id);
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = "";
+  if (includeBlank) {
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "--";
+    select.appendChild(empty);
+  }
+  options.forEach((value) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = value;
+    select.appendChild(opt);
+  });
+  if (current) select.value = current;
+}
+
+function getRotaLocations(defaultList) {
+  const list = new Set(defaultList);
+  if (state.user && state.user.scopes && state.user.scopes.length) {
+    state.user.scopes.forEach((scope) => list.add(scope.location));
+  }
+  if (state.user && state.user.role !== "admin" && state.user.scopes && state.user.scopes.length) {
+    return Array.from(new Set(state.user.scopes.map((scope) => scope.location)));
+  }
+  return Array.from(list);
+}
+
+function getRotaDepartments(defaultList) {
+  const list = new Set(defaultList);
+  if (state.user && state.user.scopes && state.user.scopes.length) {
+    state.user.scopes.forEach((scope) => list.add(scope.department));
+  }
+  if (state.user && state.user.role !== "admin" && state.user.scopes && state.user.scopes.length) {
+    return Array.from(new Set(state.user.scopes.map((scope) => scope.department)));
+  }
+  return Array.from(list);
 }
 
 function generateUpdateToken() {

@@ -73,6 +73,10 @@ Time tracking cannot be enabled until all required fields are completed and vali
 - smtp_pass (string, optional)
 - smtp_from (string, optional)
 
+### Directories
+- locations (array)
+- departments (array)
+
 ### Rota reminders
 - reminders_enabled (boolean)
 - checkin_lead_minutes (number)

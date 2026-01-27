@@ -103,3 +103,10 @@ docker compose up -d --build
 ```
 
 Enable updates in Admin > System updates and set an update token.
+
+## Migration
+If you are upgrading an existing database, run:
+```bash
+cd /opt/torre-tempo
+docker compose exec api node /repo/scripts/migrate-scopes.js
+```

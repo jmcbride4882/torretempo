@@ -64,6 +64,10 @@ module.exports = {
     smtp_pass: "",
     smtp_from: ""
   },
+  directories: {
+    locations: ["default"],
+    departments: ["general"]
+  },
   rota: {
     reminders_enabled: true,
     checkin_lead_minutes: 30,

@@ -389,7 +389,7 @@ app.get("/api/setup/status", (req, res) => {
   const settings = getSettings();
   const users = db.prepare("SELECT COUNT(*) as count FROM users").get();
   res.json({
-    needs_setup: !settings.system.setup_complete,
+    needs_setup: !settings.system.setup_complete && users.count === 0,
     has_users: users.count > 0
   });
 });
