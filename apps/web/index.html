@@ -10,6 +10,11 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
     <link rel="stylesheet" href="styles.css?v=20260127" />
   </head>
   <body>
@@ -45,8 +50,11 @@
         <button class="nav-item active" data-view="dashboard" data-i18n="nav.dashboard">Dashboard</button>
         <button class="nav-item" data-view="time" data-i18n="nav.time">Time</button>
         <button class="nav-item" data-view="rota" data-i18n="nav.rota">Rota</button>
+        <button class="nav-item" data-view="my-report" data-i18n="nav.myReport">My report</button>
+        <button class="nav-item" data-view="locations" data-i18n="nav.locations">Locations</button>
         <button class="nav-item" data-view="reports" data-i18n="nav.reports">Reports</button>
         <button class="nav-item" data-view="policies" data-i18n="nav.policies">Policies</button>
+        <button class="nav-item" data-view="profile" data-i18n="nav.profile">Profile</button>
         <button class="nav-item" data-view="admin" data-i18n="nav.admin">Admin</button>
       </nav>
 
@@ -95,7 +103,7 @@
 
         <section class="view" id="view-time">
           <div class="grid">
-            <div class="card">
+            <div class="card" id="rota-editor-card">
               <h2 data-i18n="time.title">Current Shift</h2>
               <div class="shift-status" id="shift-status">--</div>
               <div class="button-row">
@@ -120,7 +128,7 @@
               </div>
             </div>
 
-            <div class="card">
+            <div class="card" id="rota-staff-card">
               <h2 data-i18n="time.entries">Time Entries</h2>
               <div id="time-entries" class="list"></div>
             </div>
@@ -162,13 +170,35 @@
               <h2 data-i18n="reports.overtimeTitle">Overtime and Exceptions</h2>
               <div id="overtime-summary" class="list"></div>
             </div>
+
+            <div class="card">
+              <h2 data-i18n="reports.monthlyTitle">Monthly reports</h2>
+              <div class="filter-row">
+                <label>
+                  <span data-i18n="reports.month">Month</span>
+                  <input type="month" id="monthly-report-month" />
+                </label>
+                <button class="btn" id="monthly-report-load" data-i18n="reports.loadMonthly">Load</button>
+              </div>
+              <div id="monthly-report-list" class="list"></div>
+            </div>
           </div>
         </section>
 
         <section class="view" id="view-rota">
           <div class="grid">
-            <div class="card">
-              <h2 data-i18n="rota.title">Rota</h2>
+            <div class="card rota-hero">
+              <div class="rota-header">
+                <div>
+                  <h2 data-i18n="rota.title">Rota</h2>
+                  <p class="hint" data-i18n="rota.subtitle">Plan shifts, assign staff, and publish weekly schedules.</p>
+                </div>
+                <div class="button-row rota-week-nav">
+                  <button class="btn" id="rota-prev-week" data-i18n="rota.prevWeek">Prev week</button>
+                  <button class="btn" id="rota-today-week" data-i18n="rota.thisWeek">This week</button>
+                  <button class="btn" id="rota-next-week" data-i18n="rota.nextWeek">Next week</button>
+                </div>
+              </div>
               <div class="filter-row">
                 <label>
                   <span data-i18n="rota.week">Week start</span>
@@ -190,11 +220,12 @@
                 <button class="btn" id="rota-remind-checkin" data-i18n="rota.remindCheckin">Send check in reminder</button>
                 <button class="btn" id="rota-remind-checkout" data-i18n="rota.remindCheckout">Send check out reminder</button>
               </div>
+              <div class="rota-summary" id="rota-summary"></div>
               <div id="rota-status" class="hint"></div>
             </div>
 
             <div class="card">
-              <h3 data-i18n="rota.addShift">Add shift</h3>
+              <h3 data-i18n="rota.addShift">Shift editor</h3>
               <div class="form-grid">
                 <label>
                   <span data-i18n="rota.date">Date</span>
@@ -217,6 +248,10 @@
                   <select id="rota-location"></select>
                 </label>
                 <label>
+                  <span data-i18n="rota.department">Department</span>
+                  <select id="rota-department"></select>
+                </label>
+                <label>
                   <span data-i18n="rota.notes">Notes</span>
                   <input id="rota-notes" type="text" />
                 </label>
@@ -227,7 +262,10 @@
               </div>
               <div class="button-row">
                 <button class="btn primary" id="rota-add" data-i18n="rota.add">Add shift</button>
+                <button class="btn primary" id="rota-update" data-i18n="rota.update">Update shift</button>
+                <button class="btn" id="rota-cancel" data-i18n="rota.cancel">Cancel edit</button>
               </div>
+              <div class="hint" id="rota-edit-hint"></div>
             </div>
 
             <div class="card">
@@ -237,6 +275,182 @@
           </div>
 
           <div class="rota-grid" id="rota-grid"></div>
+        </section>
+
+        <section class="view" id="view-my-report">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="myReport.title">My Monthly Report</h2>
+              <p class="hint" data-i18n="myReport.subtitle">Review your monthly hours and sign digitally.</p>
+              <div class="filter-row">
+                <label>
+                  <span data-i18n="myReport.month">Month</span>
+                  <input type="month" id="my-report-month" />
+                </label>
+                <button class="btn" id="my-report-load" data-i18n="myReport.load">Load</button>
+                <button class="btn primary" id="my-report-download" data-i18n="myReport.download">Download PDF</button>
+              </div>
+              <div id="my-report-summary" class="summary"></div>
+              <div id="my-report-status" class="hint"></div>
+            </div>
+
+            <div class="card signature-card">
+              <h3 data-i18n="myReport.signature">Signature</h3>
+              <div class="signature-wrap">
+                <canvas id="signature-pad" width="640" height="200"></canvas>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="signature-clear" data-i18n="myReport.clear">Clear</button>
+                <button class="btn primary" id="signature-save" data-i18n="myReport.sign">Sign report</button>
+              </div>
+              <div id="signature-status" class="hint"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-locations">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="geo.title">Geolocation map</h2>
+              <p class="hint" data-i18n="geo.subtitle">Visualise on-clock GPS events with filters.</p>
+              <div class="filter-row">
+                <label>
+                  <span data-i18n="geo.from">From</span>
+                  <input type="date" id="geo-from" />
+                </label>
+                <label>
+                  <span data-i18n="geo.to">To</span>
+                  <input type="date" id="geo-to" />
+                </label>
+                <label>
+                  <span data-i18n="geo.type">Event</span>
+                  <select id="geo-type">
+                    <option value="">All</option>
+                    <option value="clock_in">Clock in</option>
+                    <option value="break_start">Break start</option>
+                    <option value="break_end">Break end</option>
+                    <option value="clock_out">Clock out</option>
+                  </select>
+                </label>
+                <label class="geo-user-field">
+                  <span data-i18n="geo.user">User</span>
+                  <select id="geo-user"></select>
+                </label>
+                <button class="btn" id="geo-load" data-i18n="geo.load">Load</button>
+              </div>
+              <div id="geo-map" class="geo-map"></div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="geo.list">Event list</h3>
+              <div id="geo-list" class="list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-profile">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="profile.title">Profile</h2>
+              <p class="hint" data-i18n="profile.subtitle">Keep your details up to date for monthly reporting.</p>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="profile.fullName">Full name</span>
+                  <input id="profile-full-name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.preferredName">Preferred name</span>
+                  <input id="profile-preferred-name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.email">Email</span>
+                  <input id="profile-email" type="email" disabled />
+                </label>
+                <label>
+                  <span data-i18n="profile.phone">Phone</span>
+                  <input id="profile-phone" type="tel" />
+                </label>
+                <label>
+                  <span data-i18n="profile.birthDate">Birth date</span>
+                  <input id="profile-birth" type="date" />
+                </label>
+                <label>
+                  <span data-i18n="profile.taxId">DNI/NIE</span>
+                  <input id="profile-tax-id" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.ssn">Social security</span>
+                  <input id="profile-ssn" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.address">Address</span>
+                  <input id="profile-address" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.postal">Postal code</span>
+                  <input id="profile-postal" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.city">City</span>
+                  <input id="profile-city" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.province">Province</span>
+                  <input id="profile-province" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.country">Country</span>
+                  <input id="profile-country" type="text" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn primary" id="profile-save" data-i18n="profile.save">Save profile</button>
+              </div>
+              <div id="profile-status" class="hint"></div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="profile.employment">Employment details</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="profile.employeeId">Employee ID</span>
+                  <input id="profile-employee-id" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.jobTitle">Job title</span>
+                  <input id="profile-job-title" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.startDate">Start date</span>
+                  <input id="profile-start-date" type="date" />
+                </label>
+                <label>
+                  <span data-i18n="profile.iban">IBAN</span>
+                  <input id="profile-iban" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.emergencyName">Emergency contact</span>
+                  <input id="profile-emergency-name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="profile.emergencyPhone">Emergency phone</span>
+                  <input id="profile-emergency-phone" type="tel" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="profile.selfie">Selfie</h3>
+              <div class="selfie-preview">
+                <img id="selfie-preview" alt="Selfie preview" />
+              </div>
+              <input id="selfie-file" type="file" accept="image/*" />
+              <div class="button-row">
+                <button class="btn" id="selfie-upload" data-i18n="profile.uploadSelfie">Upload selfie</button>
+              </div>
+              <div id="selfie-status" class="hint"></div>
+            </div>
+          </div>
         </section>
 
         <section class="view" id="view-policies">
@@ -584,11 +798,26 @@
               <h3 data-i18n="admin.systemSection">System updates</h3>
               <div class="form-grid">
                 <label>
+                  <span data-i18n="admin.publicBaseUrl">Public base URL</span>
+                  <input data-path="system.public_base_url" type="text" />
+                </label>
+                <label>
                   <span data-i18n="admin.updatesEnabled">Enable updates</span>
                   <select data-path="system.updates_enabled">
                     <option value="true">Yes</option>
                     <option value="false">No</option>
                   </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.autoUpdates">Auto updates</span>
+                  <select data-path="system.auto_updates_enabled">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.autoUpdateInterval">Auto update interval (hours)</span>
+                  <input data-path="system.auto_update_interval_hours" type="number" min="1" />
                 </label>
                 <label>
                   <span data-i18n="admin.updateToken">Update token</span>
@@ -647,6 +876,41 @@
                 <button class="btn" id="upload-cert" data-i18n="admin.uploadCert">Upload certificate</button>
               </div>
               <div id="cert-status" class="hint"></div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.invites">Invites</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.inviteEmail">Invite email</span>
+                  <input id="invite-email" type="email" />
+                </label>
+                <label>
+                  <span data-i18n="admin.inviteRole">Role</span>
+                  <select id="invite-role">
+                    <option value="employee">Employee</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.inviteLocation">Location</span>
+                  <select id="invite-location"></select>
+                </label>
+                <label>
+                  <span data-i18n="admin.inviteDepartment">Department</span>
+                  <select id="invite-department"></select>
+                </label>
+                <label>
+                  <span data-i18n="admin.inviteExpiry">Expiry (days)</span>
+                  <input id="invite-expiry" type="number" min="1" value="14" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn primary" id="invite-create" data-i18n="admin.inviteCreate">Create invite</button>
+              </div>
+              <div id="invite-link" class="hint"></div>
+              <div id="invite-list" class="list"></div>
             </div>
 
             <div class="card form-card">
@@ -719,6 +983,10 @@
     </div>
 
     <script src="translations.js?v=20260127"></script>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin=""
+    ></script>
     <script src="app.js?v=20260127"></script>
   </body>
 </html>

@@ -78,6 +78,9 @@ module.exports = {
     updates_enabled: false,
     update_token: "",
     update_script_path: "/repo/scripts/self-update.sh",
+    public_base_url: "",
+    auto_updates_enabled: false,
+    auto_update_interval_hours: 24,
     setup_complete: false,
     setup_completed_at: ""
   },

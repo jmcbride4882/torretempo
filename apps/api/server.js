@@ -4,6 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
@@ -21,12 +22,20 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change";
 const CERT_P12_PATH = process.env.CERT_P12_PATH || "";
 const CERT_P12_PASSWORD = process.env.CERT_P12_PASSWORD || "";
 const CERT_STORAGE_DIR = process.env.CERT_STORAGE_DIR || "/data/certs";
+const SELFIE_STORAGE_DIR = process.env.SELFIE_STORAGE_DIR || "/data/selfies";
+const SIGNATURE_STORAGE_DIR = process.env.SIGNATURE_STORAGE_DIR || "/data/signatures";
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, "data", "torre-tempo.sqlite");
 const DB_IMPORT_PATH = process.env.DB_IMPORT_PATH || path.join(__dirname, "data", "torre-tempo.sqlite.import");
 const DB_IMPORT_DIR = path.dirname(DB_IMPORT_PATH);
 
 if (!fs.existsSync(CERT_STORAGE_DIR)) {
   fs.mkdirSync(CERT_STORAGE_DIR, { recursive: true });
+}
+if (!fs.existsSync(SELFIE_STORAGE_DIR)) {
+  fs.mkdirSync(SELFIE_STORAGE_DIR, { recursive: true });
+}
+if (!fs.existsSync(SIGNATURE_STORAGE_DIR)) {
+  fs.mkdirSync(SIGNATURE_STORAGE_DIR, { recursive: true });
 }
 if (!fs.existsSync(DB_IMPORT_DIR)) {
   fs.mkdirSync(DB_IMPORT_DIR, { recursive: true });
@@ -45,14 +54,34 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
+const selfieStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, SELFIE_STORAGE_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".png";
+    cb(null, `selfie-${req.user ? req.user.id : "anon"}-${Date.now()}${ext}`);
+  }
+});
+
+const selfieUpload = multer({
+  storage: selfieStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith("image/")) {
+      return cb(new Error("Invalid file type"));
+    }
+    return cb(null, true);
+  }
+});
+
 const dbUpload = multer({
   dest: DB_IMPORT_DIR,
   limits: { fileSize: 100 * 1024 * 1024 }
 });
 
+app.set("trust proxy", 1);
 app.use(helmet());
 app.use(cors({ origin: "*" }));
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "5mb" }));
 
 initDb();
 seedSettings();
@@ -194,6 +223,188 @@ function attachScopesToUsers(users) {
   const ids = users.map((user) => user.id);
   const map = getUserScopesMap(ids);
   return users.map((user) => ({ ...user, scopes: map[user.id] || [] }));
+}
+
+const PROFILE_FIELDS = [
+  "full_name",
+  "preferred_name",
+  "phone",
+  "address",
+  "postal_code",
+  "city",
+  "province",
+  "country",
+  "birth_date",
+  "tax_id",
+  "social_security_number",
+  "employee_id",
+  "job_title",
+  "start_date",
+  "emergency_contact_name",
+  "emergency_contact_phone",
+  "iban"
+];
+
+function parseProfilePayload(body) {
+  const payload = body && typeof body === "object" ? body : {};
+  const data = {};
+  PROFILE_FIELDS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(payload, key)) {
+      data[key] = String(payload[key] || "").trim();
+    }
+  });
+  return data;
+}
+
+function getUserProfile(userId) {
+  try {
+    const row = db
+      .prepare("SELECT data, selfie_path, selfie_uploaded_at, updated_at FROM user_profiles WHERE user_id = ?")
+      .get(userId);
+    if (!row) {
+      return { data: {}, selfie_path: "", selfie_uploaded_at: null, updated_at: null };
+    }
+    let data = {};
+    try {
+      data = row.data ? JSON.parse(row.data) : {};
+    } catch (err) {
+      data = {};
+    }
+    return {
+      data,
+      selfie_path: row.selfie_path,
+      selfie_uploaded_at: row.selfie_uploaded_at,
+      updated_at: row.updated_at
+    };
+  } catch (err) {
+    return { data: {}, selfie_path: "", selfie_uploaded_at: null, updated_at: null };
+  }
+}
+
+function upsertUserProfile(userId, data, extra) {
+  try {
+    const existing = db.prepare("SELECT data, selfie_path, selfie_uploaded_at FROM user_profiles WHERE user_id = ?").get(userId);
+    const now = new Date().toISOString();
+    const extraData = extra || {};
+    if (existing) {
+      let current = {};
+      try {
+        current = existing.data ? JSON.parse(existing.data) : {};
+      } catch (err) {
+        current = {};
+      }
+      const merged = { ...current, ...data };
+      db.prepare(
+        "UPDATE user_profiles SET data = ?, selfie_path = ?, selfie_uploaded_at = ?, updated_at = ? WHERE user_id = ?"
+      ).run(
+        JSON.stringify(merged),
+        extraData.selfie_path !== undefined ? extraData.selfie_path : existing.selfie_path,
+        extraData.selfie_uploaded_at !== undefined ? extraData.selfie_uploaded_at : existing.selfie_uploaded_at,
+        now,
+        userId
+      );
+      return { data: merged };
+    }
+    db.prepare(
+      "INSERT INTO user_profiles (user_id, data, selfie_path, selfie_uploaded_at, updated_at) VALUES (?, ?, ?, ?, ?)"
+    ).run(
+      userId,
+      JSON.stringify(data || {}),
+      extraData.selfie_path || "",
+      extraData.selfie_uploaded_at || null,
+      now
+    );
+    return { data: data || {} };
+  } catch (err) {
+    throw new Error("Profile table missing. Run migration.");
+  }
+}
+
+function normalizeMonth(month) {
+  if (!month || typeof month !== "string") return null;
+  if (!/^\d{4}-\d{2}$/.test(month)) return null;
+  return month;
+}
+
+function getMonthlySignature(userId, month) {
+  try {
+    return db
+      .prepare("SELECT * FROM monthly_signatures WHERE user_id = ? AND month = ? ORDER BY signed_at DESC LIMIT 1")
+      .get(userId, month);
+  } catch (err) {
+    return null;
+  }
+}
+
+function getMonthlyEntries(userId, month) {
+  const [year, mon] = month.split("-").map(Number);
+  return db
+    .prepare("SELECT * FROM time_entries WHERE user_id = ? AND strftime('%Y', start) = ? AND strftime('%m', start) = ? ORDER BY start ASC")
+    .all(userId, String(year), String(mon).padStart(2, "0"));
+}
+
+function buildMonthlyReport(userId, month) {
+  const entries = getMonthlyEntries(userId, month);
+  const daySet = new Set();
+  let totalMinutes = 0;
+  let breakMinutes = 0;
+  const detailed = entries.map((entry) => {
+    const breaks = db.prepare("SELECT * FROM breaks WHERE entry_id = ?").all(entry.id);
+    const entryBreakMinutes = breaks.reduce((acc, brk) => {
+      if (!brk.end) return acc;
+      return acc + (new Date(brk.end) - new Date(brk.start)) / 60000;
+    }, 0);
+    const minutes = getWorkMinutes(entry);
+    totalMinutes += minutes;
+    breakMinutes += entryBreakMinutes;
+    daySet.add(entry.start.split("T")[0]);
+    return {
+      ...entry,
+      break_minutes: Math.round(entryBreakMinutes),
+      work_minutes: minutes
+    };
+  });
+  return {
+    month,
+    entries: detailed,
+    totals: {
+      total_minutes: totalMinutes,
+      total_hours: Math.round((totalMinutes / 60) * 100) / 100,
+      break_minutes: Math.round(breakMinutes),
+      days: daySet.size
+    }
+  };
+}
+
+function getPublicBaseUrl(req) {
+  const settings = getSettings();
+  const base = settings.system && settings.system.public_base_url ? settings.system.public_base_url : "";
+  if (base) return base.replace(/\/+$/, "");
+  const reset = (settings.email && settings.email.reset_url_base) || process.env.RESET_URL_BASE || "";
+  if (reset) {
+    return reset.replace(/\/reset\.html.*$/i, "").replace(/\/+$/, "");
+  }
+  const proto = (req && (req.headers["x-forwarded-proto"] || req.protocol)) || "https";
+  const host = req && (req.headers["x-forwarded-host"] || req.headers.host);
+  return host ? `${proto}://${host}` : "";
+}
+
+function writeSignatureFile(dataUrl, userId, month) {
+  if (!dataUrl || typeof dataUrl !== "string") {
+    throw new Error("Signature data missing");
+  }
+  const match = dataUrl.match(/^data:(image\/png|image\/jpeg);base64,(.+)$/);
+  if (!match) {
+    throw new Error("Invalid signature format");
+  }
+  const mime = match[1];
+  const buffer = Buffer.from(match[2], "base64");
+  const hash = crypto.createHash("sha256").update(buffer).digest("hex");
+  const ext = mime === "image/jpeg" ? ".jpg" : ".png";
+  const filename = `signature-${userId}-${month}-${Date.now()}${ext}`;
+  const filePath = path.join(SIGNATURE_STORAGE_DIR, filename);
+  fs.writeFileSync(filePath, buffer);
+  return { filePath, hash };
 }
 
 function getSettings() {
@@ -385,6 +596,59 @@ app.get("/api/settings", requireAuth, (req, res) => {
   res.json(sanitizeSettings(getSettings(), req.user.role));
 });
 
+app.get("/api/profile", requireAuth, (req, res) => {
+  const user = db
+    .prepare("SELECT id, email, name, role, location, department, created_at FROM users WHERE id = ?")
+    .get(req.user.id);
+  const profile = getUserProfile(req.user.id);
+  res.json({
+    ...user,
+    scopes: req.user.scopes || [],
+    profile: profile.data,
+    selfie_uploaded_at: profile.selfie_uploaded_at,
+    profile_updated_at: profile.updated_at
+  });
+});
+
+app.put("/api/profile", requireAuth, (req, res) => {
+  const payload = req.body && req.body.profile ? req.body.profile : req.body;
+  const profileData = parseProfilePayload(payload);
+  const displayName = profileData.full_name || profileData.preferred_name || "";
+  try {
+    if (displayName) {
+      db.prepare("UPDATE users SET name = ? WHERE id = ?").run(displayName, req.user.id);
+    }
+    upsertUserProfile(req.user.id, profileData, {});
+    logAudit(req.user.id, "profile_updated", "user_profile", req.user.id, {});
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/profile/selfie", requireAuth, (req, res) => {
+  selfieUpload.single("selfie")(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: "No selfie provided" });
+    const uploadedAt = new Date().toISOString();
+    try {
+      upsertUserProfile(req.user.id, {}, { selfie_path: req.file.path, selfie_uploaded_at: uploadedAt });
+      logAudit(req.user.id, "selfie_uploaded", "user_profile", req.user.id, { file: req.file.filename });
+      res.json({ ok: true, selfie_uploaded_at: uploadedAt });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+});
+
+app.get("/api/profile/selfie", requireAuth, (req, res) => {
+  const profile = getUserProfile(req.user.id);
+  if (!profile.selfie_path || !fs.existsSync(profile.selfie_path)) {
+    return res.status(404).json({ error: "Selfie not found" });
+  }
+  return res.sendFile(profile.selfie_path);
+});
+
 app.get("/api/setup/status", (req, res) => {
   const settings = getSettings();
   const users = db.prepare("SELECT COUNT(*) as count FROM users").get();
@@ -463,6 +727,186 @@ app.post("/api/setup/import", dbUpload.single("database"), (req, res) => {
   res.json({ ok: true, restart_required: true });
 });
 
+app.get("/api/invites/validate", (req, res) => {
+  const token = (req.query.token || "").trim();
+  if (!token) return res.status(400).json({ error: "Token required" });
+  try {
+    const invite = db.prepare("SELECT * FROM invites WHERE token = ?").get(token);
+    if (!invite) return res.status(404).json({ error: "Invite not found" });
+    if (invite.revoked_at) return res.status(400).json({ error: "Invite revoked" });
+    if (invite.used_at) return res.status(400).json({ error: "Invite already used" });
+    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+      return res.status(400).json({ error: "Invite expired" });
+    }
+    res.json({
+      email: invite.email || "",
+      role: invite.role,
+      location: invite.location || "",
+      department: invite.department || "",
+      expires_at: invite.expires_at
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Invites unavailable. Run migration." });
+  }
+});
+
+app.post("/api/signup", (req, res) => {
+  const token = (req.body.token || "").trim();
+  if (!token) return res.status(400).json({ error: "Token required" });
+  try {
+    const invite = db.prepare("SELECT * FROM invites WHERE token = ?").get(token);
+    if (!invite) return res.status(404).json({ error: "Invite not found" });
+    if (invite.revoked_at) return res.status(400).json({ error: "Invite revoked" });
+    if (invite.used_at) return res.status(400).json({ error: "Invite already used" });
+    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+      return res.status(400).json({ error: "Invite expired" });
+    }
+    const email = (invite.email || req.body.email || "").trim();
+    const password = req.body.password || "";
+    if (!email) return res.status(400).json({ error: "Email required" });
+    if (!password || password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters" });
+    }
+    const exists = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+    if (exists) return res.status(400).json({ error: "Email already registered" });
+    const profileData = parseProfilePayload(req.body.profile || req.body);
+    const name = profileData.full_name || profileData.preferred_name || "";
+    const primary = {
+      location: invite.location || "default",
+      department: invite.department || "general"
+    };
+    const hash = bcrypt.hashSync(password, 10);
+    const user = {
+      id: nanoid(),
+      email,
+      password_hash: hash,
+      name,
+      role: invite.role,
+      is_active: 1,
+      archived_at: null,
+      location: primary.location,
+      department: primary.department,
+      created_at: new Date().toISOString()
+    };
+    db.prepare(
+      "INSERT INTO users (id, email, password_hash, name, role, is_active, archived_at, location, department, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(
+      user.id,
+      user.email,
+      user.password_hash,
+      user.name,
+      user.role,
+      user.is_active,
+      user.archived_at,
+      user.location,
+      user.department,
+      user.created_at
+    );
+    if (invite.location && invite.department) {
+      setUserScopes(user.id, [{ location: invite.location, department: invite.department }]);
+    }
+    upsertUserProfile(user.id, profileData, {});
+    db.prepare("UPDATE invites SET used_at = ? WHERE id = ?").run(new Date().toISOString(), invite.id);
+    logAudit(user.id, "signup_completed", "user", user.id, { email: user.email });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/invites", requireAuth, requireRole(["admin"]), (req, res) => {
+  try {
+    const invites = db.prepare("SELECT * FROM invites ORDER BY created_at DESC").all();
+    const now = new Date();
+    const baseUrl = getPublicBaseUrl(req);
+    const rows = invites.map((invite) => {
+      let status = "pending";
+      if (invite.revoked_at) status = "revoked";
+      else if (invite.used_at) status = "used";
+      else if (invite.expires_at && new Date(invite.expires_at) < now) status = "expired";
+      return {
+        ...invite,
+        status,
+        link: baseUrl ? `${baseUrl}/signup.html?token=${invite.token}` : ""
+      };
+    });
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Invites unavailable. Run migration." });
+  }
+});
+
+app.post("/api/invites", requireAuth, requireRole(["admin"]), async (req, res) => {
+  const role = (req.body.role || "employee").trim();
+  const email = req.body.email ? String(req.body.email).trim() : "";
+  const location = req.body.location ? String(req.body.location).trim() : "";
+  const department = req.body.department ? String(req.body.department).trim() : "";
+  const expiresInDays = Math.max(1, Number(req.body.expires_in_days || 14));
+  if (!["admin", "manager", "employee"].includes(role)) {
+    return res.status(400).json({ error: "Invalid role" });
+  }
+  if (role !== "admin" && (!location || !department)) {
+    return res.status(400).json({ error: "Location and department required" });
+  }
+  const invite = {
+    id: nanoid(),
+    token: nanoid(32),
+    email: email || null,
+    role,
+    location: location || null,
+    department: department || null,
+    expires_at: new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString(),
+    created_by: req.user.id,
+    created_at: new Date().toISOString(),
+    used_at: null,
+    revoked_at: null
+  };
+  try {
+    db.prepare(
+      "INSERT INTO invites (id, token, email, role, location, department, expires_at, created_by, created_at, used_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(
+      invite.id,
+      invite.token,
+      invite.email,
+      invite.role,
+      invite.location,
+      invite.department,
+      invite.expires_at,
+      invite.created_by,
+      invite.created_at,
+      invite.used_at,
+      invite.revoked_at
+    );
+    const baseUrl = getPublicBaseUrl(req);
+    const link = baseUrl ? `${baseUrl}/signup.html?token=${invite.token}` : "";
+    const mailConfig = getEmailConfig();
+    if (email && mailConfig.host && mailConfig.from && link) {
+      try {
+        await sendMail(email, "Your Torre Tempo signup link", `Use this link to sign up: ${link}`, mailConfig);
+      } catch (err) {
+        // ignore email errors
+      }
+    }
+    logAudit(req.user.id, "invite_created", "invite", invite.id, { email, role });
+    res.json({ ok: true, link });
+  } catch (err) {
+    res.status(500).json({ error: "Invites unavailable. Run migration." });
+  }
+});
+
+app.post("/api/invites/:id/revoke", requireAuth, requireRole(["admin"]), (req, res) => {
+  try {
+    const invite = db.prepare("SELECT * FROM invites WHERE id = ?").get(req.params.id);
+    if (!invite) return res.status(404).json({ error: "Not found" });
+    if (invite.revoked_at) return res.json({ ok: true });
+    db.prepare("UPDATE invites SET revoked_at = ? WHERE id = ?").run(new Date().toISOString(), invite.id);
+    logAudit(req.user.id, "invite_revoked", "invite", invite.id, {});
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Invites unavailable. Run migration." });
+  }
+});
+
 app.put("/api/settings", requireAuth, requireRole(["admin"]), (req, res) => {
   const existing = getSettings();
   const merged = mergeSettings(existing, req.body);
@@ -539,11 +983,11 @@ app.post("/api/admin/update", requireAuth, requireRole(["admin"]), (req, res) =>
   if (!scriptPath || !fs.existsSync(scriptPath)) {
     return res.status(500).json({ error: "Update script not found" });
   }
-  execFile("bash", [scriptPath], { cwd: process.env.REPO_PATH || "/repo" }, (err, stdout, stderr) => {
+  runUpdateScript(scriptPath, (err, output, details) => {
     if (err) {
-      return res.status(500).json({ error: "Update failed", details: stderr || err.message });
+      return res.status(500).json({ error: "Update failed", details: details || err.message });
     }
-    return res.json({ ok: true, message: "Update started", output: stdout });
+    return res.json({ ok: true, message: "Update started", output });
   });
 });
 
@@ -801,6 +1245,7 @@ app.post("/api/rota/reminders", requireAuth, requireRole(["admin", "manager"]), 
 });
 
 startRotaScheduler();
+startAutoUpdateScheduler();
 
 app.get("/api/time/entries", requireAuth, (req, res) => {
   const { user_id } = req.query;
@@ -928,6 +1373,44 @@ app.post("/api/time/entries/:id/geo", requireAuth, (req, res) => {
   res.json(event);
 });
 
+app.get("/api/geo/events", requireAuth, (req, res) => {
+  const from = req.query.from ? String(req.query.from) : "";
+  const to = req.query.to ? String(req.query.to) : "";
+  const type = req.query.type ? String(req.query.type) : "";
+  const requestedUser = req.query.user_id ? String(req.query.user_id) : "";
+  const limit = Math.min(1000, Math.max(50, Number(req.query.limit || 300)));
+  const params = [];
+  let sql =
+    "SELECT geo_events.*, users.name, users.email FROM geo_events LEFT JOIN users ON users.id = geo_events.user_id WHERE 1 = 1";
+  if (req.user.role === "admin" || req.user.role === "manager") {
+    if (requestedUser) {
+      sql += " AND geo_events.user_id = ?";
+      params.push(requestedUser);
+    }
+  } else {
+    sql += " AND geo_events.user_id = ?";
+    params.push(req.user.id);
+  }
+  if (from) {
+    const fromValue = from.length === 10 ? `${from}T00:00:00` : from;
+    sql += " AND geo_events.timestamp >= ?";
+    params.push(fromValue);
+  }
+  if (to) {
+    const toValue = to.length === 10 ? `${to}T23:59:59` : to;
+    sql += " AND geo_events.timestamp <= ?";
+    params.push(toValue);
+  }
+  if (type) {
+    sql += " AND geo_events.event_type = ?";
+    params.push(type);
+  }
+  sql += " ORDER BY geo_events.timestamp DESC LIMIT ?";
+  params.push(limit);
+  const rows = db.prepare(sql).all(...params);
+  res.json(rows);
+});
+
 app.get("/api/corrections", requireAuth, (req, res) => {
   let rows;
   if (req.user.role === "admin" || req.user.role === "manager") {
@@ -997,6 +1480,120 @@ app.get("/api/reports/month", requireAuth, (req, res) => {
   res.json({ entries: entries.length, totalMinutes });
 });
 
+app.get("/api/reports/monthly", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  const month = normalizeMonth(req.query.month);
+  if (!month) return res.status(400).json({ error: "Month required" });
+  try {
+    const users = db
+      .prepare("SELECT id, email, name, role, location, department FROM users WHERE is_active = 1 ORDER BY name ASC")
+      .all();
+    const signatures = db.prepare("SELECT * FROM monthly_signatures WHERE month = ?").all(month);
+    const signatureMap = signatures.reduce((acc, sig) => {
+      if (!acc[sig.user_id]) acc[sig.user_id] = sig;
+      return acc;
+    }, {});
+    const rows = users.map((user) => {
+      const report = buildMonthlyReport(user.id, month);
+      const signature = signatureMap[user.id];
+      return {
+        user_id: user.id,
+        name: user.name || user.email,
+        email: user.email,
+        role: user.role,
+        location: user.location || "",
+        department: user.department || "",
+        totals: report.totals,
+        signed_at: signature ? signature.signed_at : null
+      };
+    });
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Monthly reports unavailable. Run migration." });
+  }
+});
+
+app.get("/api/reports/monthly/self", requireAuth, (req, res) => {
+  const month = normalizeMonth(req.query.month);
+  if (!month) return res.status(400).json({ error: "Month required" });
+  const report = buildMonthlyReport(req.user.id, month);
+  const signature = getMonthlySignature(req.user.id, month);
+  res.json({
+    ...report,
+    signed_at: signature ? signature.signed_at : null,
+    signer_name: signature ? signature.signer_name : null
+  });
+});
+
+app.post("/api/reports/monthly/sign", requireAuth, (req, res) => {
+  const month = normalizeMonth(req.body.month);
+  if (!month) return res.status(400).json({ error: "Month required" });
+  try {
+    const signatureData = req.body.signature;
+    const signerName = req.body.signer_name ? String(req.body.signer_name).trim() : "";
+    const { filePath, hash } = writeSignatureFile(signatureData, req.user.id, month);
+    const now = new Date().toISOString();
+    const existing = getMonthlySignature(req.user.id, month);
+    if (existing) {
+      db.prepare(
+        "UPDATE monthly_signatures SET signed_at = ?, signature_path = ?, signature_hash = ?, signer_name = ?, ip_address = ?, user_agent = ? WHERE id = ?"
+      ).run(now, filePath, hash, signerName || existing.signer_name || "", req.ip, req.headers["user-agent"] || "", existing.id);
+    } else {
+      db.prepare(
+        "INSERT INTO monthly_signatures (id, user_id, month, signed_at, signature_path, signature_hash, signer_name, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      ).run(
+        nanoid(),
+        req.user.id,
+        month,
+        now,
+        filePath,
+        hash,
+        signerName || "",
+        req.ip,
+        req.headers["user-agent"] || ""
+      );
+    }
+    logAudit(req.user.id, "monthly_report_signed", "monthly_signature", req.user.id, { month });
+    res.json({ ok: true, signed_at: now });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get("/api/reports/monthly/self/pdf", requireAuth, (req, res) => {
+  const month = normalizeMonth(req.query.month);
+  if (!month) return res.status(400).json({ error: "Month required" });
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
+  const profile = getUserProfile(req.user.id);
+  const signature = getMonthlySignature(req.user.id, month);
+  const report = buildMonthlyReport(req.user.id, month);
+  return renderMonthlyPdf(res, {
+    month,
+    user,
+    profile: profile.data,
+    signature,
+    report,
+    company: getSettings().company
+  }).catch((err) => res.status(500).json({ error: `PDF render failed: ${err.message}` }));
+});
+
+app.get("/api/reports/monthly/:userId/pdf", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  const month = normalizeMonth(req.query.month);
+  if (!month) return res.status(400).json({ error: "Month required" });
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.userId);
+  if (!user) return res.status(404).json({ error: "User not found" });
+  const profile = getUserProfile(user.id);
+  const signature = getMonthlySignature(user.id, month);
+  const report = buildMonthlyReport(user.id, month);
+  return renderMonthlyPdf(res, {
+    month,
+    user,
+    profile: profile.data,
+    signature,
+    report,
+    company: getSettings().company
+  }).catch((err) => res.status(500).json({ error: `PDF render failed: ${err.message}` }));
+});
+
 app.get("/api/exports/:type", requireAuth, (req, res) => {
   if (!(req.user.role === "admin" || req.user.role === "manager")) {
     return res.status(403).json({ error: "Forbidden" });
@@ -1023,7 +1620,9 @@ app.get("/api/exports/:type", requireAuth, (req, res) => {
     };
     const format = req.query.format || "json";
     if (format === "pdf") {
-      return renderPdfPack(res, payload).catch(() => res.status(500).json({ error: "PDF render failed" }));
+      return renderPdfPack(res, payload).catch((err) => {
+        return res.status(500).json({ error: `PDF render failed: ${err.message}` });
+      });
     }
     return res.json(payload);
   }
@@ -1204,7 +1803,7 @@ async function renderPdfPack(res, payload) {
   const pdfBuffer = await buildPdfBuffer(payload, PDFDocument);
   const cert = getCertConfig();
   if (!cert.path || !fs.existsSync(cert.path)) {
-    throw new Error("Certificate not configured");
+    throw new Error("Certificate not configured. Upload a P12 in Admin > Exports and Audit.");
   }
   const p12Buffer = fs.readFileSync(cert.path);
   const placeholder = plainAddPlaceholder({
@@ -1235,6 +1834,89 @@ function buildPdfBuffer(payload, PDFDocument) {
     doc.text(`Audit entries: ${payload.audit_log.length}`);
     doc.moveDown();
     doc.text("Signed with company certificate.");
+    doc.end();
+  });
+}
+
+async function renderMonthlyPdf(res, payload) {
+  const PDFDocument = require("pdfkit");
+  const pdfBuffer = await buildMonthlyPdfBuffer(payload, PDFDocument);
+  const safeMonth = payload.month || "report";
+  const namePart = payload.user && payload.user.id ? payload.user.id : "user";
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename=monthly-report-${safeMonth}-${namePart}.pdf`);
+  res.send(pdfBuffer);
+}
+
+function buildMonthlyPdfBuffer(payload, PDFDocument) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 48 });
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const company = payload.company || {};
+    const user = payload.user || {};
+    const profile = payload.profile || {};
+    const report = payload.report || { entries: [], totals: {} };
+    const signature = payload.signature || null;
+
+    const displayName = profile.full_name || user.name || user.email || "";
+
+    doc.fontSize(18).text("Monthly Time Report", { align: "left" });
+    doc.fontSize(10).text(`Generated: ${new Date().toISOString()}`);
+    doc.moveDown();
+
+    doc.fontSize(12).text("Company");
+    doc.fontSize(10).text(company.controller_legal_name || "--");
+    doc.text(`CIF: ${company.controller_cif || "--"}`);
+    if (company.controller_address) doc.text(company.controller_address);
+    doc.moveDown();
+
+    doc.fontSize(12).text("Employee");
+    doc.fontSize(10).text(`Name: ${displayName}`);
+    doc.text(`Email: ${user.email || "--"}`);
+    if (profile.employee_id) doc.text(`Employee ID: ${profile.employee_id}`);
+    if (profile.tax_id) doc.text(`Tax ID: ${profile.tax_id}`);
+    if (profile.social_security_number) doc.text(`Social Security: ${profile.social_security_number}`);
+    if (profile.job_title) doc.text(`Job title: ${profile.job_title}`);
+    doc.text(`Location / Department: ${(user.location || "--")} / ${(user.department || "--")}`);
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Period: ${payload.month}`);
+    doc.fontSize(10).text(`Days worked: ${report.totals.days || 0}`);
+    doc.text(`Total hours: ${report.totals.total_hours || 0}`);
+    doc.text(`Break minutes: ${report.totals.break_minutes || 0}`);
+    doc.moveDown();
+
+    doc.fontSize(12).text("Entries");
+    doc.fontSize(9);
+    if (!report.entries.length) {
+      doc.text("No entries recorded.");
+    } else {
+      report.entries.forEach((entry) => {
+        const date = entry.start ? entry.start.split("T")[0] : "--";
+        const start = entry.start || "--";
+        const end = entry.end || "--";
+        const line = `${date} | ${start} - ${end} | Breaks: ${entry.break_minutes || 0} min | Worked: ${entry.work_minutes || 0} min`;
+        doc.text(line);
+      });
+    }
+    doc.moveDown();
+
+    doc.fontSize(12).text("Employee signature");
+    if (signature && signature.signature_path && fs.existsSync(signature.signature_path)) {
+      doc.fontSize(10).text(`Signed at: ${signature.signed_at || "--"}`);
+      try {
+        doc.image(signature.signature_path, { fit: [220, 90] });
+      } catch (err) {
+        doc.text("Signature image unavailable.");
+      }
+    } else {
+      doc.fontSize(10).text("Not signed");
+    }
+
     doc.end();
   });
 }
@@ -1366,6 +2048,47 @@ function getCertConfig() {
     path: exportsConfig.cert_path || CERT_P12_PATH || "",
     password: exportsConfig.cert_password || CERT_P12_PASSWORD || ""
   };
+}
+
+let updateInProgress = false;
+let autoUpdateLastRun = 0;
+
+function runUpdateScript(scriptPath, callback) {
+  if (updateInProgress) {
+    return callback(new Error("Update already running"), "", "Update already running");
+  }
+  updateInProgress = true;
+  execFile("bash", [scriptPath], { cwd: process.env.REPO_PATH || "/repo" }, (err, stdout, stderr) => {
+    updateInProgress = false;
+    if (err) {
+      return callback(err, stdout || "", stderr || err.message);
+    }
+    return callback(null, stdout || "", "");
+  });
+}
+
+function startAutoUpdateScheduler() {
+  const hour = 60 * 60 * 1000;
+  setInterval(() => {
+    try {
+      maybeRunAutoUpdate();
+    } catch (err) {
+      // ignore
+    }
+  }, hour);
+}
+
+function maybeRunAutoUpdate() {
+  const settings = getSettings();
+  const system = settings.system || {};
+  if (!system.updates_enabled || !system.auto_updates_enabled) return;
+  const intervalHours = Math.max(1, Number(system.auto_update_interval_hours || 24));
+  const now = Date.now();
+  if (now - autoUpdateLastRun < intervalHours * 60 * 60 * 1000) return;
+  autoUpdateLastRun = now;
+  const scriptPath = system.update_script_path || process.env.UPDATE_SCRIPT_PATH || "";
+  if (!scriptPath || !fs.existsSync(scriptPath)) return;
+  runUpdateScript(scriptPath, () => {});
 }
 
 function startRotaScheduler() {

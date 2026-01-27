@@ -86,6 +86,9 @@ const defaultSettings = {
     updates_enabled: false,
     update_token: "",
     update_script_path: "/repo/scripts/self-update.sh",
+    public_base_url: "",
+    auto_updates_enabled: false,
+    auto_update_interval_hours: 24,
     setup_complete: false,
     setup_completed_at: ""
   },
@@ -108,10 +111,26 @@ const state = {
   corrections: [],
   users: [],
   staff: [],
+  profile: {
+    data: {},
+    selfieUrl: "",
+    selfieUploadedAt: null
+  },
+  geo: {
+    events: [],
+    map: null,
+    markers: []
+  },
+  invites: [],
+  monthly: {
+    my: null,
+    list: []
+  },
   rota: {
     weekStart: "",
     week: null,
-    shifts: []
+    shifts: [],
+    editing: null
   },
   compliance: { ready: false, missing: [] },
   language: load(STORAGE_KEYS.language, "es-ES")
@@ -271,8 +290,27 @@ async function refreshData() {
     state.compliance = await apiFetch("/compliance");
     state.entries = await apiFetch("/time/entries");
     state.corrections = await apiFetch("/corrections");
+    let profileResponse = null;
+    try {
+      profileResponse = await apiFetch("/profile");
+    } catch (err) {
+      profileResponse = { profile: {}, email: state.user ? state.user.email : "", name: state.user ? state.user.name : "" };
+    }
+    state.profile = {
+      data: profileResponse.profile || {},
+      selfieUrl: state.profile.selfieUrl || "",
+      selfieUploadedAt: profileResponse.selfie_uploaded_at || null,
+      email: profileResponse.email || "",
+      name: profileResponse.name || "",
+      role: profileResponse.role || ""
+    };
     if (state.user && state.user.role === "admin") {
       state.users = await apiFetch("/users");
+      try {
+        state.invites = await apiFetch("/invites");
+      } catch (err) {
+        state.invites = [];
+      }
     }
     updateUserUI();
     hydrateAdminForm();
@@ -281,6 +319,9 @@ async function refreshData() {
     renderDirectories();
     populateDirectoryOptions();
     prefillRotaScope();
+    renderProfile();
+    renderInvites();
+    populateGeoUsers();
     refreshUI();
   } catch (err) {
     showAuthModal(true);
@@ -297,8 +338,26 @@ function initNav() {
       const target = btn.dataset.view;
       document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
       document.getElementById(`view-${target}`).classList.add("active");
+      onViewChanged(target);
     });
   });
+}
+
+function onViewChanged(target) {
+  if (!state.token) return;
+  if (target === "my-report") {
+    resizeSignaturePad();
+    loadMyMonthlyReport();
+  }
+  if (target === "locations") {
+    ensureGeoMap();
+    populateGeoUsers();
+    loadGeoEvents();
+  }
+  if (target === "profile") {
+    renderProfile();
+    loadSelfiePreview();
+  }
 }
 
 function getMissingFields(settings) {
@@ -566,6 +625,12 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString();
 }
 
+function formatDayLabel(value) {
+  if (!value) return "--";
+  const date = new Date(`${value}T00:00:00`);
+  return date.toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short" });
+}
+
 function formatTime(value) {
   if (!value) return "--";
   return new Date(value).toLocaleTimeString();
@@ -703,10 +768,15 @@ function initActions() {
   document.getElementById("add-department").addEventListener("click", () => addDirectoryItem("departments"));
   document.getElementById("rota-load").addEventListener("click", loadRota);
   document.getElementById("rota-add").addEventListener("click", addShift);
+  document.getElementById("rota-update").addEventListener("click", updateShift);
+  document.getElementById("rota-cancel").addEventListener("click", clearRotaEdit);
   document.getElementById("rota-publish").addEventListener("click", publishRota);
   document.getElementById("rota-unpublish").addEventListener("click", unpublishRota);
   document.getElementById("rota-remind-checkin").addEventListener("click", () => sendRotaReminder("checkin"));
   document.getElementById("rota-remind-checkout").addEventListener("click", () => sendRotaReminder("checkout"));
+  document.getElementById("rota-prev-week").addEventListener("click", () => shiftRotaWeek(-7));
+  document.getElementById("rota-next-week").addEventListener("click", () => shiftRotaWeek(7));
+  document.getElementById("rota-today-week").addEventListener("click", setRotaWeekToToday);
 }
 
 function initReports() {
@@ -721,6 +791,66 @@ function initReports() {
   document.getElementById("export-geo").addEventListener("click", () => exportCsv("geo"));
   document.getElementById("export-audit").addEventListener("click", () => exportCsv("audit"));
   document.getElementById("export-pack").addEventListener("click", () => exportPack());
+  const monthlyInput = document.getElementById("monthly-report-month");
+  if (monthlyInput) {
+    monthlyInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }
+  const monthlyLoad = document.getElementById("monthly-report-load");
+  if (monthlyLoad) {
+    monthlyLoad.addEventListener("click", loadMonthlyReports);
+  }
+}
+
+let signatureState = {
+  hasStroke: false,
+  canvas: null,
+  ctx: null
+};
+
+function initMyReport() {
+  const now = new Date();
+  const monthInput = document.getElementById("my-report-month");
+  if (monthInput) {
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }
+  const loadBtn = document.getElementById("my-report-load");
+  if (loadBtn) loadBtn.addEventListener("click", loadMyMonthlyReport);
+  const downloadBtn = document.getElementById("my-report-download");
+  if (downloadBtn) downloadBtn.addEventListener("click", downloadMyMonthlyReport);
+  const clearBtn = document.getElementById("signature-clear");
+  if (clearBtn) clearBtn.addEventListener("click", clearSignaturePad);
+  const signBtn = document.getElementById("signature-save");
+  if (signBtn) signBtn.addEventListener("click", signMonthlyReport);
+  initSignaturePad();
+}
+
+function initGeo() {
+  const toInput = document.getElementById("geo-to");
+  const fromInput = document.getElementById("geo-from");
+  if (toInput && fromInput) {
+    const now = new Date();
+    const from = new Date();
+    from.setDate(now.getDate() - 7);
+    toInput.value = now.toISOString().split("T")[0];
+    fromInput.value = from.toISOString().split("T")[0];
+  }
+  const loadBtn = document.getElementById("geo-load");
+  if (loadBtn) loadBtn.addEventListener("click", loadGeoEvents);
+}
+
+function initProfile() {
+  const saveBtn = document.getElementById("profile-save");
+  if (saveBtn) saveBtn.addEventListener("click", saveProfile);
+  const uploadBtn = document.getElementById("selfie-upload");
+  if (uploadBtn) uploadBtn.addEventListener("click", uploadSelfie);
+}
+
+function initInvites() {
+  const inviteBtn = document.getElementById("invite-create");
+  if (inviteBtn) inviteBtn.addEventListener("click", createInvite);
+  const roleSelect = document.getElementById("invite-role");
+  if (roleSelect) roleSelect.addEventListener("change", updateInviteScopeVisibility);
+  updateInviteScopeVisibility();
 }
 
 function initRota() {
@@ -729,6 +859,12 @@ function initRota() {
   const monday = getWeekStartDate(today);
   weekInput.value = monday;
   document.getElementById("rota-date").value = today.toISOString().split("T")[0];
+  weekInput.addEventListener("change", loadRota);
+  const locationFilter = document.getElementById("rota-location-filter");
+  const departmentFilter = document.getElementById("rota-department-filter");
+  if (locationFilter) locationFilter.addEventListener("change", loadRota);
+  if (departmentFilter) departmentFilter.addEventListener("change", loadRota);
+  clearRotaEdit();
 }
 
 function prefillRotaScope() {
@@ -739,11 +875,13 @@ function prefillRotaScope() {
   const primary = scopes[0] || { location: state.user.location || "", department: state.user.department || "" };
   const allowPick = state.user.role !== "admin" && scopes.length > 1;
   const locked = state.user.role !== "admin" && !allowPick;
+  const locations = (state.settings.directories && state.settings.directories.locations) || [];
+  const departments = (state.settings.directories && state.settings.directories.departments) || [];
   if (locationInput && !locationInput.value) {
-    locationInput.value = primary.location || "";
+    locationInput.value = primary.location || locations[0] || "";
   }
   if (departmentInput && !departmentInput.value) {
-    departmentInput.value = primary.department || "";
+    departmentInput.value = primary.department || departments[0] || "";
   }
   if (locationInput) locationInput.disabled = locked;
   if (departmentInput) departmentInput.disabled = locked;
@@ -751,15 +889,31 @@ function prefillRotaScope() {
 
 async function loadRota() {
   const weekStart = document.getElementById("rota-week").value;
-  const location = document.getElementById("rota-location-filter").value.trim();
-  const department = document.getElementById("rota-department-filter").value.trim();
+  const locationInput = document.getElementById("rota-location-filter");
+  const departmentInput = document.getElementById("rota-department-filter");
+  let location = locationInput.value.trim();
+  let department = departmentInput.value.trim();
   if (!weekStart) return alert("Select a week start.");
   if (state.user && state.user.role === "admin" && (!location || !department)) {
-    return alert("Select location and department.");
+    if (!location && locationInput.options.length > 1) {
+      locationInput.value = locationInput.options[1].value;
+    }
+    if (!department && departmentInput.options.length > 1) {
+      departmentInput.value = departmentInput.options[1].value;
+    }
+    location = locationInput.value.trim();
+    department = departmentInput.value.trim();
+    if (!location || !department) {
+      return alert("Select location and department.");
+    }
   }
   if (!isScopeAllowed(location, department)) {
     return alert("Selected scope not allowed.");
   }
+  const locationSelect = document.getElementById("rota-location");
+  const departmentSelect = document.getElementById("rota-department");
+  if (locationSelect && location) locationSelect.value = location;
+  if (departmentSelect && department) departmentSelect.value = department;
   state.rota.weekStart = weekStart;
   try {
     const scopeQuery = `&location=${encodeURIComponent(location)}&department=${encodeURIComponent(department)}`;
@@ -774,6 +928,7 @@ async function loadRota() {
     renderRotaGrid();
     renderStaffList();
     renderRotaStatus();
+    renderRotaSummary();
   } catch (err) {
     alert(err.message);
   }
@@ -790,6 +945,37 @@ function renderRotaStatus() {
   status.textContent = state.rota.week.is_published
     ? `Published at ${state.rota.week.published_at || ""} | ${location} / ${department}`
     : `Draft | ${location} / ${department}`;
+}
+
+function renderRotaSummary() {
+  const container = document.getElementById("rota-summary");
+  if (!container) return;
+  if (!state.rota.shifts || !state.rota.shifts.length) {
+    container.innerHTML = "";
+    return;
+  }
+  const totalShifts = state.rota.shifts.length;
+  const assigned = state.rota.shifts.filter((shift) => shift.assigned_user_id).length;
+  const unassigned = totalShifts - assigned;
+  const totalMinutes = state.rota.shifts.reduce((acc, shift) => acc + getShiftMinutes(shift), 0);
+  container.innerHTML = "";
+  const items = [
+    { label: translations[state.language]["rota.totalShifts"] || "Total shifts", value: totalShifts },
+    { label: translations[state.language]["rota.assigned"] || "Assigned", value: assigned },
+    { label: translations[state.language]["rota.unassigned"] || "Unassigned", value: unassigned },
+    { label: translations[state.language]["rota.totalHours"] || "Total hours", value: formatHours(totalMinutes) }
+  ];
+  items.forEach((item) => {
+    const chip = document.createElement("div");
+    chip.className = "rota-chip";
+    const label = document.createElement("span");
+    label.textContent = item.label;
+    const value = document.createElement("strong");
+    value.textContent = item.value;
+    chip.appendChild(label);
+    chip.appendChild(value);
+    container.appendChild(chip);
+  });
 }
 
 function renderStaffList() {
@@ -839,10 +1025,18 @@ function renderRotaGrid() {
         if (shiftId) moveShift(shiftId, date);
       });
     }
-    const title = document.createElement("h4");
-    title.textContent = date;
-    day.appendChild(title);
     const shifts = state.rota.shifts.filter((shift) => shift.date === date);
+    const header = document.createElement("div");
+    header.className = "rota-day-header";
+    const title = document.createElement("h4");
+    title.textContent = formatDayLabel(date);
+    const meta = document.createElement("div");
+    meta.className = "hint";
+    const dayMinutes = shifts.reduce((acc, shift) => acc + getShiftMinutes(shift), 0);
+    meta.textContent = shifts.length ? `${formatHours(dayMinutes)} · ${shifts.length}` : "--";
+    header.appendChild(title);
+    header.appendChild(meta);
+    day.appendChild(header);
     if (shifts.length === 0) {
       const empty = document.createElement("div");
       empty.className = "hint";
@@ -852,6 +1046,10 @@ function renderRotaGrid() {
     shifts.forEach((shift) => {
       const card = document.createElement("div");
       card.className = "rota-shift";
+      if (!shift.assigned_user_id) card.classList.add("unassigned");
+      if (state.rota.editing && state.rota.editing.id === shift.id) {
+        card.classList.add("editing");
+      }
       card.dataset.shiftId = shift.id;
       if (state.user && (state.user.role === "admin" || state.user.role === "manager")) {
         card.draggable = true;
@@ -860,15 +1058,17 @@ function renderRotaGrid() {
         });
       }
       const time = document.createElement("div");
-      time.textContent = `${shift.start_time} - ${shift.end_time}`;
+      const duration = formatHours(getShiftMinutes(shift));
+      time.textContent = `${shift.start_time} - ${shift.end_time} (${duration})`;
       const role = document.createElement("div");
       role.className = "rota-assign";
       role.textContent = shift.role || "";
       const assigned = document.createElement("div");
       assigned.className = "rota-assign";
-      assigned.textContent = `Assigned: ${resolveUserName(shift.assigned_user_id)}`;
+      const assignedLabel = translations[state.language]["rota.assigned"] || "Assigned";
+      assigned.textContent = `${assignedLabel}: ${resolveUserName(shift.assigned_user_id)}`;
       card.appendChild(time);
-      card.appendChild(role);
+      if (shift.role) card.appendChild(role);
       card.appendChild(assigned);
       if (shift.location) {
         const location = document.createElement("div");
@@ -891,6 +1091,10 @@ function renderRotaGrid() {
       if (state.user && (state.user.role === "admin" || state.user.role === "manager")) {
         const actions = document.createElement("div");
         actions.className = "rota-actions";
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn";
+        editBtn.textContent = translations[state.language]["rota.edit"] || "Edit";
+        editBtn.addEventListener("click", () => setRotaEdit(shift));
         const copyBtn = document.createElement("button");
         copyBtn.className = "btn";
         copyBtn.textContent = translations[state.language]["rota.copy"] || "Copy";
@@ -899,6 +1103,7 @@ function renderRotaGrid() {
         removeBtn.className = "btn danger";
         removeBtn.textContent = translations[state.language]["rota.remove"] || "Remove";
         removeBtn.addEventListener("click", () => deleteShift(shift.id));
+        actions.appendChild(editBtn);
         actions.appendChild(copyBtn);
         actions.appendChild(removeBtn);
         card.appendChild(actions);
@@ -921,10 +1126,13 @@ function renderRotaGrid() {
 }
 
 function resolveUserName(userId) {
-  if (!userId) return "Unassigned";
-  if (state.user && userId === state.user.id) return "You";
+  const unassignedLabel = translations[state.language]["rota.unassigned"] || "Unassigned";
+  const youLabel = translations[state.language]["rota.you"] || "You";
+  const unknownLabel = translations[state.language]["rota.unknown"] || "Unknown";
+  if (!userId) return unassignedLabel;
+  if (state.user && userId === state.user.id) return youLabel;
   const user = state.staff.find((u) => u.id === userId) || state.users.find((u) => u.id === userId);
-  return user ? (user.name || user.email) : "Unknown";
+  return user ? (user.name || user.email) : unknownLabel;
 }
 
 function populateAssignDropdown() {
@@ -934,7 +1142,7 @@ function populateAssignDropdown() {
   const departmentFilter = document.getElementById("rota-department-filter").value.trim();
   const empty = document.createElement("option");
   empty.value = "";
-  empty.textContent = "Unassigned";
+  empty.textContent = translations[state.language]["rota.unassigned"] || "Unassigned";
   select.appendChild(empty);
   state.staff
     .filter((user) => userMatchesScope(user, locationFilter, departmentFilter))
@@ -972,16 +1180,18 @@ async function addShift() {
   const end = document.getElementById("rota-end").value;
   const role = document.getElementById("rota-role").value;
   const location = document.getElementById("rota-location").value;
+  const department = document.getElementById("rota-department").value;
   const locationScope = document.getElementById("rota-location-filter").value.trim();
   const departmentScope = document.getElementById("rota-department-filter").value.trim();
   const locationValue = locationScope || location;
+  const departmentValue = departmentScope || department;
   const notes = document.getElementById("rota-notes").value;
   const assigned = document.getElementById("rota-assign").value;
   if (!date || !start || !end) return alert("Date, start, and end are required.");
-  if (state.user && state.user.role === "admin" && (!locationScope || !departmentScope)) {
+  if (state.user && state.user.role === "admin" && (!locationValue || !departmentValue)) {
     return alert("Select location and department.");
   }
-  if (!isScopeAllowed(locationScope || locationValue, departmentScope)) {
+  if (!isScopeAllowed(locationValue, departmentValue)) {
     return alert("Selected scope not allowed.");
   }
   try {
@@ -993,11 +1203,100 @@ async function addShift() {
         end_time: end,
         role,
         location: locationValue,
-        department: departmentScope,
+        department: departmentValue,
         notes,
         assigned_user_id: assigned || null
       })
     });
+    clearRotaEdit();
+    await loadRota();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function setRotaEdit(shift) {
+  state.rota.editing = shift;
+  document.getElementById("rota-date").value = shift.date;
+  document.getElementById("rota-start").value = shift.start_time;
+  document.getElementById("rota-end").value = shift.end_time;
+  document.getElementById("rota-role").value = shift.role || "";
+  document.getElementById("rota-notes").value = shift.notes || "";
+  document.getElementById("rota-assign").value = shift.assigned_user_id || "";
+  const locationSelect = document.getElementById("rota-location");
+  const departmentSelect = document.getElementById("rota-department");
+  if (locationSelect) locationSelect.value = shift.location || "";
+  if (departmentSelect) departmentSelect.value = shift.department || "";
+  const addBtn = document.getElementById("rota-add");
+  const updateBtn = document.getElementById("rota-update");
+  const cancelBtn = document.getElementById("rota-cancel");
+  if (addBtn) addBtn.style.display = "none";
+  if (updateBtn) updateBtn.style.display = "inline-flex";
+  if (cancelBtn) cancelBtn.style.display = "inline-flex";
+  const hint = document.getElementById("rota-edit-hint");
+  if (hint) {
+    hint.textContent = `${translations[state.language]["rota.editing"] || "Editing"}: ${shift.date} ${shift.start_time}-${shift.end_time}`;
+  }
+}
+
+function clearRotaEdit() {
+  state.rota.editing = null;
+  const addBtn = document.getElementById("rota-add");
+  const updateBtn = document.getElementById("rota-update");
+  const cancelBtn = document.getElementById("rota-cancel");
+  if (addBtn) addBtn.style.display = "inline-flex";
+  if (updateBtn) updateBtn.style.display = "none";
+  if (cancelBtn) cancelBtn.style.display = "none";
+  const hint = document.getElementById("rota-edit-hint");
+  if (hint) hint.textContent = "";
+  document.getElementById("rota-start").value = "";
+  document.getElementById("rota-end").value = "";
+  document.getElementById("rota-role").value = "";
+  document.getElementById("rota-notes").value = "";
+  document.getElementById("rota-assign").value = "";
+  const locationScope = document.getElementById("rota-location-filter").value.trim();
+  const departmentScope = document.getElementById("rota-department-filter").value.trim();
+  if (locationScope) document.getElementById("rota-location").value = locationScope;
+  if (departmentScope) document.getElementById("rota-department").value = departmentScope;
+}
+
+async function updateShift() {
+  if (!state.rota.editing) return;
+  const shiftId = state.rota.editing.id;
+  const date = document.getElementById("rota-date").value;
+  const start = document.getElementById("rota-start").value;
+  const end = document.getElementById("rota-end").value;
+  const role = document.getElementById("rota-role").value;
+  const location = document.getElementById("rota-location").value;
+  const department = document.getElementById("rota-department").value;
+  const locationScope = document.getElementById("rota-location-filter").value.trim();
+  const departmentScope = document.getElementById("rota-department-filter").value.trim();
+  const locationValue = locationScope || location;
+  const departmentValue = departmentScope || department;
+  const notes = document.getElementById("rota-notes").value;
+  const assigned = document.getElementById("rota-assign").value;
+  if (!date || !start || !end) return alert("Date, start, and end are required.");
+  if (state.user && state.user.role === "admin" && (!locationValue || !departmentValue)) {
+    return alert("Select location and department.");
+  }
+  if (!isScopeAllowed(locationValue, departmentValue)) {
+    return alert("Selected scope not allowed.");
+  }
+  try {
+    await apiFetch(`/rota/shifts/${shiftId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        date,
+        start_time: start,
+        end_time: end,
+        role,
+        location: locationValue,
+        department: departmentValue,
+        notes,
+        assigned_user_id: assigned || null
+      })
+    });
+    clearRotaEdit();
     await loadRota();
   } catch (err) {
     alert(err.message);
@@ -1129,6 +1428,23 @@ function getWeekStartDate(date) {
   return monday.toISOString().split("T")[0];
 }
 
+function shiftRotaWeek(offsetDays) {
+  const input = document.getElementById("rota-week");
+  if (!input || !input.value) return;
+  const date = new Date(`${input.value}T00:00:00`);
+  date.setDate(date.getDate() + offsetDays);
+  input.value = date.toISOString().split("T")[0];
+  loadRota();
+}
+
+function setRotaWeekToToday() {
+  const input = document.getElementById("rota-week");
+  if (!input) return;
+  const monday = getWeekStartDate(new Date());
+  input.value = monday;
+  loadRota();
+}
+
 function getWeekDays(weekStart) {
   const base = new Date(`${weekStart}T00:00:00`);
   return Array.from({ length: 7 }, (_, idx) => {
@@ -1136,6 +1452,21 @@ function getWeekDays(weekStart) {
     day.setDate(base.getDate() + idx);
     return day.toISOString().split("T")[0];
   });
+}
+
+function getShiftMinutes(shift) {
+  if (!shift.start_time || !shift.end_time) return 0;
+  const start = new Date(`1970-01-01T${shift.start_time}`);
+  const end = new Date(`1970-01-01T${shift.end_time}`);
+  let diff = (end - start) / 60000;
+  if (diff < 0) diff += 24 * 60;
+  diff = Math.max(0, diff);
+  return Math.round(diff);
+}
+
+function formatHours(minutes) {
+  const hours = minutes / 60;
+  return `${Math.round(hours * 10) / 10}h`;
 }
 
 async function runReport(month) {
@@ -1239,6 +1570,10 @@ function init() {
   initActions();
   initReports();
   initRota();
+  initMyReport();
+  initGeo();
+  initProfile();
+  initInvites();
   initPolicies();
   updateUserUI();
   bootstrap();
@@ -1246,10 +1581,19 @@ function init() {
 
 function applyRoleVisibility() {
   const reportsTab = document.querySelector('[data-view="reports"]');
+  const profileTab = document.querySelector('[data-view="profile"]');
+  const adminTab = document.querySelector('[data-view="admin"]');
   const canViewReports = state.user && (state.user.role === "admin" || state.user.role === "manager");
   const canManageRota = state.user && (state.user.role === "admin" || state.user.role === "manager");
+  const isAdmin = state.user && state.user.role === "admin";
   if (reportsTab) {
     reportsTab.style.display = canViewReports ? "inline-flex" : "none";
+  }
+  if (profileTab) {
+    profileTab.style.display = state.user ? "inline-flex" : "none";
+  }
+  if (adminTab) {
+    adminTab.style.display = isAdmin ? "inline-flex" : "none";
   }
   if (!canViewReports) {
     const reportsView = document.getElementById("view-reports");
@@ -1265,12 +1609,15 @@ function applyRoleVisibility() {
   });
 
   const manageIds = [
-    "rota-add-card",
+    "rota-editor-card",
     "rota-staff-card",
     "rota-publish",
     "rota-unpublish",
     "rota-remind-checkin",
-    "rota-remind-checkout"
+    "rota-remind-checkout",
+    "rota-add",
+    "rota-update",
+    "rota-cancel"
   ];
   manageIds.forEach((id) => {
     const el = document.getElementById(id);
@@ -1431,8 +1778,11 @@ function populateDirectoryOptions() {
   populateSelect("user-location", locations, true);
   populateSelect("user-department", departments, true);
   populateSelect("rota-location", locations, true);
+  populateSelect("rota-department", departments, true);
   populateSelect("rota-location-filter", getRotaLocations(locations), true);
   populateSelect("rota-department-filter", getRotaDepartments(departments), true);
+  populateSelect("invite-location", locations, true);
+  populateSelect("invite-department", departments, true);
 }
 
 function populateSelect(id, options, includeBlank) {
@@ -1475,6 +1825,503 @@ function getRotaDepartments(defaultList) {
     return Array.from(new Set(state.user.scopes.map((scope) => scope.department)));
   }
   return Array.from(list);
+}
+
+function renderProfile() {
+  const data = state.profile.data || {};
+  const emailInput = document.getElementById("profile-email");
+  if (emailInput) emailInput.value = state.profile.email || (state.user ? state.user.email : "");
+  const setValue = (id, value) => {
+    const input = document.getElementById(id);
+    if (input) input.value = value || "";
+  };
+  setValue("profile-full-name", data.full_name);
+  setValue("profile-preferred-name", data.preferred_name);
+  setValue("profile-phone", data.phone);
+  setValue("profile-birth", data.birth_date);
+  setValue("profile-tax-id", data.tax_id);
+  setValue("profile-ssn", data.social_security_number);
+  setValue("profile-address", data.address);
+  setValue("profile-postal", data.postal_code);
+  setValue("profile-city", data.city);
+  setValue("profile-province", data.province);
+  setValue("profile-country", data.country);
+  setValue("profile-employee-id", data.employee_id);
+  setValue("profile-job-title", data.job_title);
+  setValue("profile-start-date", data.start_date);
+  setValue("profile-iban", data.iban);
+  setValue("profile-emergency-name", data.emergency_contact_name);
+  setValue("profile-emergency-phone", data.emergency_contact_phone);
+}
+
+async function saveProfile() {
+  const payload = {
+    full_name: document.getElementById("profile-full-name").value.trim(),
+    preferred_name: document.getElementById("profile-preferred-name").value.trim(),
+    phone: document.getElementById("profile-phone").value.trim(),
+    birth_date: document.getElementById("profile-birth").value.trim(),
+    tax_id: document.getElementById("profile-tax-id").value.trim(),
+    social_security_number: document.getElementById("profile-ssn").value.trim(),
+    address: document.getElementById("profile-address").value.trim(),
+    postal_code: document.getElementById("profile-postal").value.trim(),
+    city: document.getElementById("profile-city").value.trim(),
+    province: document.getElementById("profile-province").value.trim(),
+    country: document.getElementById("profile-country").value.trim(),
+    employee_id: document.getElementById("profile-employee-id").value.trim(),
+    job_title: document.getElementById("profile-job-title").value.trim(),
+    start_date: document.getElementById("profile-start-date").value.trim(),
+    iban: document.getElementById("profile-iban").value.trim(),
+    emergency_contact_name: document.getElementById("profile-emergency-name").value.trim(),
+    emergency_contact_phone: document.getElementById("profile-emergency-phone").value.trim()
+  };
+  const status = document.getElementById("profile-status");
+  try {
+    await apiFetch("/profile", {
+      method: "PUT",
+      body: JSON.stringify({ profile: payload })
+    });
+    state.profile.data = payload;
+    if (state.user && (payload.full_name || payload.preferred_name)) {
+      state.user.name = payload.full_name || payload.preferred_name;
+      save(STORAGE_KEYS.user, state.user);
+      updateUserUI();
+    }
+    if (status) status.textContent = translations[state.language]["profile.saved"] || "Profile saved.";
+  } catch (err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
+async function uploadSelfie() {
+  const fileInput = document.getElementById("selfie-file");
+  const status = document.getElementById("selfie-status");
+  if (!fileInput || !fileInput.files[0]) {
+    if (status) status.textContent = translations[state.language]["profile.selfieMissing"] || "Select an image.";
+    return;
+  }
+  const form = new FormData();
+  form.append("selfie", fileInput.files[0]);
+  try {
+    const response = await fetch(`${API_BASE}/profile/selfie`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${state.token}` },
+      body: form
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Upload failed" }));
+      throw new Error(error.error || "Upload failed");
+    }
+    if (status) status.textContent = translations[state.language]["profile.selfieSaved"] || "Selfie updated.";
+    fileInput.value = "";
+    loadSelfiePreview();
+  } catch (err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
+async function loadSelfiePreview() {
+  const img = document.getElementById("selfie-preview");
+  if (!img) return;
+  try {
+    const blob = await apiFetchBlob("/profile/selfie", { method: "GET" });
+    if (state.profile.selfieUrl) URL.revokeObjectURL(state.profile.selfieUrl);
+    const url = URL.createObjectURL(blob);
+    state.profile.selfieUrl = url;
+    img.src = url;
+  } catch (err) {
+    img.removeAttribute("src");
+  }
+}
+
+function renderInvites() {
+  const list = document.getElementById("invite-list");
+  if (!list) return;
+  list.innerHTML = "";
+  if (!state.user || state.user.role !== "admin") {
+    list.textContent = "--";
+    return;
+  }
+  if (!state.invites.length) {
+    list.textContent = "--";
+    return;
+  }
+  state.invites.forEach((invite) => {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const header = document.createElement("div");
+    const scope = [invite.location, invite.department].filter(Boolean).join(" / ") || "--";
+    header.textContent = `${invite.email || "(no email)"} | ${invite.role} | ${scope} | ${invite.status}`;
+    item.appendChild(header);
+    if (invite.link) {
+      const link = document.createElement("div");
+      link.className = "hint";
+      link.textContent = invite.link;
+      item.appendChild(link);
+    }
+    const actions = document.createElement("div");
+    actions.className = "button-row";
+    if (invite.link) {
+      const copy = document.createElement("button");
+      copy.className = "btn";
+      copy.textContent = translations[state.language]["admin.inviteCopy"] || "Copy link";
+      copy.addEventListener("click", () => copyInviteLink(invite.link));
+      actions.appendChild(copy);
+    }
+    if (invite.status === "pending") {
+      const revoke = document.createElement("button");
+      revoke.className = "btn danger";
+      revoke.textContent = translations[state.language]["admin.inviteRevoke"] || "Revoke";
+      revoke.addEventListener("click", () => revokeInvite(invite.id));
+      actions.appendChild(revoke);
+    }
+    if (actions.children.length) item.appendChild(actions);
+    list.appendChild(item);
+  });
+}
+
+function updateInviteScopeVisibility() {
+  const roleSelect = document.getElementById("invite-role");
+  const locationSelect = document.getElementById("invite-location");
+  const departmentSelect = document.getElementById("invite-department");
+  if (!roleSelect || !locationSelect || !departmentSelect) return;
+  const isAdmin = roleSelect.value === "admin";
+  locationSelect.disabled = isAdmin;
+  departmentSelect.disabled = isAdmin;
+  if (isAdmin) {
+    locationSelect.value = "";
+    departmentSelect.value = "";
+  }
+}
+
+async function createInvite() {
+  const email = document.getElementById("invite-email").value.trim();
+  const role = document.getElementById("invite-role").value;
+  const location = document.getElementById("invite-location").value.trim();
+  const department = document.getElementById("invite-department").value.trim();
+  const expiry = document.getElementById("invite-expiry").value;
+  const status = document.getElementById("invite-link");
+  try {
+    const result = await apiFetch("/invites", {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        role,
+        location,
+        department,
+        expires_in_days: expiry
+      })
+    });
+    if (status) {
+      status.textContent = result.link
+        ? `${translations[state.language]["admin.inviteLink"] || "Invite link"}: ${result.link}`
+        : translations[state.language]["admin.inviteCreated"] || "Invite created.";
+    }
+    document.getElementById("invite-email").value = "";
+    state.invites = await apiFetch("/invites");
+    renderInvites();
+  } catch (err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
+async function revokeInvite(id) {
+  try {
+    await apiFetch(`/invites/${id}/revoke`, { method: "POST" });
+    state.invites = await apiFetch("/invites");
+    renderInvites();
+  } catch (err) {
+    // ignore
+  }
+}
+
+function copyInviteLink(link) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).catch(() => {
+      window.prompt("Copy invite link", link);
+    });
+  } else {
+    window.prompt("Copy invite link", link);
+  }
+}
+
+function initSignaturePad() {
+  const canvas = document.getElementById("signature-pad");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const width = rect.width || canvas.width;
+  const height = rect.height || canvas.height;
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.strokeStyle = "#1a1e1b";
+  ctx.lineWidth = 2;
+  signatureState = { hasStroke: false, canvas, ctx };
+  let drawing = false;
+  const getPoint = (event) => {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+  };
+  canvas.addEventListener("pointerdown", (event) => {
+    drawing = true;
+    signatureState.hasStroke = true;
+    const point = getPoint(event);
+    ctx.beginPath();
+    ctx.moveTo(point.x, point.y);
+  });
+  canvas.addEventListener("pointermove", (event) => {
+    if (!drawing) return;
+    const point = getPoint(event);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+  });
+  const endStroke = () => {
+    drawing = false;
+  };
+  canvas.addEventListener("pointerup", endStroke);
+  canvas.addEventListener("pointerleave", endStroke);
+}
+
+function resizeSignaturePad() {
+  if (!signatureState.canvas || !signatureState.ctx) return;
+  const ratio = window.devicePixelRatio || 1;
+  const rect = signatureState.canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  signatureState.canvas.width = rect.width * ratio;
+  signatureState.canvas.height = rect.height * ratio;
+  signatureState.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  signatureState.ctx.strokeStyle = "#1a1e1b";
+  signatureState.ctx.lineWidth = 2;
+}
+
+function clearSignaturePad() {
+  if (!signatureState.canvas || !signatureState.ctx) return;
+  signatureState.ctx.clearRect(0, 0, signatureState.canvas.width, signatureState.canvas.height);
+  signatureState.hasStroke = false;
+  const status = document.getElementById("signature-status");
+  if (status) status.textContent = "";
+}
+
+async function signMonthlyReport() {
+  const month = document.getElementById("my-report-month").value;
+  const status = document.getElementById("signature-status");
+  if (!month) {
+    if (status) status.textContent = translations[state.language]["myReport.missingMonth"] || "Select a month.";
+    return;
+  }
+  if (!signatureState.hasStroke) {
+    if (status) status.textContent = translations[state.language]["myReport.signatureRequired"] || "Signature required.";
+    return;
+  }
+  const signerName = (state.profile.data && (state.profile.data.full_name || state.profile.data.preferred_name)) ||
+    (state.user ? state.user.name : "");
+  try {
+    await apiFetch("/reports/monthly/sign", {
+      method: "POST",
+      body: JSON.stringify({
+        month,
+        signature: signatureState.canvas.toDataURL("image/png"),
+        signer_name: signerName
+      })
+    });
+    if (status) status.textContent = translations[state.language]["myReport.signed"] || "Signed.";
+    loadMyMonthlyReport();
+  } catch (err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
+async function loadMyMonthlyReport() {
+  const monthInput = document.getElementById("my-report-month");
+  if (!monthInput || !monthInput.value) return;
+  try {
+    const data = await apiFetch(`/reports/monthly/self?month=${monthInput.value}`);
+    state.monthly.my = data;
+    renderMyMonthlyReport();
+  } catch (err) {
+    const status = document.getElementById("my-report-status");
+    if (status) status.textContent = err.message;
+  }
+}
+
+function renderMyMonthlyReport() {
+  const summary = document.getElementById("my-report-summary");
+  const status = document.getElementById("my-report-status");
+  if (!summary || !state.monthly.my) return;
+  const totals = state.monthly.my.totals || {};
+  summary.textContent = `${translations[state.language]["myReport.days"] || "Days"}: ${totals.days || 0} | ${translations[state.language]["myReport.hours"] || "Hours"}: ${totals.total_hours || 0} | ${translations[state.language]["myReport.breaks"] || "Breaks"}: ${totals.break_minutes || 0} min`;
+  if (status) {
+    status.textContent = state.monthly.my.signed_at
+      ? `${translations[state.language]["myReport.signedAt"] || "Signed at"}: ${state.monthly.my.signed_at}`
+      : translations[state.language]["myReport.notSigned"] || "Not signed";
+  }
+}
+
+async function downloadMyMonthlyReport() {
+  const monthInput = document.getElementById("my-report-month");
+  if (!monthInput || !monthInput.value) return;
+  try {
+    const blob = await apiFetchBlob(`/reports/monthly/self/pdf?month=${monthInput.value}`, { method: "GET" });
+    downloadBlob(`monthly-report-${monthInput.value}.pdf`, blob);
+  } catch (err) {
+    const status = document.getElementById("my-report-status");
+    if (status) status.textContent = err.message;
+  }
+}
+
+async function loadMonthlyReports() {
+  const monthInput = document.getElementById("monthly-report-month");
+  if (!monthInput || !monthInput.value) return;
+  if (!state.user || (state.user.role !== "admin" && state.user.role !== "manager")) return;
+  try {
+    state.monthly.list = await apiFetch(`/reports/monthly?month=${monthInput.value}`);
+    renderMonthlyReportList(monthInput.value);
+  } catch (err) {
+    const list = document.getElementById("monthly-report-list");
+    if (list) list.textContent = err.message;
+  }
+}
+
+function renderMonthlyReportList(month) {
+  const list = document.getElementById("monthly-report-list");
+  if (!list) return;
+  list.innerHTML = "";
+  if (!state.monthly.list || !state.monthly.list.length) {
+    list.textContent = "--";
+    return;
+  }
+  state.monthly.list.forEach((row) => {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const header = document.createElement("div");
+    const statusLabel = row.signed_at
+      ? translations[state.language]["myReport.signed"] || "Signed"
+      : translations[state.language]["myReport.notSigned"] || "Pending";
+    header.textContent = `${row.name} | ${row.totals.total_hours || 0}h | ${statusLabel}`;
+    item.appendChild(header);
+    const actions = document.createElement("div");
+    actions.className = "button-row";
+    const download = document.createElement("button");
+    download.className = "btn";
+    download.textContent = translations[state.language]["reports.downloadMonthly"] || "Download PDF";
+    download.addEventListener("click", () => downloadMonthlyReport(row.user_id, month));
+    actions.appendChild(download);
+    item.appendChild(actions);
+    list.appendChild(item);
+  });
+}
+
+async function downloadMonthlyReport(userId, month) {
+  try {
+    const blob = await apiFetchBlob(`/reports/monthly/${userId}/pdf?month=${month}`, { method: "GET" });
+    downloadBlob(`monthly-report-${month}-${userId}.pdf`, blob);
+  } catch (err) {
+    // ignore
+  }
+}
+
+function ensureGeoMap() {
+  if (!document.getElementById("geo-map")) return;
+  if (state.geo.map) {
+    setTimeout(() => state.geo.map.invalidateSize(), 200);
+    return;
+  }
+  if (!window.L) return;
+  const map = window.L.map("geo-map").setView([37.74, -0.87], 10);
+  window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  state.geo.map = map;
+}
+
+async function populateGeoUsers() {
+  const field = document.querySelector(".geo-user-field");
+  const select = document.getElementById("geo-user");
+  if (!field || !select) return;
+  const canViewAll = state.user && (state.user.role === "admin" || state.user.role === "manager");
+  field.style.display = canViewAll ? "flex" : "none";
+  if (!canViewAll) return;
+  let users = state.user && state.user.role === "admin" ? state.users : state.staff;
+  if ((!users || !users.length) && state.user && state.user.role === "manager") {
+    try {
+      users = await apiFetch("/staff");
+      state.staff = users;
+    } catch (err) {
+      users = [];
+    }
+  }
+  select.innerHTML = "";
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = translations[state.language]["geo.allUsers"] || "All";
+  select.appendChild(empty);
+  (users || []).forEach((user) => {
+    const opt = document.createElement("option");
+    opt.value = user.id;
+    opt.textContent = user.name || user.email;
+    select.appendChild(opt);
+  });
+}
+
+async function loadGeoEvents() {
+  const from = document.getElementById("geo-from").value;
+  const to = document.getElementById("geo-to").value;
+  const type = document.getElementById("geo-type").value;
+  const userId = document.getElementById("geo-user").value;
+  const params = new URLSearchParams();
+  if (from) params.append("from", from);
+  if (to) params.append("to", to);
+  if (type) params.append("type", type);
+  if (userId) params.append("user_id", userId);
+  try {
+    state.geo.events = await apiFetch(`/geo/events?${params.toString()}`);
+    renderGeoList();
+    renderGeoMarkers();
+  } catch (err) {
+    const list = document.getElementById("geo-list");
+    if (list) list.textContent = err.message;
+  }
+}
+
+function renderGeoList() {
+  const list = document.getElementById("geo-list");
+  if (!list) return;
+  list.innerHTML = "";
+  if (!state.geo.events.length) {
+    list.textContent = "--";
+    return;
+  }
+  state.geo.events.forEach((event) => {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const userLabel = event.name || event.email || "--";
+    item.textContent = `${new Date(event.timestamp).toLocaleString()} | ${event.event_type} | ${userLabel}`;
+    list.appendChild(item);
+  });
+}
+
+function renderGeoMarkers() {
+  if (!state.geo.map || !window.L) return;
+  state.geo.markers.forEach((marker) => state.geo.map.removeLayer(marker));
+  state.geo.markers = [];
+  const bounds = [];
+  state.geo.events.forEach((event) => {
+    if (!event.latitude || !event.longitude) return;
+    const marker = window.L.marker([event.latitude, event.longitude]);
+    const userLabel = event.name || event.email || "--";
+    marker.bindPopup(`${userLabel}<br>${event.event_type}<br>${new Date(event.timestamp).toLocaleString()}`);
+    marker.addTo(state.geo.map);
+    state.geo.markers.push(marker);
+    bounds.push([event.latitude, event.longitude]);
+  });
+  if (bounds.length) {
+    state.geo.map.fitBounds(bounds, { padding: [20, 20] });
+  }
 }
 
 function generateUpdateToken() {
