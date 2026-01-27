@@ -186,7 +186,7 @@ const translations = {
     "setup.importButton": "Upload database",
     "setup.importMissing": "Select a database file.",
     "setup.importSuccess": "Import staged. Restart the server to apply.",
-    "setup.importError": "Import failed."
+    "setup.importError": "Import failed.",
     "rota.title": "Rota",
     "rota.week": "Week start",
     "rota.load": "Load",
@@ -395,7 +395,7 @@ const translations = {
     "setup.importButton": "Subir base de datos",
     "setup.importMissing": "Selecciona un archivo.",
     "setup.importSuccess": "Importacion preparada. Reinicia el servidor.",
-    "setup.importError": "Error al importar."
+    "setup.importError": "Error al importar.",
     "rota.title": "Rota",
     "rota.week": "Inicio de semana",
     "rota.load": "Cargar",
@@ -604,7 +604,7 @@ const translations = {
     "setup.importButton": "Pujar base de dades",
     "setup.importMissing": "Selecciona un fitxer.",
     "setup.importSuccess": "Importacio preparada. Reinicia el servidor.",
-    "setup.importError": "Error en importar."
+    "setup.importError": "Error en importar.",
     "rota.title": "Rota",
     "rota.week": "Inici de setmana",
     "rota.load": "Carregar",
@@ -813,7 +813,7 @@ const translations = {
     "setup.importButton": "Igo datu basea",
     "setup.importMissing": "Hautatu fitxategi bat.",
     "setup.importSuccess": "Inportazioa prest. Berrabiarazi zerbitzaria.",
-    "setup.importError": "Errorea inportatzean."
+    "setup.importError": "Errorea inportatzean.",
     "rota.title": "Rota",
     "rota.week": "Aste hasiera",
     "rota.load": "Kargatu",
@@ -1022,7 +1022,7 @@ const translations = {
     "setup.importButton": "Subir base de datos",
     "setup.importMissing": "Selecciona un ficheiro.",
     "setup.importSuccess": "Importacion preparada. Reinicia o servidor.",
-    "setup.importError": "Erro ao importar."
+    "setup.importError": "Erro ao importar.",
     "rota.title": "Rota",
     "rota.week": "Inicio de semana",
     "rota.load": "Cargar",
