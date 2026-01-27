@@ -94,7 +94,6 @@ CREATE TABLE IF NOT EXISTS rota_shifts (
   start_time TEXT NOT NULL,
   end_time TEXT NOT NULL,
   role TEXT,
-  location TEXT,
   notes TEXT,
   assigned_user_id TEXT,
   created_by TEXT,
