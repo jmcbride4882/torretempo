@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  TextInput
+  TextInput,
+  Modal,
+  Pressable
 } from "react-native";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,7 +18,42 @@ const STORAGE_KEYS = {
   geo: "tt_mobile_geo",
   token: "tt_mobile_token",
   user: "tt_mobile_user",
-  apiBase: "tt_mobile_api_base"
+  apiBase: "tt_mobile_api_base",
+  environment: "tt_mobile_environment",
+  customApiBase: "tt_mobile_custom_api_base"
+};
+
+const DEFAULT_ENVIRONMENT = "production";
+
+const ENVIRONMENT_MAP = {
+  production: {
+    key: "production",
+    labelKey: "production",
+    apiBase: "https://time.lsltgroup.es/api"
+  },
+  vps: {
+    key: "vps",
+    labelKey: "vps",
+    apiBase: "https://vps-463f2901.vps.ovh.net/api"
+  },
+  custom: {
+    key: "custom",
+    labelKey: "custom",
+    apiBase: ""
+  }
+};
+
+const ENVIRONMENT_ORDER = ["production", "vps", "custom"];
+
+const normalizeApiBase = (value) => {
+  if (!value) return "";
+  return value.trim().replace(/\/+$/, "");
+};
+
+const getApiBase = (environmentKey, customValue) => {
+  if (environmentKey === "custom") return normalizeApiBase(customValue);
+  const env = ENVIRONMENT_MAP[environmentKey] || ENVIRONMENT_MAP[DEFAULT_ENVIRONMENT];
+  return env.apiBase;
 };
 
 const translations = {
@@ -34,7 +71,12 @@ const translations = {
     email: "Email",
     password: "Password",
     apiBase: "API base",
-    logout: "Logout"
+    logout: "Logout",
+    apiEnvironment: "API environment",
+    production: "Production",
+    vps: "VPS",
+    custom: "Custom",
+    apiBaseRequired: "API base is required"
   },
   "es-ES": {
     title: "Torre Tempo",
@@ -50,7 +92,12 @@ const translations = {
     email: "Email",
     password: "Contraseña",
     apiBase: "Base API",
-    logout: "Salir"
+    logout: "Salir",
+    apiEnvironment: "Entorno API",
+    production: "Producción",
+    vps: "VPS",
+    custom: "Personalizado",
+    apiBaseRequired: "La base API es obligatoria"
   },
   "ca-ES": {
     title: "Torre Tempo",
@@ -66,7 +113,12 @@ const translations = {
     email: "Email",
     password: "Contrasenya",
     apiBase: "Base API",
-    logout: "Sortir"
+    logout: "Sortir",
+    apiEnvironment: "Entorn API",
+    production: "Producció",
+    vps: "VPS",
+    custom: "Personalitzat",
+    apiBaseRequired: "La base API és obligatòria"
   },
   "eu-ES": {
     title: "Torre Tempo",
@@ -82,7 +134,12 @@ const translations = {
     email: "Email",
     password: "Pasahitza",
     apiBase: "API oinarria",
-    logout: "Irten"
+    logout: "Irten",
+    apiEnvironment: "API ingurunea",
+    production: "Produkzioa",
+    vps: "VPS",
+    custom: "Pertsonalizatua",
+    apiBaseRequired: "API oinarria beharrezkoa da"
   },
   "gl-ES": {
     title: "Torre Tempo",
@@ -98,7 +155,12 @@ const translations = {
     email: "Email",
     password: "Contrasinal",
     apiBase: "Base API",
-    logout: "Sair"
+    logout: "Sair",
+    apiEnvironment: "Contorno da API",
+    production: "Produción",
+    vps: "VPS",
+    custom: "Personalizado",
+    apiBaseRequired: "A base API é obrigatoria"
   }
 };
 
@@ -115,10 +177,15 @@ export default function App() {
   const [lang, setLang] = useState(defaultLang);
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-  const [apiBase, setApiBase] = useState("http://localhost:8080/api");
+  const [environment, setEnvironment] = useState(DEFAULT_ENVIRONMENT);
+  const [customApiBase, setCustomApiBase] = useState("");
+  const [environmentPickerVisible, setEnvironmentPickerVisible] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+
+  const apiBase = getApiBase(environment, customApiBase);
+  const environmentLabelKey = (ENVIRONMENT_MAP[environment] || ENVIRONMENT_MAP[DEFAULT_ENVIRONMENT]).labelKey;
 
   useEffect(() => {
     loadState();
@@ -130,13 +197,33 @@ export default function App() {
     const storedToken = await AsyncStorage.getItem(STORAGE_KEYS.token);
     const storedUser = await AsyncStorage.getItem(STORAGE_KEYS.user);
     const storedApiBase = await AsyncStorage.getItem(STORAGE_KEYS.apiBase);
+    const storedEnvironment = await AsyncStorage.getItem(STORAGE_KEYS.environment);
+    const storedCustomApiBase = await AsyncStorage.getItem(STORAGE_KEYS.customApiBase);
     setEntries(storedEntries ? JSON.parse(storedEntries) : []);
     setGeoEvents(storedGeo ? JSON.parse(storedGeo) : []);
     setToken(storedToken || null);
     setUser(storedUser ? JSON.parse(storedUser) : null);
-    if (storedApiBase) setApiBase(storedApiBase);
-    if (storedToken && storedApiBase) {
-      await fetchEntries(storedToken, storedApiBase);
+    let resolvedEnvironment = storedEnvironment || DEFAULT_ENVIRONMENT;
+    let resolvedCustomApiBase = storedCustomApiBase || "";
+    if (storedEnvironment === "custom" && !storedCustomApiBase && storedApiBase) {
+      resolvedCustomApiBase = normalizeApiBase(storedApiBase);
+    }
+    if (!storedEnvironment && storedApiBase) {
+      const normalizedStoredApiBase = normalizeApiBase(storedApiBase);
+      if (normalizedStoredApiBase === ENVIRONMENT_MAP.production.apiBase) {
+        resolvedEnvironment = "production";
+      } else if (normalizedStoredApiBase === ENVIRONMENT_MAP.vps.apiBase) {
+        resolvedEnvironment = "vps";
+      } else {
+        resolvedEnvironment = "custom";
+        resolvedCustomApiBase = normalizedStoredApiBase;
+      }
+    }
+    setEnvironment(resolvedEnvironment);
+    setCustomApiBase(resolvedCustomApiBase);
+    const resolvedApiBase = getApiBase(resolvedEnvironment, resolvedCustomApiBase);
+    if (storedToken && resolvedApiBase) {
+      await fetchEntries(storedToken, resolvedApiBase);
     }
   };
 
@@ -149,6 +236,47 @@ export default function App() {
     await AsyncStorage.setItem(STORAGE_KEYS.token, tokenValue);
     await AsyncStorage.setItem(STORAGE_KEYS.user, JSON.stringify(userValue));
     await AsyncStorage.setItem(STORAGE_KEYS.apiBase, apiBase);
+    await AsyncStorage.setItem(STORAGE_KEYS.environment, environment);
+    await AsyncStorage.setItem(STORAGE_KEYS.customApiBase, customApiBase);
+  };
+
+  const persistEnvironment = async (nextEnvironment, nextCustomApiBase) => {
+    await AsyncStorage.setItem(STORAGE_KEYS.environment, nextEnvironment);
+    await AsyncStorage.setItem(STORAGE_KEYS.customApiBase, nextCustomApiBase || "");
+    await AsyncStorage.setItem(STORAGE_KEYS.apiBase, getApiBase(nextEnvironment, nextCustomApiBase));
+  };
+
+  const clearAuth = async () => {
+    setToken(null);
+    setUser(null);
+    await AsyncStorage.removeItem(STORAGE_KEYS.token);
+    await AsyncStorage.removeItem(STORAGE_KEYS.user);
+  };
+
+  const clearCachedData = async () => {
+    setEntries([]);
+    setGeoEvents([]);
+    setCurrentEntryId(null);
+    await AsyncStorage.removeItem(STORAGE_KEYS.entries);
+    await AsyncStorage.removeItem(STORAGE_KEYS.geo);
+  };
+
+  const handleEnvironmentChange = async (nextEnvironment) => {
+    if (nextEnvironment === environment) {
+      setEnvironmentPickerVisible(false);
+      return;
+    }
+    setEnvironment(nextEnvironment);
+    await persistEnvironment(nextEnvironment, customApiBase);
+    await clearAuth();
+    await clearCachedData();
+    setError("");
+    setEnvironmentPickerVisible(false);
+  };
+
+  const handleCustomApiBaseChange = async (value) => {
+    setCustomApiBase(value);
+    await persistEnvironment(environment, value);
   };
 
   const apiFetch = async (path, options) => {
@@ -171,6 +299,10 @@ export default function App() {
 
   const login = async () => {
     setError("");
+    if (!apiBase) {
+      setError(t(lang, "apiBaseRequired"));
+      return;
+    }
     try {
       const result = await apiFetch("/auth/login", {
         method: "POST",
@@ -186,10 +318,7 @@ export default function App() {
   };
 
   const logout = async () => {
-    setToken(null);
-    setUser(null);
-    await AsyncStorage.removeItem(STORAGE_KEYS.token);
-    await AsyncStorage.removeItem(STORAGE_KEYS.user);
+    await clearAuth();
   };
 
   const fetchEntries = async (tokenValue, base) => {
@@ -262,6 +391,37 @@ export default function App() {
     setLang(next);
   };
 
+  const environmentModal = (
+    <Modal
+      visible={environmentPickerVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setEnvironmentPickerVisible(false)}
+    >
+      <Pressable style={styles.modalOverlay} onPress={() => setEnvironmentPickerVisible(false)}>
+        <Pressable style={styles.modalCard} onPress={() => {}}>
+          <Text style={styles.modalTitle}>{t(lang, "apiEnvironment")}</Text>
+          {ENVIRONMENT_ORDER.map((key) => {
+            const option = ENVIRONMENT_MAP[key];
+            const isSelected = key === environment;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.modalOption, isSelected ? styles.modalOptionSelected : null]}
+                onPress={() => handleEnvironmentChange(key)}
+              >
+                <Text style={styles.modalOptionText}>{t(lang, option.labelKey)}</Text>
+                {option.apiBase ? (
+                  <Text style={styles.modalOptionSubtext}>{option.apiBase}</Text>
+                ) : null}
+              </TouchableOpacity>
+            );
+          })}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+
   if (!token) {
     return (
       <SafeAreaView style={styles.container}>
@@ -273,13 +433,24 @@ export default function App() {
         </View>
         <View style={styles.loginCard}>
           <Text style={styles.sectionTitle}>{t(lang, "login")}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t(lang, "apiBase")}
-            value={apiBase}
-            onChangeText={setApiBase}
-            autoCapitalize="none"
-          />
+          <View style={styles.envBlock}>
+            <Text style={styles.fieldLabel}>{t(lang, "apiEnvironment")}</Text>
+            <TouchableOpacity style={styles.select} onPress={() => setEnvironmentPickerVisible(true)}>
+              <Text style={styles.selectText}>{t(lang, environmentLabelKey)}</Text>
+              <Text style={styles.selectSubtext}>{apiBase || t(lang, "apiBase")}</Text>
+            </TouchableOpacity>
+            {environment === "custom" ? (
+              <TextInput
+                style={styles.input}
+                placeholder={t(lang, "apiBase")}
+                value={customApiBase}
+                onChangeText={handleCustomApiBaseChange}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            ) : null}
+          </View>
           <TextInput
             style={styles.input}
             placeholder={t(lang, "email")}
@@ -299,6 +470,7 @@ export default function App() {
           </TouchableOpacity>
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
+        {environmentModal}
       </SafeAreaView>
     );
   }
@@ -310,6 +482,26 @@ export default function App() {
         <TouchableOpacity style={styles.lang} onPress={cycleLang}>
           <Text style={styles.langText}>{lang}</Text>
         </TouchableOpacity>
+      </View>
+      <View style={styles.envCard}>
+        <View style={styles.envBlock}>
+          <Text style={styles.fieldLabel}>{t(lang, "apiEnvironment")}</Text>
+          <TouchableOpacity style={styles.select} onPress={() => setEnvironmentPickerVisible(true)}>
+            <Text style={styles.selectText}>{t(lang, environmentLabelKey)}</Text>
+            <Text style={styles.selectSubtext}>{apiBase || t(lang, "apiBase")}</Text>
+          </TouchableOpacity>
+          {environment === "custom" ? (
+            <TextInput
+              style={styles.input}
+              placeholder={t(lang, "apiBase")}
+              value={customApiBase}
+              onChangeText={handleCustomApiBaseChange}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+          ) : null}
+        </View>
       </View>
       <Text style={styles.status}>{t(lang, "status")}: {statusText}</Text>
       <View style={styles.buttonRow}>
@@ -341,6 +533,7 @@ export default function App() {
           </View>
         )}
       />
+      {environmentModal}
     </SafeAreaView>
   );
 }
@@ -419,6 +612,37 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 10
   },
+  envCard: {
+    backgroundColor: "#fff",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12
+  },
+  envBlock: {
+    gap: 8
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1a1e1b"
+  },
+  select: {
+    borderWidth: 1,
+    borderColor: "#d1d7cf",
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: "#fff"
+  },
+  selectText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1a1e1b"
+  },
+  selectSubtext: {
+    fontSize: 12,
+    color: "#5a6158",
+    marginTop: 4
+  },
   input: {
     borderWidth: 1,
     borderColor: "#d1d7cf",
@@ -434,5 +658,40 @@ const styles = StyleSheet.create({
   logoutText: {
     color: "#0f6b5f",
     fontWeight: "600"
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    justifyContent: "center",
+    padding: 20
+  },
+  modalCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    gap: 12
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "600"
+  },
+  modalOption: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e1e6dd"
+  },
+  modalOptionSelected: {
+    borderColor: "#0f6b5f",
+    backgroundColor: "#e8f2ef"
+  },
+  modalOptionText: {
+    fontSize: 14,
+    fontWeight: "600"
+  },
+  modalOptionSubtext: {
+    fontSize: 12,
+    color: "#5a6158",
+    marginTop: 4
   }
 });

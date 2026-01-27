@@ -7,11 +7,13 @@
     "platforms": ["ios", "android"],
     "sdkVersion": "50.0.0",
     "ios": {
+      "bundleIdentifier": "com.lakeside.torretempo",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Location is used only for on clock time events."
       }
     },
     "android": {
+      "package": "com.lakeside.torretempo",
       "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     }
   }
