@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Torre Tempo",
+    "slug": "torre-tempo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android"],
+    "sdkVersion": "50.0.0",
+    "ios": {
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Location is used only for on clock time events."
+      }
+    },
+    "android": {
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    }
+  }
+}

@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Torre Tempo | Registro de Jornada</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">TT</div>
+          <div>
+            <div class="brand-title">Torre Tempo</div>
+            <div class="brand-subtitle" data-i18n="app.subtitle">Registro de jornada y cumplimiento</div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="lang-picker">
+            <label for="lang" data-i18n="app.language">Idioma</label>
+            <select id="lang" aria-label="Language">
+              <option value="es-ES">es-ES</option>
+              <option value="ca-ES">ca-ES</option>
+              <option value="eu-ES">eu-ES</option>
+              <option value="gl-ES">gl-ES</option>
+              <option value="en-US">en-US</option>
+            </select>
+          </div>
+          <div class="user-pill" id="user-pill">
+            <span id="user-label" data-i18n="auth.loggedOut">Signed out</span>
+            <button class="btn tiny" id="logout" data-i18n="auth.logout">Logout</button>
+          </div>
+          <div class="status-pill" id="compliance-status">Compliance: --</div>
+        </div>
+      </header>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard" data-i18n="nav.dashboard">Dashboard</button>
+        <button class="nav-item" data-view="time" data-i18n="nav.time">Time</button>
+        <button class="nav-item" data-view="rota" data-i18n="nav.rota">Rota</button>
+        <button class="nav-item" data-view="reports" data-i18n="nav.reports">Reports</button>
+        <button class="nav-item" data-view="policies" data-i18n="nav.policies">Policies</button>
+        <button class="nav-item" data-view="admin" data-i18n="nav.admin">Admin</button>
+      </nav>
+
+      <main class="content">
+        <section class="view active" id="view-dashboard">
+          <div class="grid">
+            <div class="card hero">
+              <h1 data-i18n="dashboard.title">Daily Time Compliance</h1>
+              <p data-i18n="dashboard.subtitle">
+                Track working time with on clock geolocation and audit ready exports.
+              </p>
+              <div class="hero-stats">
+                <div>
+                  <div class="stat-label" data-i18n="dashboard.status">Status</div>
+                  <div class="stat-value" id="status-value">--</div>
+                </div>
+                <div>
+                  <div class="stat-label" data-i18n="dashboard.lastEvent">Last event</div>
+                  <div class="stat-value" id="last-event">--</div>
+                </div>
+                <div>
+                  <div class="stat-label" data-i18n="dashboard.geolocation">Geolocation</div>
+                  <div class="stat-value" id="geo-status">--</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" id="rota-add-card">
+              <h2 data-i18n="dashboard.complianceTitle">Compliance Checklist</h2>
+              <ul class="checklist" id="compliance-list"></ul>
+            </div>
+
+            <div class="card" id="rota-staff-card">
+              <h2 data-i18n="dashboard.quickActions">Quick Actions</h2>
+              <div class="button-row">
+                <button class="btn primary" id="quick-clock-in" data-i18n="actions.clockIn">Clock in</button>
+                <button class="btn ghost" id="quick-break" data-i18n="actions.break">Start break</button>
+                <button class="btn ghost" id="quick-clock-out" data-i18n="actions.clockOut">Clock out</button>
+              </div>
+              <p class="hint" data-i18n="dashboard.quickHint">
+                Quick actions respect on clock geolocation capture.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-time">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="time.title">Current Shift</h2>
+              <div class="shift-status" id="shift-status">--</div>
+              <div class="button-row">
+                <button class="btn primary" id="start-shift" data-i18n="actions.clockIn">Clock in</button>
+                <button class="btn" id="start-break" data-i18n="actions.break">Start break</button>
+                <button class="btn" id="end-break" data-i18n="actions.endBreak">End break</button>
+                <button class="btn danger" id="end-shift" data-i18n="actions.clockOut">Clock out</button>
+              </div>
+              <div class="shift-meta">
+                <div>
+                  <span data-i18n="time.shiftStart">Shift start</span>
+                  <strong id="shift-start">--</strong>
+                </div>
+                <div>
+                  <span data-i18n="time.shiftEnd">Shift end</span>
+                  <strong id="shift-end">--</strong>
+                </div>
+                <div>
+                  <span data-i18n="time.breaks">Breaks</span>
+                  <strong id="shift-breaks">0</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2 data-i18n="time.entries">Time Entries</h2>
+              <div id="time-entries" class="list"></div>
+            </div>
+
+            <div class="card">
+              <h2 data-i18n="time.corrections">Corrections</h2>
+              <p data-i18n="time.correctionsHint">
+                Request a correction with reason and manager approval.
+              </p>
+              <button class="btn" id="request-correction" data-i18n="actions.requestCorrection">
+                Request correction
+              </button>
+              <div id="corrections-list" class="list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-reports">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="reports.title">Reports and Exports</h2>
+              <div class="filter-row">
+                <label>
+                  <span data-i18n="reports.month">Month</span>
+                  <input type="month" id="report-month" />
+                </label>
+                <button class="btn" id="run-report" data-i18n="actions.runReport">Run report</button>
+              </div>
+              <div id="report-summary" class="summary"></div>
+              <div class="button-row">
+                <button class="btn" id="export-time" data-i18n="actions.exportTime">Export time records</button>
+                <button class="btn" id="export-geo" data-i18n="actions.exportGeo">Export geolocation</button>
+                <button class="btn" id="export-audit" data-i18n="actions.exportAudit">Export audit log</button>
+                <button class="btn primary" id="export-pack" data-i18n="actions.exportPack">Inspectorate pack</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <h2 data-i18n="reports.overtimeTitle">Overtime and Exceptions</h2>
+              <div id="overtime-summary" class="list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-rota">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="rota.title">Rota</h2>
+              <div class="filter-row">
+                <label>
+                  <span data-i18n="rota.week">Week start</span>
+                  <input type="date" id="rota-week" />
+                </label>
+                <label>
+                  <span data-i18n="rota.location">Location</span>
+                  <input type="text" id="rota-location-filter" />
+                </label>
+                <label>
+                  <span data-i18n="rota.department">Department</span>
+                  <input type="text" id="rota-department-filter" />
+                </label>
+                <button class="btn" id="rota-load" data-i18n="rota.load">Load</button>
+                <button class="btn primary" id="rota-publish" data-i18n="rota.publish">Publish</button>
+                <button class="btn" id="rota-unpublish" data-i18n="rota.unpublish">Unpublish</button>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="rota-remind-checkin" data-i18n="rota.remindCheckin">Send check in reminder</button>
+                <button class="btn" id="rota-remind-checkout" data-i18n="rota.remindCheckout">Send check out reminder</button>
+              </div>
+              <div id="rota-status" class="hint"></div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="rota.addShift">Add shift</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="rota.date">Date</span>
+                  <input id="rota-date" type="date" />
+                </label>
+                <label>
+                  <span data-i18n="rota.start">Start</span>
+                  <input id="rota-start" type="time" />
+                </label>
+                <label>
+                  <span data-i18n="rota.end">End</span>
+                  <input id="rota-end" type="time" />
+                </label>
+                <label>
+                  <span data-i18n="rota.role">Role</span>
+                  <input id="rota-role" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="rota.location">Location</span>
+                  <input id="rota-location" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="rota.notes">Notes</span>
+                  <input id="rota-notes" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="rota.assign">Assign to</span>
+                  <select id="rota-assign"></select>
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn primary" id="rota-add" data-i18n="rota.add">Add shift</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="rota.staff">Staff</h3>
+              <div id="rota-staff" class="list"></div>
+            </div>
+          </div>
+
+          <div class="rota-grid" id="rota-grid"></div>
+        </section>
+
+        <section class="view" id="view-policies">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="policies.title">Policies and Notices</h2>
+              <p data-i18n="policies.subtitle">
+                Generated from admin settings and versioned for compliance.
+              </p>
+              <div class="button-row">
+                <button class="btn" data-template="time" data-i18n="policies.time">Time recording policy</button>
+                <button class="btn" data-template="privacy" data-i18n="policies.privacy">Employee privacy notice</button>
+                <button class="btn" data-template="geo" data-i18n="policies.geo">Geolocation notice</button>
+                <button class="btn" data-template="byod" data-i18n="policies.byod">BYOD policy</button>
+                <button class="btn" data-template="disconnect" data-i18n="policies.disconnect">Disconnection policy</button>
+              </div>
+            </div>
+
+            <div class="card policy-preview">
+              <h2 data-i18n="policies.preview">Preview</h2>
+              <pre id="policy-preview">--</pre>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-admin">
+          <div class="grid">
+            <div class="card">
+              <h2 data-i18n="admin.title">Compliance Settings</h2>
+              <p data-i18n="admin.subtitle">
+                Complete required fields to enable time tracking.
+              </p>
+              <div id="missing-fields" class="missing"></div>
+              <div class="button-row">
+                <button class="btn primary" id="save-settings" data-i18n="admin.save">Save settings</button>
+                <button class="btn" id="refresh-data" data-i18n="admin.refresh">Refresh data</button>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.company">Company</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.legalName">Legal name</span>
+                  <input data-path="company.controller_legal_name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.cif">CIF</span>
+                  <input data-path="company.controller_cif" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.address">Address</span>
+                  <input data-path="company.controller_address" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.contactEmail">Contact email</span>
+                  <input data-path="company.controller_contact_email" type="email" />
+                </label>
+                <label>
+                  <span data-i18n="admin.phone">Contact phone</span>
+                  <input data-path="company.controller_contact_phone" type="tel" />
+                </label>
+                <label>
+                  <span data-i18n="admin.hasDpo">Has DPO</span>
+                  <select data-path="company.has_dpo">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.dpoName">DPO name</span>
+                  <input data-path="company.dpo_name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.dpoEmail">DPO email</span>
+                  <input data-path="company.dpo_email" type="email" />
+                </label>
+                <label>
+                  <span data-i18n="admin.dpoPhone">DPO phone</span>
+                  <input data-path="company.dpo_phone" type="tel" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.reps">Representatives</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.hasReps">Has worker reps</span>
+                  <select data-path="representatives.has_worker_reps">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.consultation">Consultation record</span>
+                  <input data-path="representatives.reps_consultation_record" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.noReps">No reps statement</span>
+                  <input data-path="representatives.no_reps_statement" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.methodVersion">Method version</span>
+                  <input data-path="representatives.recording_method_version" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.methodDate">Method effective date</span>
+                  <input data-path="representatives.recording_method_effective_date" type="date" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.timePayroll">Time and Payroll</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.dailyHours">Standard daily hours</span>
+                  <input data-path="time.standard_daily_hours" type="number" step="0.25" />
+                </label>
+                <label>
+                  <span data-i18n="admin.weeklyHours">Standard weekly hours</span>
+                  <input data-path="time.standard_weekly_hours" type="number" step="0.25" />
+                </label>
+                <label>
+                  <span data-i18n="admin.breakMinutes">Min break minutes</span>
+                  <input data-path="time.break_rules.min_break_minutes" type="number" />
+                </label>
+                <label>
+                  <span data-i18n="admin.breakThreshold">Break threshold hours</span>
+                  <input data-path="time.break_rules.break_threshold_hours" type="number" step="0.25" />
+                </label>
+                <label>
+                  <span data-i18n="admin.paidBreaks">Paid breaks</span>
+                  <select data-path="time.break_rules.paid_breaks">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.dailyOvertime">Daily overtime threshold</span>
+                  <input data-path="time.overtime_policy.daily_overtime_threshold" type="number" step="0.25" />
+                </label>
+                <label>
+                  <span data-i18n="admin.weeklyOvertime">Weekly overtime threshold</span>
+                  <input data-path="time.overtime_policy.weekly_overtime_threshold" type="number" step="0.25" />
+                </label>
+                <label>
+                  <span data-i18n="admin.overtimeApproval">Overtime approval required</span>
+                  <select data-path="time.overtime_policy.approval_required">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.payrollProvider">Payroll provider</span>
+                  <input data-path="time.payroll_provider_name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.summaryDelivery">Part time summary delivery</span>
+                  <select data-path="time.part_time_monthly_summary_delivery_method">
+                    <option value="payroll_attachment">Payroll attachment</option>
+                    <option value="email">Email</option>
+                    <option value="hr_portal">HR portal</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.geolocation">Geolocation</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.geoPrecision">Precision</span>
+                  <select data-path="geo.geo_precision">
+                    <option value="exact">Exact</option>
+                    <option value="approx_radius">Approx radius</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.geoRadius">Approx radius meters</span>
+                  <input data-path="geo.geo_approx_radius_meters" type="number" />
+                </label>
+                <label>
+                  <span data-i18n="admin.geoRetention">Geo retention years</span>
+                  <input data-path="geo.geo_retention_years" type="number" min="4" />
+                </label>
+                <label>
+                  <span data-i18n="admin.geoNotice">Geo notice version</span>
+                  <input data-path="geo.geo_notice_version" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.geoRoles">Geo visibility roles</span>
+                  <input data-path="geo.geo_visibility_roles" type="text" placeholder="HR, Manager" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.privacy">Privacy and Compliance</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.retention">Data retention years</span>
+                  <input data-path="privacy.data_retention_years" type="number" min="4" />
+                </label>
+                <label>
+                  <span data-i18n="admin.legalHold">Legal hold enabled</span>
+                  <select data-path="privacy.legal_hold_enabled">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.privacyVersion">Privacy notice version</span>
+                  <input data-path="privacy.privacy_notice_version" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.byodVersion">BYOD policy version</span>
+                  <input data-path="privacy.byod_policy_version" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.disconnectVersion">Disconnection policy version</span>
+                  <input data-path="privacy.disconnection_policy_version" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.ropaVersion">Record of processing version</span>
+                  <input data-path="privacy.record_of_processing_version" type="text" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.hosting">Hosting and Processors</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.hostingProvider">Hosting provider</span>
+                  <input data-path="hosting.hosting_provider" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.hostingRegion">Hosting region</span>
+                  <input data-path="hosting.hosting_region" type="text" placeholder="EU" />
+                </label>
+                <label>
+                  <span data-i18n="admin.subprocessors">Subprocessors (one per line)</span>
+                  <textarea data-path="hosting.subprocessors_list" rows="3"></textarea>
+                </label>
+                <label>
+                  <span data-i18n="admin.dpa">DPA reference</span>
+                  <input data-path="hosting.data_processing_agreement_ref" type="text" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.emailSection">Email and Reset</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.resetUrl">Reset URL base</span>
+                  <input data-path="email.reset_url_base" type="text" placeholder="https://your-domain/reset.html" />
+                </label>
+                <label>
+                  <span data-i18n="admin.smtpHost">SMTP host</span>
+                  <input data-path="email.smtp_host" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.smtpPort">SMTP port</span>
+                  <input data-path="email.smtp_port" type="number" />
+                </label>
+                <label>
+                  <span data-i18n="admin.smtpSecure">SMTP secure</span>
+                  <select data-path="email.smtp_secure">
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.smtpUser">SMTP user</span>
+                  <input data-path="email.smtp_user" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.smtpPass">SMTP pass</span>
+                  <input data-path="email.smtp_pass" type="password" />
+                </label>
+                <label>
+                  <span data-i18n="admin.smtpFrom">SMTP from</span>
+                  <input data-path="email.smtp_from" type="text" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.rotaSection">Rota reminders</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.rotaEnabled">Enable reminders</span>
+                  <select data-path="rota.reminders_enabled">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.rotaCheckin">Check in lead (minutes)</span>
+                  <input data-path="rota.checkin_lead_minutes" type="number" />
+                </label>
+                <label>
+                  <span data-i18n="admin.rotaCheckout">Check out lead (minutes)</span>
+                  <input data-path="rota.checkout_lead_minutes" type="number" />
+                </label>
+                <label>
+                  <span data-i18n="admin.rotaInterval">Scheduler interval (minutes)</span>
+                  <input data-path="rota.scheduler_interval_minutes" type="number" />
+                </label>
+              </div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.audit">Exports and Audit</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.exportFormat">Inspectorate export format</span>
+                  <select data-path="exports.inspectorate_export_format">
+                    <option value="pdf">PDF</option>
+                    <option value="csv">CSV</option>
+                    <option value="pdf_csv">PDF + CSV</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.signature">Export signature method</span>
+                  <select data-path="exports.export_signature_method">
+                    <option value="company_certificate">Company certificate</option>
+                    <option value="hash_checksum">Hash checksum</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.auditRetention">Audit retention years</span>
+                  <input data-path="exports.audit_log_retention_years" type="number" min="4" />
+                </label>
+                <label>
+                  <span data-i18n="admin.certPassword">Certificate password</span>
+                  <input id="cert-password" type="password" placeholder="Leave blank to keep" />
+                </label>
+                <label>
+                  <span data-i18n="admin.certFile">Certificate file (.p12)</span>
+                  <input id="cert-file" type="file" accept=".p12,.pfx" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="upload-cert" data-i18n="admin.uploadCert">Upload certificate</button>
+              </div>
+              <div id="cert-status" class="hint"></div>
+            </div>
+
+            <div class="card form-card">
+              <h3 data-i18n="admin.staff">Staff</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="admin.userName">Name</span>
+                  <input id="user-name" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.userEmail">Email</span>
+                  <input id="user-email" type="email" />
+                </label>
+                <label>
+                  <span data-i18n="admin.userLocation">Location</span>
+                  <input id="user-location" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.userDepartment">Department</span>
+                  <input id="user-department" type="text" />
+                </label>
+                <label>
+                  <span data-i18n="admin.userRole">Role</span>
+                  <select id="user-role">
+                    <option value="employee">Employee</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="admin.userPassword">Temporary password</span>
+                  <input id="user-password" type="password" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="generate-user-password" data-i18n="admin.generatePassword">Generate password</button>
+                <button class="btn" id="create-user" data-i18n="admin.createStaff">Add staff</button>
+              </div>
+              <div id="user-list" class="list"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="auth-modal" id="auth-modal">
+      <div class="auth-card">
+        <h2 data-i18n="auth.title">Sign in</h2>
+        <p data-i18n="auth.subtitle">Use your admin or employee credentials.</p>
+        <label>
+          <span data-i18n="auth.email">Email</span>
+          <input id="auth-email" type="email" autocomplete="username" />
+        </label>
+        <label>
+          <span data-i18n="auth.password">Password</span>
+          <input id="auth-password" type="password" autocomplete="current-password" />
+        </label>
+        <button class="btn primary" id="auth-submit" data-i18n="auth.login">Sign in</button>
+        <button class="btn" id="auth-forgot" data-i18n="auth.forgot">Forgot password</button>
+        <div class="auth-error" id="auth-error"></div>
+      </div>
+    </div>
+
+    <script src="translations.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
