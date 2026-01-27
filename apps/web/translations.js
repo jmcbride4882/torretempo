@@ -1,4 +1,4 @@
-const translations = {
+window.translations = {
 const translations = {
   "en-US": {
     "app.subtitle": "Daily time records and compliance",
