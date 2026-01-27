@@ -1,4 +1,5 @@
 const translations = {
+const translations = {
   "en-US": {
     "app.subtitle": "Daily time records and compliance",
     "app.language": "Language",
