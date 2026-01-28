@@ -111,6 +111,10 @@ const state = {
   corrections: [],
   users: [],
   staff: [],
+  availability: [],
+  timeOff: [],
+  rotaTemplates: [],
+  rotaConflicts: { map: {}, list: [] },
   profile: {
     data: {},
     selfieUrl: "",
@@ -349,6 +353,9 @@ function onViewChanged(target) {
     resizeSignaturePad();
     loadMyMonthlyReport();
   }
+  if (target === "rota") {
+    loadRota();
+  }
   if (target === "locations") {
     ensureGeoMap();
     populateGeoUsers();
@@ -447,17 +454,31 @@ function updateShiftUI() {
   const start = document.getElementById("shift-start");
   const end = document.getElementById("shift-end");
   const breaks = document.getElementById("shift-breaks");
+  const worked = document.getElementById("shift-worked");
   if (!entry) {
     status.textContent = "Not on shift";
     start.textContent = "--";
     end.textContent = "--";
     breaks.textContent = "0";
+    if (worked) worked.textContent = "--";
     return;
   }
   status.textContent = entry.end ? "Shift complete" : "On shift";
   start.textContent = formatDateTime(entry.start);
   end.textContent = entry.end ? formatDateTime(entry.end) : "--";
   breaks.textContent = entry.breaks ? entry.breaks.length.toString() : "0";
+  if (worked) worked.textContent = formatDuration(getWorkMinutes(entry));
+}
+
+function updateLiveClock() {
+  const now = new Date();
+  const liveTime = document.getElementById("shift-live-time");
+  if (liveTime) liveTime.textContent = now.toLocaleTimeString();
+  const entry = getCurrentEntry();
+  const worked = document.getElementById("shift-worked");
+  if (worked) {
+    worked.textContent = entry ? formatDuration(getWorkMinutes(entry)) : "--";
+  }
 }
 
 function updateEntriesUI() {
@@ -608,10 +629,17 @@ function getWorkMinutes(entry) {
   const start = new Date(entry.start);
   const totalMinutes = Math.max(0, (end - start) / 60000);
   const breakMinutes = (entry.breaks || []).reduce((acc, br) => {
-    if (!br.end) return acc;
-    return acc + (new Date(br.end) - new Date(br.start)) / 60000;
+    const brEnd = br.end ? new Date(br.end) : new Date();
+    return acc + (brEnd - new Date(br.start)) / 60000;
   }, 0);
   return Math.round(totalMinutes - breakMinutes);
+}
+
+function formatDuration(minutes) {
+  if (!Number.isFinite(minutes)) return "--";
+  const hrs = Math.floor(minutes / 60);
+  const mins = Math.abs(minutes % 60);
+  return `${hrs}h ${String(mins).padStart(2, "0")}m`;
 }
 
 function formatDateTime(value) {
@@ -807,6 +835,8 @@ let signatureState = {
   ctx: null
 };
 
+let liveClockTimer = null;
+
 function initMyReport() {
   const now = new Date();
   const monthInput = document.getElementById("my-report-month");
@@ -853,6 +883,46 @@ function initInvites() {
   updateInviteScopeVisibility();
 }
 
+function initRotaTools() {
+  const saveTemplate = document.getElementById("rota-template-save");
+  if (saveTemplate) saveTemplate.addEventListener("click", saveTemplateFromWeek);
+  const applyTemplate = document.getElementById("rota-template-apply");
+  if (applyTemplate) applyTemplate.addEventListener("click", applySelectedTemplate);
+  const deleteTemplate = document.getElementById("rota-template-delete");
+  if (deleteTemplate) deleteTemplate.addEventListener("click", deleteSelectedTemplate);
+  const copyWeek = document.getElementById("rota-copy-run");
+  if (copyWeek) copyWeek.addEventListener("click", copyWeekShifts);
+}
+
+function initAvailability() {
+  const addBtn = document.getElementById("availability-add");
+  if (addBtn) addBtn.addEventListener("click", addAvailabilityRule);
+  const userSelect = document.getElementById("availability-user");
+  if (userSelect) userSelect.addEventListener("change", renderAvailabilityList);
+}
+
+function initTimeOff() {
+  const addBtn = document.getElementById("timeoff-add");
+  if (addBtn) addBtn.addEventListener("click", requestTimeOff);
+  const userSelect = document.getElementById("timeoff-user");
+  if (userSelect) userSelect.addEventListener("change", renderTimeOffList);
+}
+
+function initNotifyModal() {
+  const openBtn = document.getElementById("rota-notify");
+  const sendBtn = document.getElementById("rota-notify-send");
+  const cancelBtn = document.getElementById("rota-notify-cancel");
+  const modal = document.getElementById("rota-notify-modal");
+  if (openBtn) openBtn.addEventListener("click", () => toggleNotifyModal(true));
+  if (sendBtn) sendBtn.addEventListener("click", sendRotaNotifications);
+  if (cancelBtn) cancelBtn.addEventListener("click", () => toggleNotifyModal(false));
+  if (modal) {
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) toggleNotifyModal(false);
+    });
+  }
+}
+
 function initRota() {
   const weekInput = document.getElementById("rota-week");
   const today = new Date();
@@ -864,7 +934,41 @@ function initRota() {
   const departmentFilter = document.getElementById("rota-department-filter");
   if (locationFilter) locationFilter.addEventListener("change", loadRota);
   if (departmentFilter) departmentFilter.addEventListener("change", loadRota);
+  initRotaFilters();
+  renderRotaRoleFilter();
+  initRotaTools();
+  initAvailability();
+  initTimeOff();
+  initNotifyModal();
   clearRotaEdit();
+}
+
+function initRotaFilters() {
+  const search = document.getElementById("rota-search");
+  const roleFilter = document.getElementById("rota-role-filter");
+  const clear = document.getElementById("rota-clear-filters");
+  if (search) {
+    search.addEventListener("input", () => {
+      renderRotaGrid();
+      renderStaffList();
+      renderUnassignedShifts();
+    });
+  }
+  if (roleFilter) {
+    roleFilter.addEventListener("change", () => {
+      renderRotaGrid();
+      renderUnassignedShifts();
+    });
+  }
+  if (clear) {
+    clear.addEventListener("click", () => {
+      if (search) search.value = "";
+      if (roleFilter) roleFilter.value = "";
+      renderRotaGrid();
+      renderStaffList();
+      renderUnassignedShifts();
+    });
+  }
 }
 
 function prefillRotaScope() {
@@ -915,6 +1019,14 @@ async function loadRota() {
   if (locationSelect && location) locationSelect.value = location;
   if (departmentSelect && department) departmentSelect.value = department;
   state.rota.weekStart = weekStart;
+  const templateWeek = document.getElementById("rota-template-week");
+  if (templateWeek && !templateWeek.value) templateWeek.value = weekStart;
+  const copyWeek = document.getElementById("rota-copy-week");
+  if (copyWeek && !copyWeek.value) {
+    const next = new Date(`${weekStart}T00:00:00Z`);
+    next.setUTCDate(next.getUTCDate() + 7);
+    copyWeek.value = next.toISOString().split("T")[0];
+  }
   try {
     const scopeQuery = `&location=${encodeURIComponent(location)}&department=${encodeURIComponent(department)}`;
     state.rota.week = await apiFetch(`/rota/weeks?start=${weekStart}${scopeQuery}`);
@@ -924,11 +1036,18 @@ async function loadRota() {
     } else {
       state.staff = [];
     }
+    await loadRotaSupportingData(location, department, weekStart);
+    computeRotaConflicts();
     populateAssignDropdown();
+    renderRotaRoleFilter();
     renderRotaGrid();
     renderStaffList();
     renderRotaStatus();
     renderRotaSummary();
+    renderUnassignedShifts();
+    renderAvailabilityList();
+    renderTimeOffList();
+    renderConflictList();
   } catch (err) {
     alert(err.message);
   }
@@ -936,15 +1055,40 @@ async function loadRota() {
 
 function renderRotaStatus() {
   const status = document.getElementById("rota-status");
+  const weekStatus = document.getElementById("rota-week-status");
+  const weekSummary = document.getElementById("rota-week-summary");
+  const notifyBtn = document.getElementById("rota-notify");
   if (!state.rota.week) {
     status.textContent = "--";
+    if (weekStatus) weekStatus.textContent = "--";
+    if (weekSummary) weekSummary.textContent = "--";
+    if (notifyBtn) notifyBtn.disabled = true;
     return;
   }
   const location = document.getElementById("rota-location-filter").value.trim();
   const department = document.getElementById("rota-department-filter").value.trim();
-  status.textContent = state.rota.week.is_published
-    ? `Published at ${state.rota.week.published_at || ""} | ${location} / ${department}`
-    : `Draft | ${location} / ${department}`;
+  const isPublished = state.rota.week.is_published;
+  const statusLabel = isPublished
+    ? translations[state.language]["rota.statusPublished"] || "Published"
+    : translations[state.language]["rota.statusDraft"] || "Draft";
+  const publishedAt = state.rota.week.published_at ? formatDateTime(state.rota.week.published_at) : "";
+  status.textContent = isPublished
+    ? `${statusLabel} ${publishedAt ? `(${publishedAt})` : ""} | ${location} / ${department}`
+    : `${statusLabel} | ${location} / ${department}`;
+  if (weekStatus) weekStatus.textContent = statusLabel;
+  if (weekStatus) {
+    weekStatus.classList.remove("published", "draft");
+    weekStatus.classList.add(isPublished ? "published" : "draft");
+  }
+  if (weekSummary) {
+    const weekLabel = `${translations[state.language]["rota.weekOf"] || "Week of"} ${state.rota.weekStart}`;
+    const shiftCount = state.rota.shifts.length;
+    const conflicts = state.rotaConflicts.list ? state.rotaConflicts.list.length : 0;
+    const conflictLabel = translations[state.language]["rota.conflicts"] || "Conflicts";
+    weekSummary.textContent = `${weekLabel} · ${shiftCount} ${translations[state.language]["rota.shifts"] || "shifts"}`
+      + (conflicts ? ` · ${conflicts} ${conflictLabel}` : "");
+  }
+  if (notifyBtn) notifyBtn.disabled = !isPublished;
 }
 
 function renderRotaSummary() {
@@ -978,12 +1122,579 @@ function renderRotaSummary() {
   });
 }
 
+async function loadRotaSupportingData(location, department, weekStart) {
+  if (!state.user) return;
+  const weekEnd = getWeekEndDate(weekStart);
+  if (state.user.role === "employee") {
+    try {
+      state.availability = await apiFetch("/availability");
+    } catch (err) {
+      state.availability = [];
+    }
+    try {
+      const params = new URLSearchParams();
+      if (weekStart) params.set("from", weekStart);
+      if (weekEnd) params.set("to", weekEnd);
+      state.timeOff = await apiFetch(`/time-off?${params.toString()}`);
+    } catch (err) {
+      state.timeOff = [];
+    }
+    state.rotaTemplates = [];
+    populateRotaUserSelects();
+    renderRotaTemplates();
+    return;
+  }
+  const userIds = state.staff.map((user) => user.id).join(",");
+  try {
+    state.availability = await apiFetch(`/availability?user_ids=${encodeURIComponent(userIds)}`);
+  } catch (err) {
+    state.availability = [];
+  }
+  try {
+    const params = new URLSearchParams();
+    if (userIds) params.set("user_ids", userIds);
+    if (weekStart) params.set("from", weekStart);
+    if (weekEnd) params.set("to", weekEnd);
+    state.timeOff = await apiFetch(`/time-off?${params.toString()}`);
+  } catch (err) {
+    state.timeOff = [];
+  }
+  try {
+    const params = new URLSearchParams();
+    if (location) params.set("location", location);
+    if (department) params.set("department", department);
+    state.rotaTemplates = await apiFetch(`/rota/templates?${params.toString()}`);
+  } catch (err) {
+    state.rotaTemplates = [];
+  }
+  populateRotaUserSelects();
+  renderRotaTemplates();
+}
+
+function populateRotaUserSelects() {
+  const availabilityUser = document.getElementById("availability-user");
+  const timeoffUser = document.getElementById("timeoff-user");
+  const users = state.user && (state.user.role === "admin" || state.user.role === "manager")
+    ? state.staff
+    : state.user
+      ? [state.user]
+      : [];
+  [availabilityUser, timeoffUser].forEach((select) => {
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = "";
+    users.forEach((user) => {
+      const option = document.createElement("option");
+      option.value = user.id;
+      option.textContent = user.name || user.email;
+      select.appendChild(option);
+    });
+    if (current && users.some((user) => user.id === current)) {
+      select.value = current;
+    }
+    if (state.user && state.user.role === "employee") {
+      select.disabled = true;
+    }
+  });
+}
+
+function renderRotaTemplates() {
+  const select = document.getElementById("rota-template-select");
+  const applyBtn = document.getElementById("rota-template-apply");
+  const deleteBtn = document.getElementById("rota-template-delete");
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = "";
+  if (!state.rotaTemplates.length) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = translations[state.language]["rota.noTemplates"] || "No templates";
+    select.appendChild(opt);
+    if (applyBtn) applyBtn.disabled = true;
+    if (deleteBtn) deleteBtn.disabled = true;
+    return;
+  }
+  state.rotaTemplates.forEach((template) => {
+    const opt = document.createElement("option");
+    opt.value = template.id;
+    opt.textContent = template.name;
+    select.appendChild(opt);
+  });
+  if (current && state.rotaTemplates.some((template) => template.id === current)) {
+    select.value = current;
+  }
+  if (applyBtn) applyBtn.disabled = false;
+  if (deleteBtn) deleteBtn.disabled = false;
+}
+
+function renderAvailabilityList() {
+  const container = document.getElementById("availability-list");
+  if (!container) return;
+  const userId = document.getElementById("availability-user")?.value;
+  if (!userId) {
+    container.textContent = "--";
+    return;
+  }
+  const rules = (state.availability || []).filter((rule) => rule.user_id === userId);
+  container.innerHTML = "";
+  if (!rules.length) {
+    container.textContent = "--";
+    return;
+  }
+  rules
+    .slice()
+    .sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time))
+    .forEach((rule) => {
+      const item = document.createElement("div");
+      item.className = "list-item";
+      const dayLabel = getDayLabel(rule.day_of_week);
+      item.textContent = `${dayLabel} ${rule.start_time}-${rule.end_time}`;
+      if (state.user && (state.user.role === "admin" || state.user.role === "manager" || state.user.id === rule.user_id)) {
+        const actions = document.createElement("div");
+        actions.className = "button-row";
+        const remove = document.createElement("button");
+        remove.className = "btn danger";
+        remove.textContent = translations[state.language]["rota.remove"] || "Remove";
+        remove.addEventListener("click", () => removeAvailabilityRule(rule.id));
+        actions.appendChild(remove);
+        item.appendChild(actions);
+      }
+      container.appendChild(item);
+    });
+}
+
+function renderTimeOffList() {
+  const container = document.getElementById("timeoff-list");
+  if (!container) return;
+  const userId = document.getElementById("timeoff-user")?.value;
+  if (!userId) {
+    container.textContent = "--";
+    return;
+  }
+  const records = (state.timeOff || []).filter((item) => item.user_id === userId);
+  container.innerHTML = "";
+  if (!records.length) {
+    container.textContent = "--";
+    return;
+  }
+  records.forEach((record) => {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const statusLabel = record.status || "pending";
+    const header = document.createElement("div");
+    header.textContent = `${record.start_date} → ${record.end_date} | ${statusLabel}`;
+    item.appendChild(header);
+    if (record.reason) {
+      const reason = document.createElement("div");
+      reason.className = "hint";
+      reason.textContent = record.reason;
+      item.appendChild(reason);
+    }
+    if (state.user && (state.user.role === "admin" || state.user.role === "manager") && record.status === "pending") {
+      const actions = document.createElement("div");
+      actions.className = "button-row";
+      const approve = document.createElement("button");
+      approve.className = "btn";
+      approve.textContent = translations[state.language]["rota.approve"] || "Approve";
+      approve.addEventListener("click", () => updateTimeOff(record.id, "approved"));
+      const reject = document.createElement("button");
+      reject.className = "btn danger";
+      reject.textContent = translations[state.language]["rota.reject"] || "Reject";
+      reject.addEventListener("click", () => updateTimeOff(record.id, "rejected"));
+      actions.appendChild(approve);
+      actions.appendChild(reject);
+      item.appendChild(actions);
+    }
+    container.appendChild(item);
+  });
+}
+
+function renderConflictList() {
+  const container = document.getElementById("rota-conflicts");
+  if (!container) return;
+  container.innerHTML = "";
+  const list = state.rotaConflicts.list || [];
+  if (!list.length) {
+    container.textContent = "--";
+    return;
+  }
+  list.forEach((conflict) => {
+    const item = document.createElement("div");
+    item.className = "list-item conflict-item";
+    if (conflict.severity === "danger") item.classList.add("danger");
+    item.textContent = conflict.message;
+    container.appendChild(item);
+  });
+}
+
+function computeRotaConflicts() {
+  const shifts = state.rota.shifts || [];
+  const warnings = {};
+  const conflictList = [];
+
+  const addWarning = (shiftId, type, message, severity) => {
+    if (!warnings[shiftId]) warnings[shiftId] = [];
+    warnings[shiftId].push({ type, message, severity });
+    conflictList.push({ shiftId, message, severity });
+  };
+
+  const timeOffByUser = (state.timeOff || []).reduce((acc, record) => {
+    if (!acc[record.user_id]) acc[record.user_id] = [];
+    acc[record.user_id].push(record);
+    return acc;
+  }, {});
+
+  const availabilityByUser = (state.availability || []).reduce((acc, rule) => {
+    if (!acc[rule.user_id]) acc[rule.user_id] = [];
+    acc[rule.user_id].push(rule);
+    return acc;
+  }, {});
+
+  const shiftsByUserDate = shifts.reduce((acc, shift) => {
+    if (!shift.assigned_user_id) return acc;
+    const key = `${shift.assigned_user_id}|${shift.date}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(shift);
+    return acc;
+  }, {});
+
+  Object.values(shiftsByUserDate).forEach((items) => {
+    const sorted = items.slice().sort(sortShiftsByTime);
+    for (let i = 0; i < sorted.length; i += 1) {
+      for (let j = i + 1; j < sorted.length; j += 1) {
+        if (shiftsOverlap(sorted[i], sorted[j])) {
+          const label = translations[state.language]["rota.conflictOverlap"] || "Overlapping shift";
+          const name = getUserDisplayName(sorted[i].assigned_user_id) || "";
+          addWarning(sorted[i].id, "overlap", `${label}: ${name} ${sorted[i].date}`, "danger");
+          addWarning(sorted[j].id, "overlap", `${label}: ${name} ${sorted[j].date}`, "danger");
+        }
+      }
+    }
+  });
+
+  shifts.forEach((shift) => {
+    if (!shift.assigned_user_id) return;
+    const records = timeOffByUser[shift.assigned_user_id] || [];
+    records.forEach((record) => {
+      if (record.status === "rejected") return;
+      if (!isDateBetween(shift.date, record.start_date, record.end_date)) return;
+      const status = record.status || "pending";
+      const label = status === "approved"
+        ? translations[state.language]["rota.conflictTimeOff"] || "Approved time off"
+        : translations[state.language]["rota.conflictPending"] || "Pending time off";
+      const severity = status === "approved" ? "danger" : "warning";
+      addWarning(shift.id, "time_off", `${label}: ${record.start_date} → ${record.end_date}`, severity);
+    });
+  });
+
+  shifts.forEach((shift) => {
+    if (!shift.assigned_user_id) return;
+    const rules = availabilityByUser[shift.assigned_user_id] || [];
+    if (!rules.length) return;
+    const dayIndex = getDayIndex(shift.date);
+    const slots = rules.filter((rule) => rule.day_of_week === dayIndex && rule.is_available === 1);
+    if (!slots.length) {
+      const label = translations[state.language]["rota.conflictAvailability"] || "Outside availability";
+      addWarning(shift.id, "availability", label, "warning");
+      return;
+    }
+    const shiftStart = parseTimeToMinutes(shift.start_time);
+    let shiftEnd = parseTimeToMinutes(shift.end_time);
+    if (shiftStart === null || shiftEnd === null) return;
+    if (shiftEnd <= shiftStart) shiftEnd += 24 * 60;
+    const isWithin = slots.some((slot) => {
+      const slotStart = parseTimeToMinutes(slot.start_time);
+      let slotEnd = parseTimeToMinutes(slot.end_time);
+      if (slotStart === null || slotEnd === null) return false;
+      if (slotEnd <= slotStart) slotEnd += 24 * 60;
+      return shiftStart >= slotStart && shiftEnd <= slotEnd;
+    });
+    if (!isWithin) {
+      const label = translations[state.language]["rota.conflictAvailability"] || "Outside availability";
+      addWarning(shift.id, "availability", label, "warning");
+    }
+  });
+
+  state.rotaConflicts = { map: warnings, list: conflictList };
+}
+
+function getDayIndex(dateValue) {
+  const date = new Date(`${dateValue}T00:00:00`);
+  const day = date.getDay();
+  return day === 0 ? 6 : day - 1;
+}
+
+function getDayLabel(index) {
+  const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  return labels[index] || "--";
+}
+
+function isDateBetween(value, start, end) {
+  return value >= start && value <= end;
+}
+
+function shiftsOverlap(a, b) {
+  const startA = parseTimeToMinutes(a.start_time);
+  let endA = parseTimeToMinutes(a.end_time);
+  const startB = parseTimeToMinutes(b.start_time);
+  let endB = parseTimeToMinutes(b.end_time);
+  if (startA === null || endA === null || startB === null || endB === null) return false;
+  if (endA <= startA) endA += 24 * 60;
+  if (endB <= startB) endB += 24 * 60;
+  return startA < endB && startB < endA;
+}
+
+function getWeekEndDate(weekStart) {
+  if (!weekStart) return "";
+  const date = new Date(`${weekStart}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 6);
+  return date.toISOString().split("T")[0];
+}
+
+async function addAvailabilityRule() {
+  const userId = document.getElementById("availability-user").value;
+  const day = document.getElementById("availability-day").value;
+  const start = document.getElementById("availability-start").value;
+  const end = document.getElementById("availability-end").value;
+  if (!userId || !start || !end) return;
+  try {
+    const rule = await apiFetch("/availability", {
+      method: "POST",
+      body: JSON.stringify({
+        user_id: userId,
+        day_of_week: Number(day),
+        start_time: start,
+        end_time: end,
+        is_available: true
+      })
+    });
+    state.availability = [...state.availability, rule];
+    document.getElementById("availability-start").value = "";
+    document.getElementById("availability-end").value = "";
+    renderAvailabilityList();
+    computeRotaConflicts();
+    renderRotaGrid();
+    renderConflictList();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function removeAvailabilityRule(ruleId) {
+  try {
+    await apiFetch(`/availability/${ruleId}`, { method: "DELETE" });
+    state.availability = state.availability.filter((rule) => rule.id !== ruleId);
+    renderAvailabilityList();
+    computeRotaConflicts();
+    renderRotaGrid();
+    renderConflictList();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function requestTimeOff() {
+  const userId = document.getElementById("timeoff-user").value;
+  const start = document.getElementById("timeoff-start").value;
+  const end = document.getElementById("timeoff-end").value;
+  const reason = document.getElementById("timeoff-reason").value.trim();
+  if (!userId || !start || !end) return;
+  try {
+    const record = await apiFetch("/time-off", {
+      method: "POST",
+      body: JSON.stringify({
+        user_id: userId,
+        start_date: start,
+        end_date: end,
+        reason
+      })
+    });
+    state.timeOff = [record, ...state.timeOff];
+    document.getElementById("timeoff-start").value = "";
+    document.getElementById("timeoff-end").value = "";
+    document.getElementById("timeoff-reason").value = "";
+    renderTimeOffList();
+    computeRotaConflicts();
+    renderRotaGrid();
+    renderConflictList();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function updateTimeOff(recordId, status) {
+  try {
+    await apiFetch(`/time-off/${recordId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    });
+    state.timeOff = state.timeOff.map((record) =>
+      record.id === recordId ? { ...record, status } : record
+    );
+    renderTimeOffList();
+    computeRotaConflicts();
+    renderRotaGrid();
+    renderConflictList();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function saveTemplateFromWeek() {
+  const name = document.getElementById("rota-template-name").value.trim();
+  if (!name) return alert("Template name required.");
+  const includeAssignments = document.getElementById("rota-template-include").checked;
+  const location = document.getElementById("rota-location-filter").value.trim();
+  const department = document.getElementById("rota-department-filter").value.trim();
+  const status = document.getElementById("rota-tools-status");
+  const shifts = (state.rota.shifts || []).map((shift) => ({
+    day_of_week: getDayIndex(shift.date),
+    start_time: shift.start_time,
+    end_time: shift.end_time,
+    role: shift.role,
+    notes: shift.notes,
+    assigned_user_id: includeAssignments ? shift.assigned_user_id : null,
+    location: shift.location,
+    department: shift.department
+  }));
+  try {
+    await apiFetch("/rota/templates", {
+      method: "POST",
+      body: JSON.stringify({ name, location, department, shifts })
+    });
+    document.getElementById("rota-template-name").value = "";
+    state.rotaTemplates = await apiFetch(`/rota/templates?location=${encodeURIComponent(location)}&department=${encodeURIComponent(department)}`);
+    renderRotaTemplates();
+    if (status) status.textContent = translations[state.language]["rota.templateSaved"] || "Template saved.";
+  } catch (err) {
+    if (status) {
+      status.textContent = err.message;
+    } else {
+      alert(err.message);
+    }
+  }
+}
+
+async function applySelectedTemplate() {
+  const templateId = document.getElementById("rota-template-select").value;
+  const weekStart = document.getElementById("rota-template-week").value || state.rota.weekStart;
+  if (!templateId || !weekStart) return;
+  const includeAssignments = document.getElementById("rota-template-apply-include").checked;
+  const overwrite = document.getElementById("rota-template-overwrite").checked;
+  const location = document.getElementById("rota-location-filter").value.trim();
+  const department = document.getElementById("rota-department-filter").value.trim();
+  const status = document.getElementById("rota-tools-status");
+  try {
+    await apiFetch(`/rota/templates/${templateId}/apply`, {
+      method: "POST",
+      body: JSON.stringify({ week_start: weekStart, include_assignments: includeAssignments, overwrite, location, department })
+    });
+    if (status) status.textContent = translations[state.language]["rota.templateApplied"] || "Template applied.";
+    await loadRota();
+  } catch (err) {
+    if (status) {
+      status.textContent = err.message;
+    } else {
+      alert(err.message);
+    }
+  }
+}
+
+async function deleteSelectedTemplate() {
+  const templateId = document.getElementById("rota-template-select").value;
+  if (!templateId) return;
+  if (!confirm("Delete template?")) return;
+  const status = document.getElementById("rota-tools-status");
+  try {
+    await apiFetch(`/rota/templates/${templateId}`, { method: "DELETE" });
+    state.rotaTemplates = state.rotaTemplates.filter((template) => template.id !== templateId);
+    renderRotaTemplates();
+    if (status) status.textContent = translations[state.language]["rota.templateDeleted"] || "Template deleted.";
+  } catch (err) {
+    if (status) {
+      status.textContent = err.message;
+    } else {
+      alert(err.message);
+    }
+  }
+}
+
+async function copyWeekShifts() {
+  const fromWeek = state.rota.weekStart;
+  const toWeek = document.getElementById("rota-copy-week").value;
+  const repeat = Math.max(1, Number(document.getElementById("rota-copy-repeat").value || 1));
+  const includeAssignments = document.getElementById("rota-copy-include").checked;
+  const overwrite = document.getElementById("rota-copy-overwrite").checked;
+  const location = document.getElementById("rota-location-filter").value.trim();
+  const department = document.getElementById("rota-department-filter").value.trim();
+  const status = document.getElementById("rota-tools-status");
+  if (!fromWeek || !toWeek) return alert("Select target week.");
+  try {
+    await apiFetch("/rota/weeks/copy", {
+      method: "POST",
+      body: JSON.stringify({
+        from_week_start: fromWeek,
+        to_week_start: toWeek,
+        repeat_weeks: repeat,
+        include_assignments: includeAssignments,
+        overwrite,
+        location,
+        department
+      })
+    });
+    if (status) status.textContent = translations[state.language]["rota.copyDone"] || "Week copied.";
+    await loadRota();
+  } catch (err) {
+    if (status) {
+      status.textContent = err.message;
+    } else {
+      alert(err.message);
+    }
+  }
+}
+
+function toggleNotifyModal(show) {
+  const modal = document.getElementById("rota-notify-modal");
+  const status = document.getElementById("rota-notify-status");
+  if (!modal) return;
+  if (show) {
+    if (status) status.textContent = "";
+    modal.classList.add("active");
+  } else {
+    modal.classList.remove("active");
+  }
+}
+
+async function sendRotaNotifications() {
+  const weekStart = state.rota.weekStart;
+  const location = document.getElementById("rota-location-filter").value.trim();
+  const department = document.getElementById("rota-department-filter").value.trim();
+  const status = document.getElementById("rota-notify-status");
+  if (!weekStart) return;
+  try {
+    await apiFetch(`/rota/weeks/${weekStart}/notify`, {
+      method: "POST",
+      body: JSON.stringify({ location, department })
+    });
+    if (status) status.textContent = translations[state.language]["rota.notifySent"] || "Notifications sent.";
+    setTimeout(() => toggleNotifyModal(false), 1200);
+  } catch (err) {
+    if (status) status.textContent = err.message;
+  }
+}
+
 function renderStaffList() {
   const container = document.getElementById("rota-staff");
   container.innerHTML = "";
   const locationFilter = document.getElementById("rota-location-filter").value.trim();
   const departmentFilter = document.getElementById("rota-department-filter").value.trim();
-  const filtered = state.staff.filter((user) => userMatchesScope(user, locationFilter, departmentFilter));
+  const search = (document.getElementById("rota-search")?.value || "").trim().toLowerCase();
+  const filtered = state.staff.filter((user) => {
+    if (!userMatchesScope(user, locationFilter, departmentFilter)) return false;
+    if (!search) return true;
+    const label = `${user.name || ""} ${user.email || ""} ${user.role || ""}`.toLowerCase();
+    return label.includes(search);
+  });
   if (!filtered.length) {
     container.textContent = "--";
     return;
@@ -1007,12 +1718,16 @@ function renderRotaGrid() {
   const grid = document.getElementById("rota-grid");
   grid.innerHTML = "";
   if (!state.rota.weekStart) return;
+  const canManage = state.user && (state.user.role === "admin" || state.user.role === "manager");
+  const filteredShifts = filterRotaShifts(state.rota.shifts || []);
   const days = getWeekDays(state.rota.weekStart);
+  const timeRange = getRotaTimeRange(filteredShifts);
+  const scaleMeta = getRotaTimeScaleMeta(timeRange);
   days.forEach((date) => {
     const day = document.createElement("div");
     day.className = "rota-day";
     day.dataset.date = date;
-    if (state.user && (state.user.role === "admin" || state.user.role === "manager")) {
+    if (canManage) {
       day.addEventListener("dragover", (event) => {
         event.preventDefault();
         day.classList.add("drag-over");
@@ -1025,7 +1740,7 @@ function renderRotaGrid() {
         if (shiftId) moveShift(shiftId, date);
       });
     }
-    const shifts = state.rota.shifts.filter((shift) => shift.date === date);
+    const shifts = filteredShifts.filter((shift) => shift.date === date).sort(sortShiftsByTime);
     const header = document.createElement("div");
     header.className = "rota-day-header";
     const title = document.createElement("h4");
@@ -1037,60 +1752,51 @@ function renderRotaGrid() {
     header.appendChild(title);
     header.appendChild(meta);
     day.appendChild(header);
-    if (shifts.length === 0) {
+
+    const scale = document.createElement("div");
+    scale.className = "rota-time-scale";
+    scale.style.gridTemplateColumns = `repeat(${scaleMeta.labels.length}, 1fr)`;
+    scaleMeta.labels.forEach((label) => {
+      const tick = document.createElement("span");
+      tick.textContent = label;
+      scale.appendChild(tick);
+    });
+    day.appendChild(scale);
+
+    const timeline = document.createElement("div");
+    timeline.className = "rota-timeline";
+    if (!shifts.length) {
       const empty = document.createElement("div");
       empty.className = "hint";
       empty.textContent = "--";
-      day.appendChild(empty);
+      timeline.appendChild(empty);
     }
     shifts.forEach((shift) => {
-      const card = document.createElement("div");
-      card.className = "rota-shift";
-      if (!shift.assigned_user_id) card.classList.add("unassigned");
-      if (state.rota.editing && state.rota.editing.id === shift.id) {
-        card.classList.add("editing");
-      }
-      card.dataset.shiftId = shift.id;
-      if (state.user && (state.user.role === "admin" || state.user.role === "manager")) {
-        card.draggable = true;
-        card.addEventListener("dragstart", (event) => {
-          event.dataTransfer.setData("text/shift-id", shift.id);
-        });
-      }
-      const time = document.createElement("div");
-      const duration = formatHours(getShiftMinutes(shift));
-      time.textContent = `${shift.start_time} - ${shift.end_time} (${duration})`;
-      const role = document.createElement("div");
-      role.className = "rota-assign";
-      role.textContent = shift.role || "";
-      const assigned = document.createElement("div");
-      assigned.className = "rota-assign";
-      const assignedLabel = translations[state.language]["rota.assigned"] || "Assigned";
-      assigned.textContent = `${assignedLabel}: ${resolveUserName(shift.assigned_user_id)}`;
-      card.appendChild(time);
-      if (shift.role) card.appendChild(role);
-      card.appendChild(assigned);
-      if (shift.location) {
-        const location = document.createElement("div");
-        location.className = "rota-assign";
-        location.textContent = shift.location;
-        card.appendChild(location);
-      }
-      if (shift.department) {
-        const department = document.createElement("div");
-        department.className = "rota-assign";
-        department.textContent = shift.department;
-        card.appendChild(department);
+      const lane = document.createElement("div");
+      lane.className = "rota-lane";
+
+      const label = document.createElement("div");
+      label.className = "rota-lane-label";
+      const titleLine = document.createElement("div");
+      titleLine.className = "rota-lane-title";
+      const roleLabel = shift.role ? ` · ${shift.role}` : "";
+      titleLine.textContent = `${resolveUserName(shift.assigned_user_id)}${roleLabel}`;
+      label.appendChild(titleLine);
+      const warnings = (state.rotaConflicts.map && state.rotaConflicts.map[shift.id]) || [];
+      if (warnings.length) {
+        const warningTag = document.createElement("div");
+        warningTag.className = "warning-tag";
+        warningTag.textContent = warnings[0].message;
+        label.appendChild(warningTag);
       }
       if (shift.notes) {
-        const notes = document.createElement("div");
-        notes.className = "rota-assign";
-        notes.textContent = shift.notes;
-        card.appendChild(notes);
+        const noteLine = document.createElement("div");
+        noteLine.textContent = shift.notes;
+        label.appendChild(noteLine);
       }
-      if (state.user && (state.user.role === "admin" || state.user.role === "manager")) {
+      if (canManage) {
         const actions = document.createElement("div");
-        actions.className = "rota-actions";
+        actions.className = "rota-lane-actions";
         const editBtn = document.createElement("button");
         editBtn.className = "btn";
         editBtn.textContent = translations[state.language]["rota.edit"] || "Edit";
@@ -1106,23 +1812,214 @@ function renderRotaGrid() {
         actions.appendChild(editBtn);
         actions.appendChild(copyBtn);
         actions.appendChild(removeBtn);
-        card.appendChild(actions);
+        label.appendChild(actions);
       }
-      card.addEventListener("dragover", (event) => {
+
+      const track = document.createElement("div");
+      track.className = "rota-track";
+      const gridOverlay = document.createElement("div");
+      gridOverlay.className = "rota-track-grid";
+      gridOverlay.style.gridTemplateColumns = `repeat(${scaleMeta.tickCount}, 1fr)`;
+      for (let i = 0; i < scaleMeta.tickCount; i += 1) {
+        const tick = document.createElement("span");
+        gridOverlay.appendChild(tick);
+      }
+      track.appendChild(gridOverlay);
+
+      const metrics = getShiftBarMetrics(shift, timeRange);
+      const bar = document.createElement("div");
+      bar.className = "rota-bar";
+      if (!shift.assigned_user_id) bar.classList.add("unassigned");
+      if (metrics.clipped) bar.classList.add("clipped");
+      if (state.rota.editing && state.rota.editing.id === shift.id) {
+        bar.classList.add("editing");
+      }
+      if (warnings.length) {
+        const severity = warnings.some((warning) => warning.severity === "danger") ? "danger" : "warning";
+        bar.classList.add(severity);
+        bar.title = warnings.map((warning) => warning.message).join("\n");
+      }
+      bar.style.left = `${metrics.left}%`;
+      bar.style.width = `${metrics.width}%`;
+      bar.textContent = `${shift.start_time} - ${shift.end_time}`;
+      if (canManage) {
+        bar.draggable = true;
+        bar.addEventListener("dragstart", (event) => {
+          event.dataTransfer.setData("text/shift-id", shift.id);
+        });
+        bar.addEventListener("click", () => setRotaEdit(shift));
+      }
+      bar.addEventListener("dragover", (event) => {
         event.preventDefault();
-        card.classList.add("drag-over");
+        bar.classList.add("drag-over");
       });
-      card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
-      card.addEventListener("drop", (event) => {
+      bar.addEventListener("dragleave", () => bar.classList.remove("drag-over"));
+      bar.addEventListener("drop", (event) => {
         event.preventDefault();
-        card.classList.remove("drag-over");
+        bar.classList.remove("drag-over");
         const userId = event.dataTransfer.getData("text/user-id");
         if (userId) assignShift(shift.id, userId);
       });
-      day.appendChild(card);
+
+      if (canManage) {
+        track.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          track.classList.add("drag-over");
+        });
+        track.addEventListener("dragleave", () => track.classList.remove("drag-over"));
+        track.addEventListener("drop", (event) => {
+          event.preventDefault();
+          track.classList.remove("drag-over");
+          const userId = event.dataTransfer.getData("text/user-id");
+          if (userId) assignShift(shift.id, userId);
+        });
+      }
+
+      track.appendChild(bar);
+      lane.appendChild(label);
+      lane.appendChild(track);
+      timeline.appendChild(lane);
     });
+
+    day.appendChild(timeline);
     grid.appendChild(day);
   });
+}
+
+function sortShiftsByTime(a, b) {
+  const startA = parseTimeToMinutes(a.start_time) || 0;
+  const startB = parseTimeToMinutes(b.start_time) || 0;
+  if (startA !== startB) return startA - startB;
+  const endA = parseTimeToMinutes(a.end_time) || 0;
+  const endB = parseTimeToMinutes(b.end_time) || 0;
+  return endA - endB;
+}
+
+function getRotaFilters() {
+  return {
+    search: (document.getElementById("rota-search")?.value || "").trim().toLowerCase(),
+    role: document.getElementById("rota-role-filter")?.value || ""
+  };
+}
+
+function filterRotaShifts(shifts) {
+  const { search, role } = getRotaFilters();
+  return shifts.filter((shift) => {
+    if (role && shift.role !== role) return false;
+    if (!search) return true;
+    const unassignedLabel = translations[state.language]["rota.unassigned"] || "Unassigned";
+    const userLabel = (shift.assigned_user_id ? getUserDisplayName(shift.assigned_user_id) : unassignedLabel).toLowerCase();
+    const roleLabel = (shift.role || "").toLowerCase();
+    const notesLabel = (shift.notes || "").toLowerCase();
+    return userLabel.includes(search) || roleLabel.includes(search) || notesLabel.includes(search);
+  });
+}
+
+function renderRotaRoleFilter() {
+  const select = document.getElementById("rota-role-filter");
+  if (!select) return;
+  const current = select.value;
+  const roles = Array.from(new Set((state.rota.shifts || []).map((shift) => shift.role).filter(Boolean))).sort();
+  select.innerHTML = "";
+  const all = document.createElement("option");
+  all.value = "";
+  all.textContent = translations[state.language]["rota.allRoles"] || "All roles";
+  select.appendChild(all);
+  roles.forEach((role) => {
+    const opt = document.createElement("option");
+    opt.value = role;
+    opt.textContent = role;
+    select.appendChild(opt);
+  });
+  if (current && roles.includes(current)) {
+    select.value = current;
+  }
+}
+
+function renderUnassignedShifts() {
+  const container = document.getElementById("rota-unassigned");
+  if (!container) return;
+  if (!state.user || (state.user.role !== "admin" && state.user.role !== "manager")) {
+    container.textContent = "--";
+    return;
+  }
+  const shifts = filterRotaShifts(state.rota.shifts || []).filter((shift) => !shift.assigned_user_id);
+  container.innerHTML = "";
+  if (!shifts.length) {
+    container.textContent = "--";
+    return;
+  }
+  shifts.forEach((shift) => {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const duration = formatHours(getShiftMinutes(shift));
+    item.textContent = `${formatDayLabel(shift.date)} | ${shift.start_time}-${shift.end_time} (${duration}) ${shift.role || ""}`.trim();
+    item.addEventListener("click", () => setRotaEdit(shift));
+    container.appendChild(item);
+  });
+}
+
+function parseTimeToMinutes(value) {
+  if (!value) return null;
+  const [hours, minutes] = value.split(":").map((part) => Number(part));
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return hours * 60 + minutes;
+}
+
+function getRotaTimeRange(shifts) {
+  const defaultStart = 6 * 60;
+  const defaultEnd = 22 * 60;
+  if (!shifts.length) {
+    return { start: defaultStart, end: defaultEnd };
+  }
+  let min = defaultStart;
+  let max = defaultEnd;
+  shifts.forEach((shift) => {
+    const start = parseTimeToMinutes(shift.start_time);
+    let end = parseTimeToMinutes(shift.end_time);
+    if (start === null || end === null) return;
+    if (end <= start) end += 24 * 60;
+    if (start < min) min = start;
+    if (end > max) max = end;
+  });
+  min = Math.max(0, Math.floor(min / 60) * 60);
+  max = Math.min(24 * 60, Math.ceil(max / 60) * 60);
+  if (max - min < 2 * 60) {
+    max = Math.min(24 * 60, min + 2 * 60);
+  }
+  return { start: min, end: max };
+}
+
+function getRotaTimeScaleMeta(range) {
+  const totalHours = Math.max(1, Math.round((range.end - range.start) / 60));
+  const step = totalHours <= 12 ? 2 : 4;
+  const labels = [];
+  for (let hour = range.start / 60; hour <= range.end / 60; hour += step) {
+    labels.push(formatHourLabel(hour));
+  }
+  const tickCount = Math.max(1, labels.length - 1);
+  return { labels, tickCount, range };
+}
+
+function formatHourLabel(hour) {
+  const normalized = ((Math.round(hour) % 24) + 24) % 24;
+  return `${String(normalized).padStart(2, "0")}:00`;
+}
+
+function getShiftBarMetrics(shift, range) {
+  const start = parseTimeToMinutes(shift.start_time);
+  let end = parseTimeToMinutes(shift.end_time);
+  if (start === null || end === null) {
+    return { left: 0, width: 100, clipped: false };
+  }
+  if (end <= start) end += 24 * 60;
+  const durationRange = Math.max(1, range.end - range.start);
+  const clampedStart = Math.min(range.end, Math.max(range.start, start));
+  const clampedEnd = Math.min(range.end, Math.max(range.start, end));
+  const left = ((clampedStart - range.start) / durationRange) * 100;
+  const width = Math.max(2, ((clampedEnd - clampedStart) / durationRange) * 100);
+  const clipped = start < range.start || end > range.end;
+  return { left, width, clipped };
 }
 
 function resolveUserName(userId) {
@@ -1131,8 +2028,17 @@ function resolveUserName(userId) {
   const unknownLabel = translations[state.language]["rota.unknown"] || "Unknown";
   if (!userId) return unassignedLabel;
   if (state.user && userId === state.user.id) return youLabel;
+  const label = getUserDisplayName(userId);
+  return label || unknownLabel;
+}
+
+function getUserDisplayName(userId) {
+  if (!userId) return "";
+  if (state.user && userId === state.user.id) {
+    return state.user.name || state.user.email || "";
+  }
   const user = state.staff.find((u) => u.id === userId) || state.users.find((u) => u.id === userId);
-  return user ? (user.name || user.email) : unknownLabel;
+  return user ? (user.name || user.email) : "";
 }
 
 function populateAssignDropdown() {
@@ -1575,8 +2481,15 @@ function init() {
   initProfile();
   initInvites();
   initPolicies();
+  startLiveClock();
   updateUserUI();
   bootstrap();
+}
+
+function startLiveClock() {
+  updateLiveClock();
+  if (liveClockTimer) clearInterval(liveClockTimer);
+  liveClockTimer = setInterval(updateLiveClock, 1000);
 }
 
 function applyRoleVisibility() {
@@ -1611,10 +2524,14 @@ function applyRoleVisibility() {
   const manageIds = [
     "rota-editor-card",
     "rota-staff-card",
+    "rota-unassigned-card",
+    "rota-tools-card",
+    "rota-conflicts-card",
     "rota-publish",
     "rota-unpublish",
     "rota-remind-checkin",
     "rota-remind-checkout",
+    "rota-notify",
     "rota-add",
     "rota-update",
     "rota-cancel"

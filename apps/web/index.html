@@ -82,12 +82,12 @@
               </div>
             </div>
 
-            <div class="card" id="rota-add-card">
+            <div class="card" id="dashboard-compliance-card">
               <h2 data-i18n="dashboard.complianceTitle">Compliance Checklist</h2>
               <ul class="checklist" id="compliance-list"></ul>
             </div>
 
-            <div class="card" id="rota-staff-card">
+            <div class="card" id="dashboard-actions-card">
               <h2 data-i18n="dashboard.quickActions">Quick Actions</h2>
               <div class="button-row">
                 <button class="btn primary" id="quick-clock-in" data-i18n="actions.clockIn">Clock in</button>
@@ -103,9 +103,19 @@
 
         <section class="view" id="view-time">
           <div class="grid">
-            <div class="card" id="rota-editor-card">
+            <div class="card" id="time-shift-card">
               <h2 data-i18n="time.title">Current Shift</h2>
               <div class="shift-status" id="shift-status">--</div>
+              <div class="shift-live">
+                <div>
+                  <span data-i18n="time.currentTime">Current time</span>
+                  <strong id="shift-live-time">--</strong>
+                </div>
+                <div>
+                  <span data-i18n="time.timeWorked">Time worked</span>
+                  <strong id="shift-worked">--</strong>
+                </div>
+              </div>
               <div class="button-row">
                 <button class="btn primary" id="start-shift" data-i18n="actions.clockIn">Clock in</button>
                 <button class="btn" id="start-break" data-i18n="actions.break">Start break</button>
@@ -128,12 +138,12 @@
               </div>
             </div>
 
-            <div class="card" id="rota-staff-card">
+            <div class="card" id="time-entries-card">
               <h2 data-i18n="time.entries">Time Entries</h2>
               <div id="time-entries" class="list"></div>
             </div>
 
-            <div class="card">
+            <div class="card" id="rota-tools-card">
               <h2 data-i18n="time.corrections">Corrections</h2>
               <p data-i18n="time.correctionsHint">
                 Request a correction with reason and manager approval.
@@ -148,7 +158,7 @@
 
         <section class="view" id="view-reports">
           <div class="grid">
-            <div class="card">
+            <div class="card" id="rota-availability-card">
               <h2 data-i18n="reports.title">Reports and Exports</h2>
               <div class="filter-row">
                 <label>
@@ -166,12 +176,12 @@
               </div>
             </div>
 
-            <div class="card">
+            <div class="card" id="rota-timeoff-card">
               <h2 data-i18n="reports.overtimeTitle">Overtime and Exceptions</h2>
               <div id="overtime-summary" class="list"></div>
             </div>
 
-            <div class="card">
+            <div class="card" id="rota-conflicts-card">
               <h2 data-i18n="reports.monthlyTitle">Monthly reports</h2>
               <div class="filter-row">
                 <label>
@@ -216,15 +226,31 @@
                 <button class="btn primary" id="rota-publish" data-i18n="rota.publish">Publish</button>
                 <button class="btn" id="rota-unpublish" data-i18n="rota.unpublish">Unpublish</button>
               </div>
+              <div class="rota-week-meta">
+                <div class="status-pill" id="rota-week-status">--</div>
+                <div class="hint" id="rota-week-summary">--</div>
+              </div>
               <div class="button-row">
                 <button class="btn" id="rota-remind-checkin" data-i18n="rota.remindCheckin">Send check in reminder</button>
                 <button class="btn" id="rota-remind-checkout" data-i18n="rota.remindCheckout">Send check out reminder</button>
+                <button class="btn" id="rota-notify" data-i18n="rota.notify">Notify staff</button>
+              </div>
+              <div class="filter-row rota-filters">
+                <label>
+                  <span data-i18n="rota.search">Search</span>
+                  <input id="rota-search" type="text" placeholder="Name or role" />
+                </label>
+                <label>
+                  <span data-i18n="rota.roleFilter">Role</span>
+                  <select id="rota-role-filter"></select>
+                </label>
+                <button class="btn" id="rota-clear-filters" data-i18n="rota.clearFilters">Clear</button>
               </div>
               <div class="rota-summary" id="rota-summary"></div>
               <div id="rota-status" class="hint"></div>
             </div>
 
-            <div class="card">
+            <div class="card" id="rota-editor-card">
               <h3 data-i18n="rota.addShift">Shift editor</h3>
               <div class="form-grid">
                 <label>
@@ -268,13 +294,147 @@
               <div class="hint" id="rota-edit-hint"></div>
             </div>
 
-            <div class="card">
+            <div class="card" id="rota-staff-card">
               <h3 data-i18n="rota.staff">Staff</h3>
               <div id="rota-staff" class="list"></div>
             </div>
+
+            <div class="card" id="rota-unassigned-card">
+              <h3 data-i18n="rota.unassignedTitle">Unassigned shifts</h3>
+              <div id="rota-unassigned" class="list"></div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="rota.tools">Templates & Copy</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="rota.templateName">Template name</span>
+                  <input id="rota-template-name" type="text" />
+                </label>
+                <label class="checkbox-field">
+                  <span data-i18n="rota.includeAssignments">Include assignments</span>
+                  <input id="rota-template-include" type="checkbox" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="rota-template-save" data-i18n="rota.saveTemplate">Save current week</button>
+              </div>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="rota.templateSelect">Template</span>
+                  <select id="rota-template-select"></select>
+                </label>
+                <label>
+                  <span data-i18n="rota.applyWeek">Apply to week</span>
+                  <input id="rota-template-week" type="date" />
+                </label>
+                <label class="checkbox-field">
+                  <span data-i18n="rota.applyInclude">Include assignments</span>
+                  <input id="rota-template-apply-include" type="checkbox" />
+                </label>
+                <label class="checkbox-field">
+                  <span data-i18n="rota.overwrite">Overwrite existing</span>
+                  <input id="rota-template-overwrite" type="checkbox" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn primary" id="rota-template-apply" data-i18n="rota.applyTemplate">Apply template</button>
+                <button class="btn danger" id="rota-template-delete" data-i18n="rota.deleteTemplate">Delete template</button>
+              </div>
+              <h4 data-i18n="rota.bulkCopy">Bulk copy</h4>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="rota.copyToWeek">Copy to week</span>
+                  <input id="rota-copy-week" type="date" />
+                </label>
+                <label>
+                  <span data-i18n="rota.copyRepeat">Repeat weeks</span>
+                  <input id="rota-copy-repeat" type="number" min="1" value="1" />
+                </label>
+                <label class="checkbox-field">
+                  <span data-i18n="rota.copyInclude">Include assignments</span>
+                  <input id="rota-copy-include" type="checkbox" />
+                </label>
+                <label class="checkbox-field">
+                  <span data-i18n="rota.overwrite">Overwrite existing</span>
+                  <input id="rota-copy-overwrite" type="checkbox" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="rota-copy-run" data-i18n="rota.copyWeek">Copy week</button>
+              </div>
+              <div class="hint" id="rota-tools-status"></div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="rota.availabilityTitle">Availability</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="rota.user">User</span>
+                  <select id="availability-user"></select>
+                </label>
+                <label>
+                  <span data-i18n="rota.day">Day</span>
+                  <select id="availability-day">
+                    <option value="0">Mon</option>
+                    <option value="1">Tue</option>
+                    <option value="2">Wed</option>
+                    <option value="3">Thu</option>
+                    <option value="4">Fri</option>
+                    <option value="5">Sat</option>
+                    <option value="6">Sun</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="rota.start">Start</span>
+                  <input id="availability-start" type="time" />
+                </label>
+                <label>
+                  <span data-i18n="rota.end">End</span>
+                  <input id="availability-end" type="time" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="availability-add" data-i18n="rota.addAvailability">Add availability</button>
+              </div>
+              <div id="availability-list" class="list"></div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="rota.timeOffTitle">Time off</h3>
+              <div class="form-grid">
+                <label>
+                  <span data-i18n="rota.user">User</span>
+                  <select id="timeoff-user"></select>
+                </label>
+                <label>
+                  <span data-i18n="rota.from">From</span>
+                  <input id="timeoff-start" type="date" />
+                </label>
+                <label>
+                  <span data-i18n="rota.to">To</span>
+                  <input id="timeoff-end" type="date" />
+                </label>
+                <label>
+                  <span data-i18n="rota.reason">Reason</span>
+                  <input id="timeoff-reason" type="text" />
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="btn" id="timeoff-add" data-i18n="rota.addTimeOff">Request time off</button>
+              </div>
+              <div id="timeoff-list" class="list"></div>
+            </div>
+
+            <div class="card">
+              <h3 data-i18n="rota.conflicts">Conflicts</h3>
+              <div id="rota-conflicts" class="list"></div>
+            </div>
           </div>
 
-          <div class="rota-grid" id="rota-grid"></div>
+          <div class="rota-board">
+            <div class="rota-grid" id="rota-grid"></div>
+          </div>
         </section>
 
         <section class="view" id="view-my-report">
@@ -979,6 +1139,18 @@
         <button class="btn primary" id="auth-submit" data-i18n="auth.login">Sign in</button>
         <button class="btn" id="auth-forgot" data-i18n="auth.forgot">Forgot password</button>
         <div class="auth-error" id="auth-error"></div>
+      </div>
+    </div>
+
+    <div class="modal" id="rota-notify-modal">
+      <div class="modal-card">
+        <h3 data-i18n="rota.notifyTitle">Notify staff</h3>
+        <p data-i18n="rota.notifyHint">Send the published rota to assigned staff by email.</p>
+        <div class="button-row">
+          <button class="btn primary" id="rota-notify-send" data-i18n="rota.notifySend">Send notifications</button>
+          <button class="btn" id="rota-notify-cancel" data-i18n="rota.cancel">Cancel</button>
+        </div>
+        <div class="hint" id="rota-notify-status"></div>
       </div>
     </div>
 

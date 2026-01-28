@@ -225,6 +225,25 @@ function attachScopesToUsers(users) {
   return users.map((user) => ({ ...user, scopes: map[user.id] || [] }));
 }
 
+function getManagerScopedUserIds(req) {
+  if (req.user.role !== "manager") return [];
+  const users = db
+    .prepare("SELECT id, email, name, role, is_active, location, department FROM users WHERE is_active = 1 ORDER BY name ASC")
+    .all();
+  const managerScopes = req.user.scopes && req.user.scopes.length
+    ? req.user.scopes
+    : [{ location: req.user.location, department: req.user.department }];
+  const scoped = attachScopesToUsers(users).filter((user) =>
+    user.scopes.some((scope) =>
+      managerScopes.some(
+        (managerScope) =>
+          scope.location === managerScope.location && scope.department === managerScope.department
+      )
+    )
+  );
+  return scoped.map((user) => user.id);
+}
+
 const PROFILE_FIELDS = [
   "full_name",
   "preferred_name",
@@ -1025,10 +1044,249 @@ app.get("/api/staff", requireAuth, requireRole(["admin", "manager"]), (req, res)
   res.json(attachScopesToUsers(users));
 });
 
+app.get("/api/availability", requireAuth, (req, res) => {
+  try {
+    const userIdsParam = req.query.user_ids ? String(req.query.user_ids).split(",").filter(Boolean) : [];
+    if (req.user.role === "employee") {
+      const rows = db
+        .prepare("SELECT * FROM availability_rules WHERE user_id = ? ORDER BY day_of_week, start_time")
+        .all(req.user.id);
+      return res.json(rows);
+    }
+    let allowedUserIds = userIdsParam;
+    if (req.user.role === "manager") {
+      const managerUserIds = getManagerScopedUserIds(req);
+      allowedUserIds = (userIdsParam.length ? userIdsParam : managerUserIds).filter((id) => managerUserIds.includes(id));
+      if (allowedUserIds.length === 0) {
+        return res.json([]);
+      }
+    }
+    if (allowedUserIds.length === 0) {
+      const rows = db.prepare("SELECT * FROM availability_rules ORDER BY user_id, day_of_week, start_time").all();
+      return res.json(rows);
+    }
+    const placeholders = allowedUserIds.map(() => "?").join(",");
+    const rows = db
+      .prepare(`SELECT * FROM availability_rules WHERE user_id IN (${placeholders}) ORDER BY user_id, day_of_week, start_time`)
+      .all(...allowedUserIds);
+    return res.json(rows);
+  } catch (err) {
+    return res.status(500).json({ error: "Availability unavailable. Run migration." });
+  }
+});
+
+app.post("/api/availability", requireAuth, (req, res) => {
+  const userId = req.body.user_id || req.user.id;
+  if (req.user.role === "employee" && userId !== req.user.id) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  if (req.user.role === "manager") {
+    const managerUserIds = getManagerScopedUserIds(req);
+    if (!managerUserIds.includes(userId)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+  }
+  const dayOfWeek = Number(req.body.day_of_week);
+  const startTime = req.body.start_time;
+  const endTime = req.body.end_time;
+  const isAvailable = req.body.is_available === undefined ? 1 : req.body.is_available ? 1 : 0;
+  if (Number.isNaN(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
+    return res.status(400).json({ error: "Invalid day" });
+  }
+  if (!startTime || !endTime) {
+    return res.status(400).json({ error: "Start and end times required" });
+  }
+  const now = new Date().toISOString();
+  const rule = {
+    id: nanoid(),
+    user_id: userId,
+    day_of_week: dayOfWeek,
+    start_time: startTime,
+    end_time: endTime,
+    is_available: isAvailable,
+    created_at: now,
+    updated_at: now
+  };
+  try {
+    db.prepare(
+      "INSERT INTO availability_rules (id, user_id, day_of_week, start_time, end_time, is_available, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(
+      rule.id,
+      rule.user_id,
+      rule.day_of_week,
+      rule.start_time,
+      rule.end_time,
+      rule.is_available,
+      rule.created_at,
+      rule.updated_at
+    );
+    logAudit(req.user.id, "availability_added", "availability_rule", rule.id, { user_id: userId });
+    return res.json(rule);
+  } catch (err) {
+    return res.status(500).json({ error: "Availability unavailable. Run migration." });
+  }
+});
+
+app.delete("/api/availability/:id", requireAuth, (req, res) => {
+  let rule;
+  try {
+    rule = db.prepare("SELECT * FROM availability_rules WHERE id = ?").get(req.params.id);
+  } catch (err) {
+    return res.status(500).json({ error: "Availability unavailable. Run migration." });
+  }
+  if (!rule) return res.status(404).json({ error: "Not found" });
+  if (req.user.role === "employee" && rule.user_id !== req.user.id) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  if (req.user.role === "manager") {
+    const managerUserIds = getManagerScopedUserIds(req);
+    if (!managerUserIds.includes(rule.user_id)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+  }
+  db.prepare("DELETE FROM availability_rules WHERE id = ?").run(req.params.id);
+  logAudit(req.user.id, "availability_removed", "availability_rule", req.params.id, { user_id: rule.user_id });
+  res.json({ ok: true });
+});
+
+app.get("/api/time-off", requireAuth, (req, res) => {
+  try {
+    const from = req.query.from ? String(req.query.from) : "";
+    const to = req.query.to ? String(req.query.to) : "";
+    const userIdsParam = req.query.user_ids ? String(req.query.user_ids).split(",").filter(Boolean) : [];
+    if (req.user.role === "employee") {
+      let sql = "SELECT * FROM time_off WHERE user_id = ?";
+      const params = [req.user.id];
+      if (from) {
+        sql += " AND end_date >= ?";
+        params.push(from);
+      }
+      if (to) {
+        sql += " AND start_date <= ?";
+        params.push(to);
+      }
+      sql += " ORDER BY start_date DESC";
+      const rows = db.prepare(sql).all(...params);
+      return res.json(rows);
+    }
+    let allowedUserIds = userIdsParam;
+    if (req.user.role === "manager") {
+      const managerUserIds = getManagerScopedUserIds(req);
+      allowedUserIds = (userIdsParam.length ? userIdsParam : managerUserIds).filter((id) => managerUserIds.includes(id));
+      if (allowedUserIds.length === 0) {
+        return res.json([]);
+      }
+    }
+    const params = [];
+    let sql = "SELECT * FROM time_off WHERE 1 = 1";
+    if (allowedUserIds.length) {
+      const placeholders = allowedUserIds.map(() => "?").join(",");
+      sql += ` AND user_id IN (${placeholders})`;
+      params.push(...allowedUserIds);
+    }
+    if (from) {
+      sql += " AND end_date >= ?";
+      params.push(from);
+    }
+    if (to) {
+      sql += " AND start_date <= ?";
+      params.push(to);
+    }
+    sql += " ORDER BY start_date DESC";
+    const rows = db.prepare(sql).all(...params);
+    return res.json(rows);
+  } catch (err) {
+    return res.status(500).json({ error: "Time off unavailable. Run migration." });
+  }
+});
+
+app.post("/api/time-off", requireAuth, (req, res) => {
+  const userId = req.body.user_id || req.user.id;
+  if (req.user.role === "employee" && userId !== req.user.id) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  if (req.user.role === "manager") {
+    const managerUserIds = getManagerScopedUserIds(req);
+    if (!managerUserIds.includes(userId)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+  }
+  const startDate = req.body.start_date;
+  const endDate = req.body.end_date;
+  if (!startDate || !endDate) {
+    return res.status(400).json({ error: "Start and end dates required" });
+  }
+  const now = new Date().toISOString();
+  const status = req.user.role === "employee" ? "pending" : req.body.status || "approved";
+  const record = {
+    id: nanoid(),
+    user_id: userId,
+    start_date: startDate,
+    end_date: endDate,
+    reason: req.body.reason || "",
+    status,
+    created_by: req.user.id,
+    created_at: now,
+    approved_by: status === "approved" ? req.user.id : null,
+    approved_at: status === "approved" ? now : null,
+    notes: req.body.notes || ""
+  };
+  try {
+    db.prepare(
+      "INSERT INTO time_off (id, user_id, start_date, end_date, reason, status, created_by, created_at, approved_by, approved_at, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(
+      record.id,
+      record.user_id,
+      record.start_date,
+      record.end_date,
+      record.reason,
+      record.status,
+      record.created_by,
+      record.created_at,
+      record.approved_by,
+      record.approved_at,
+      record.notes
+    );
+    logAudit(req.user.id, "time_off_created", "time_off", record.id, { user_id: userId, status });
+    return res.json(record);
+  } catch (err) {
+    return res.status(500).json({ error: "Time off unavailable. Run migration." });
+  }
+});
+
+app.patch("/api/time-off/:id", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  let record;
+  try {
+    record = db.prepare("SELECT * FROM time_off WHERE id = ?").get(req.params.id);
+  } catch (err) {
+    return res.status(500).json({ error: "Time off unavailable. Run migration." });
+  }
+  if (!record) return res.status(404).json({ error: "Not found" });
+  if (req.user.role === "manager") {
+    const managerUserIds = getManagerScopedUserIds(req);
+    if (!managerUserIds.includes(record.user_id)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+  }
+  const status = req.body.status || record.status;
+  const notes = req.body.notes !== undefined ? req.body.notes : record.notes;
+  const approved = status === "approved" ? new Date().toISOString() : record.approved_at;
+  const approvedBy = status === "approved" ? req.user.id : record.approved_by;
+  db.prepare("UPDATE time_off SET status = ?, notes = ?, approved_at = ?, approved_by = ? WHERE id = ?").run(
+    status,
+    notes,
+    approved,
+    approvedBy,
+    record.id
+  );
+  logAudit(req.user.id, "time_off_updated", "time_off", record.id, { status });
+  res.json({ ok: true });
+});
+
 app.get("/api/rota/weeks", requireAuth, (req, res) => {
   const start = req.query.start;
   if (!start) return res.status(400).json({ error: "start is required" });
-  const scope = resolveScope(req);
+  const scope = resolveScope(req, req.query);
   const week = db
     .prepare("SELECT * FROM rota_weeks WHERE week_start = ? AND location = ? AND department = ?")
     .get(start, scope.location, scope.department);
@@ -1077,6 +1335,205 @@ app.post("/api/rota/weeks/:start/unpublish", requireAuth, requireRole(["admin", 
     scope.department
   );
   logAudit(req.user.id, "rota_unpublished", "rota_week", weekStart, scope);
+  res.json({ ok: true });
+});
+
+app.post("/api/rota/weeks/:start/notify", requireAuth, requireRole(["admin", "manager"]), async (req, res) => {
+  const weekStart = req.params.start;
+  const scope = resolveScope(req, req.body);
+  try {
+    await sendRotaPublishNotifications(weekStart, scope);
+    logAudit(req.user.id, "rota_notify_sent", "rota_week", weekStart, scope);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/rota/templates", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  const scope = resolveScope(req, req.query);
+  try {
+    const rows = db
+      .prepare("SELECT * FROM rota_templates WHERE location = ? AND department = ? ORDER BY created_at DESC")
+      .all(scope.location, scope.department);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Templates unavailable. Run migration." });
+  }
+});
+
+app.get("/api/rota/templates/:id", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  try {
+    const template = db.prepare("SELECT * FROM rota_templates WHERE id = ?").get(req.params.id);
+    if (!template) return res.status(404).json({ error: "Not found" });
+    const shifts = db
+      .prepare("SELECT * FROM rota_template_shifts WHERE template_id = ? ORDER BY day_of_week, start_time")
+      .all(template.id);
+    res.json({ ...template, shifts });
+  } catch (err) {
+    res.status(500).json({ error: "Templates unavailable. Run migration." });
+  }
+});
+
+app.post("/api/rota/templates", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  const name = (req.body.name || "").trim();
+  const scope = resolveScope(req, req.body);
+  const shifts = Array.isArray(req.body.shifts) ? req.body.shifts : [];
+  if (!name) return res.status(400).json({ error: "Name required" });
+  const now = new Date().toISOString();
+  const template = {
+    id: nanoid(),
+    name,
+    location: scope.location,
+    department: scope.department,
+    created_by: req.user.id,
+    created_at: now,
+    updated_at: now
+  };
+  try {
+    db.prepare(
+      "INSERT INTO rota_templates (id, name, location, department, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).run(
+      template.id,
+      template.name,
+      template.location,
+      template.department,
+      template.created_by,
+      template.created_at,
+      template.updated_at
+    );
+    const stmt = db.prepare(
+      "INSERT INTO rota_template_shifts (id, template_id, day_of_week, start_time, end_time, role, notes, assigned_user_id, location, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    );
+    shifts.forEach((shift) => {
+      const day = Number(shift.day_of_week);
+      if (Number.isNaN(day)) return;
+      stmt.run(
+        nanoid(),
+        template.id,
+        day,
+        shift.start_time,
+        shift.end_time,
+        shift.role || "",
+        shift.notes || "",
+        shift.assigned_user_id || null,
+        shift.location || template.location,
+        shift.department || template.department
+      );
+    });
+    logAudit(req.user.id, "rota_template_created", "rota_template", template.id, { name });
+    res.json(template);
+  } catch (err) {
+    res.status(500).json({ error: "Templates unavailable. Run migration." });
+  }
+});
+
+app.delete("/api/rota/templates/:id", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  try {
+    const template = db.prepare("SELECT * FROM rota_templates WHERE id = ?").get(req.params.id);
+    if (!template) return res.status(404).json({ error: "Not found" });
+    db.prepare("DELETE FROM rota_template_shifts WHERE template_id = ?").run(template.id);
+    db.prepare("DELETE FROM rota_templates WHERE id = ?").run(template.id);
+    logAudit(req.user.id, "rota_template_deleted", "rota_template", template.id, {});
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Templates unavailable. Run migration." });
+  }
+});
+
+app.post("/api/rota/templates/:id/apply", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  const weekStart = req.body.week_start;
+  if (!weekStart) return res.status(400).json({ error: "week_start required" });
+  const includeAssignments = Boolean(req.body.include_assignments);
+  const overwrite = Boolean(req.body.overwrite);
+  const scope = resolveScope(req, req.body);
+  try {
+    const template = db.prepare("SELECT * FROM rota_templates WHERE id = ?").get(req.params.id);
+    if (!template) return res.status(404).json({ error: "Not found" });
+    const shifts = db.prepare("SELECT * FROM rota_template_shifts WHERE template_id = ?").all(template.id);
+    if (overwrite) {
+      db.prepare("DELETE FROM rota_shifts WHERE week_start = ? AND location = ? AND department = ?").run(
+        weekStart,
+        scope.location,
+        scope.department
+      );
+    }
+    const stmt = db.prepare(
+      "INSERT INTO rota_shifts (id, week_start, location, department, date, start_time, end_time, role, notes, assigned_user_id, created_by, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    );
+    shifts.forEach((shift) => {
+      const date = new Date(`${weekStart}T00:00:00Z`);
+      date.setUTCDate(date.getUTCDate() + Number(shift.day_of_week || 0));
+      const shiftDate = date.toISOString().split("T")[0];
+      stmt.run(
+        nanoid(),
+        weekStart,
+        scope.location,
+        scope.department,
+        shiftDate,
+        shift.start_time,
+        shift.end_time,
+        shift.role || "",
+        shift.notes || "",
+        includeAssignments ? shift.assigned_user_id : null,
+        req.user.id,
+        new Date().toISOString()
+      );
+    });
+    logAudit(req.user.id, "rota_template_applied", "rota_template", template.id, { weekStart });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Templates unavailable. Run migration." });
+  }
+});
+
+app.post("/api/rota/weeks/copy", requireAuth, requireRole(["admin", "manager"]), (req, res) => {
+  const fromWeek = req.body.from_week_start;
+  const toWeek = req.body.to_week_start;
+  if (!fromWeek || !toWeek) return res.status(400).json({ error: "from_week_start and to_week_start required" });
+  const includeAssignments = Boolean(req.body.include_assignments);
+  const overwrite = Boolean(req.body.overwrite);
+  const repeatWeeks = Math.max(1, Number(req.body.repeat_weeks || 1));
+  const scope = resolveScope(req, req.body);
+  const sourceShifts = db
+    .prepare("SELECT * FROM rota_shifts WHERE week_start = ? AND location = ? AND department = ?")
+    .all(fromWeek, scope.location, scope.department);
+  const stmt = db.prepare(
+    "INSERT INTO rota_shifts (id, week_start, location, department, date, start_time, end_time, role, notes, assigned_user_id, created_by, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  );
+  for (let weekIndex = 0; weekIndex < repeatWeeks; weekIndex += 1) {
+    const baseDate = new Date(`${toWeek}T00:00:00Z`);
+    baseDate.setUTCDate(baseDate.getUTCDate() + weekIndex * 7);
+    const targetWeek = baseDate.toISOString().split("T")[0];
+    if (overwrite) {
+      db.prepare("DELETE FROM rota_shifts WHERE week_start = ? AND location = ? AND department = ?").run(
+        targetWeek,
+        scope.location,
+        scope.department
+      );
+    }
+    sourceShifts.forEach((shift) => {
+      const offset = dayDiff(fromWeek, shift.date);
+      const newDate = new Date(`${targetWeek}T00:00:00Z`);
+      newDate.setUTCDate(newDate.getUTCDate() + offset);
+      const shiftDate = newDate.toISOString().split("T")[0];
+      stmt.run(
+        nanoid(),
+        targetWeek,
+        scope.location,
+        scope.department,
+        shiftDate,
+        shift.start_time,
+        shift.end_time,
+        shift.role || "",
+        shift.notes || "",
+        includeAssignments ? shift.assigned_user_id : null,
+        req.user.id,
+        new Date().toISOString()
+      );
+    });
+  }
+  logAudit(req.user.id, "rota_week_copied", "rota_week", fromWeek, { toWeek, repeatWeeks });
   res.json({ ok: true });
 });
 
@@ -1927,6 +2384,12 @@ function getWeekStart(dateStr) {
   const diff = (day === 0 ? -6 : 1) - day;
   date.setUTCDate(date.getUTCDate() + diff);
   return date.toISOString().split("T")[0];
+}
+
+function dayDiff(fromDate, toDate) {
+  const start = new Date(`${fromDate}T00:00:00Z`);
+  const end = new Date(`${toDate}T00:00:00Z`);
+  return Math.round((end - start) / (24 * 60 * 60 * 1000));
 }
 
 function resolveScope(req, source) {

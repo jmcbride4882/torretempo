@@ -144,3 +144,51 @@ CREATE TABLE IF NOT EXISTS monthly_signatures (
   ip_address TEXT,
   user_agent TEXT
 );
+
+CREATE TABLE IF NOT EXISTS availability_rules (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  day_of_week INTEGER NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  is_available INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS time_off (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  reason TEXT,
+  status TEXT NOT NULL,
+  created_by TEXT,
+  created_at TEXT NOT NULL,
+  approved_by TEXT,
+  approved_at TEXT,
+  notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS rota_templates (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  location TEXT NOT NULL,
+  department TEXT NOT NULL,
+  created_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rota_template_shifts (
+  id TEXT PRIMARY KEY,
+  template_id TEXT NOT NULL,
+  day_of_week INTEGER NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  role TEXT,
+  notes TEXT,
+  assigned_user_id TEXT,
+  location TEXT,
+  department TEXT
+);
