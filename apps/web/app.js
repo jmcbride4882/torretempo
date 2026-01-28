@@ -488,7 +488,21 @@ function updateEntriesUI() {
     const item = document.createElement("div");
     item.className = "list-item";
     const workMinutes = getWorkMinutes(entry);
-    item.textContent = `${formatDate(entry.start)} | ${formatTime(entry.start)} - ${entry.end ? formatTime(entry.end) : "--"} | ${workMinutes} min`;
+    const header = document.createElement("div");
+    header.className = "item-header";
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = formatDate(entry.start);
+    const badges = document.createElement("div");
+    badges.className = "item-badges";
+    badges.appendChild(createBadge(formatDuration(workMinutes), "neutral"));
+    header.appendChild(title);
+    header.appendChild(badges);
+    const meta = document.createElement("div");
+    meta.className = "item-meta";
+    meta.textContent = `${formatTime(entry.start)} - ${entry.end ? formatTime(entry.end) : "--"}`;
+    item.appendChild(header);
+    item.appendChild(meta);
     container.appendChild(item);
   });
 }
@@ -500,10 +514,20 @@ function updateCorrectionsUI() {
     const item = document.createElement("div");
     item.className = "list-item";
     const header = document.createElement("div");
-    header.textContent = `${formatDateTime(c.created_at)} | ${c.reason} | ${c.status}`;
+    header.className = "item-header";
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = c.reason || "Correction";
+    header.appendChild(title);
+    header.appendChild(createStatusBadge(c.status || "pending"));
+    const meta = document.createElement("div");
+    meta.className = "item-meta";
+    meta.textContent = formatDateTime(c.created_at);
     item.appendChild(header);
+    item.appendChild(meta);
     if (c.resolution_note) {
       const note = document.createElement("div");
+      note.className = "item-meta";
       note.textContent = `Note: ${c.resolution_note}`;
       item.appendChild(note);
     }
@@ -640,6 +664,26 @@ function formatDuration(minutes) {
   const hrs = Math.floor(minutes / 60);
   const mins = Math.abs(minutes % 60);
   return `${hrs}h ${String(mins).padStart(2, "0")}m`;
+}
+
+function getStatusTone(status) {
+  const value = String(status || "").toLowerCase();
+  if (["approved", "active", "published", "used", "sent", "complete"].includes(value)) return "success";
+  if (["pending", "draft", "awaiting"].includes(value)) return "warning";
+  if (["rejected", "revoked", "expired", "archived", "failed"].includes(value)) return "danger";
+  return "neutral";
+}
+
+function createBadge(label, tone = "neutral") {
+  const badge = document.createElement("span");
+  badge.className = `badge ${tone}`;
+  badge.textContent = label;
+  return badge;
+}
+
+function createStatusBadge(status) {
+  const label = status ? String(status).replace(/_/g, " ") : "--";
+  return createBadge(label, getStatusTone(status));
 }
 
 function formatDateTime(value) {
@@ -1248,7 +1292,14 @@ function renderAvailabilityList() {
       const item = document.createElement("div");
       item.className = "list-item";
       const dayLabel = getDayLabel(rule.day_of_week);
-      item.textContent = `${dayLabel} ${rule.start_time}-${rule.end_time}`;
+      const header = document.createElement("div");
+      header.className = "item-header";
+      const title = document.createElement("div");
+      title.className = "item-title";
+      title.textContent = dayLabel;
+      header.appendChild(title);
+      header.appendChild(createBadge(`${rule.start_time}-${rule.end_time}`, "neutral"));
+      item.appendChild(header);
       if (state.user && (state.user.role === "admin" || state.user.role === "manager" || state.user.id === rule.user_id)) {
         const actions = document.createElement("div");
         actions.className = "button-row";
@@ -1282,11 +1333,16 @@ function renderTimeOffList() {
     item.className = "list-item";
     const statusLabel = record.status || "pending";
     const header = document.createElement("div");
-    header.textContent = `${record.start_date} → ${record.end_date} | ${statusLabel}`;
+    header.className = "item-header";
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = `${record.start_date} → ${record.end_date}`;
+    header.appendChild(title);
+    header.appendChild(createStatusBadge(statusLabel));
     item.appendChild(header);
     if (record.reason) {
       const reason = document.createElement("div");
-      reason.className = "hint";
+      reason.className = "item-meta";
       reason.textContent = record.reason;
       item.appendChild(reason);
     }
@@ -2562,12 +2618,21 @@ function renderUserList() {
     const item = document.createElement("div");
     item.className = "list-item";
     const header = document.createElement("div");
-    const scopes = (user.scopes || []).map((scope) => `${scope.location}/${scope.department}`).join(", ");
-    header.textContent = `${user.name || ""} ${user.email} | ${user.role} | ${user.location || "-"} / ${user.department || "-"} | ${user.is_active ? "Active" : "Archived"}`;
+    header.className = "item-header";
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = user.name || user.email;
+    header.appendChild(title);
+    header.appendChild(createStatusBadge(user.is_active ? "active" : "archived"));
     item.appendChild(header);
+    const meta = document.createElement("div");
+    meta.className = "item-meta";
+    meta.textContent = `${user.email} · ${user.role} · ${user.location || "-"} / ${user.department || "-"}`;
+    item.appendChild(meta);
+    const scopes = (user.scopes || []).map((scope) => `${scope.location}/${scope.department}`).join(", ");
     if (scopes) {
       const scopeLine = document.createElement("div");
-      scopeLine.className = "hint";
+      scopeLine.className = "item-meta";
       scopeLine.textContent = `Scopes: ${scopes}`;
       item.appendChild(scopeLine);
     }
@@ -2652,6 +2717,7 @@ function renderDirectoryList(type, containerId) {
     const item = document.createElement("div");
     item.className = "list-item";
     const label = document.createElement("div");
+    label.className = "item-title";
     label.textContent = value;
     const actions = document.createElement("div");
     actions.className = "button-row";
@@ -2828,6 +2894,10 @@ async function uploadSelfie() {
       const error = await response.json().catch(() => ({ error: "Upload failed" }));
       throw new Error(error.error || "Upload failed");
     }
+    const payload = await response.json().catch(() => ({}));
+    if (payload.selfie_uploaded_at) {
+      state.profile.selfieUploadedAt = payload.selfie_uploaded_at;
+    }
     if (status) status.textContent = translations[state.language]["profile.selfieSaved"] || "Selfie updated.";
     fileInput.value = "";
     loadSelfiePreview();
@@ -2839,6 +2909,10 @@ async function uploadSelfie() {
 async function loadSelfiePreview() {
   const img = document.getElementById("selfie-preview");
   if (!img) return;
+  if (!state.profile.selfieUploadedAt) {
+    img.removeAttribute("src");
+    return;
+  }
   try {
     const blob = await apiFetchBlob("/profile/selfie", { method: "GET" });
     if (state.profile.selfieUrl) URL.revokeObjectURL(state.profile.selfieUrl);
@@ -2866,12 +2940,21 @@ function renderInvites() {
     const item = document.createElement("div");
     item.className = "list-item";
     const header = document.createElement("div");
-    const scope = [invite.location, invite.department].filter(Boolean).join(" / ") || "--";
-    header.textContent = `${invite.email || "(no email)"} | ${invite.role} | ${scope} | ${invite.status}`;
+    header.className = "item-header";
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = invite.email || "(no email)";
+    header.appendChild(title);
+    header.appendChild(createStatusBadge(invite.status));
     item.appendChild(header);
+    const scope = [invite.location, invite.department].filter(Boolean).join(" / ") || "--";
+    const meta = document.createElement("div");
+    meta.className = "item-meta";
+    meta.textContent = `${invite.role} · ${scope}`;
+    item.appendChild(meta);
     if (invite.link) {
       const link = document.createElement("div");
-      link.className = "hint";
+      link.className = "item-meta";
       link.textContent = invite.link;
       item.appendChild(link);
     }
