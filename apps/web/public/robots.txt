@@ -1,0 +1,15 @@
+# Torre Tempo - Robots.txt
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /employees/
+Disallow: /settings/
+
+# Public pages
+Allow: /
+Allow: /login
+
+# Sitemap (future)
+# Sitemap: https://time.lsltgroup.es/sitemap.xml

@@ -1,0 +1,41 @@
+.app-footer {
+  background: #1e293b;
+  color: #cbd5e1;
+  padding: 1.5rem 2rem;
+  margin-top: auto;
+  border-top: 1px solid #334155;
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.copyright {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #f1f5f9;
+  margin: 0 0 0.25rem 0;
+}
+
+.developer {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .app-footer {
+    padding: 1.25rem 1rem;
+  }
+
+  .copyright {
+    font-size: 0.8125rem;
+  }
+
+  .developer {
+    font-size: 0.75rem;
+  }
+}

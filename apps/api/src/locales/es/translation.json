@@ -1,0 +1,52 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "search": "Buscar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "logout": "Cerrar Sesión",
+    "email": "Correo Electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "invalidCredentials": "Credenciales inválidas",
+    "welcome": "Bienvenido de nuevo"
+  },
+  "employee": {
+    "employee": "Empleado",
+    "employees": "Empleados",
+    "addEmployee": "Agregar Empleado",
+    "editEmployee": "Editar Empleado",
+    "deleteEmployee": "Eliminar Empleado",
+    "employeeNumber": "Número de Empleado",
+    "position": "Puesto",
+    "hireDate": "Fecha de Ingreso",
+    "contractType": "Tipo de Contrato",
+    "status": "Estado",
+    "active": "Activo",
+    "onLeave": "De Baja",
+    "terminated": "Terminado"
+  },
+  "email": {
+    "welcome": {
+      "subject": "Bienvenido a {{tenantName}} - Detalles de tu Cuenta",
+      "greeting": "Hola {{firstName}},",
+      "intro": "¡Bienvenido a {{tenantName}}! Tu cuenta de empleado ha sido creada.",
+      "credentials": "Tus credenciales de acceso:",
+      "companyCode": "Código de Empresa",
+      "email": "Correo Electrónico",
+      "temporaryPassword": "Contraseña Temporal",
+      "loginUrl": "URL de Inicio de Sesión",
+      "changePassword": "Por favor, cambia tu contraseña después de tu primer inicio de sesión.",
+      "needHelp": "¿Necesitas ayuda? Contacta a tu gerente o soporte IT.",
+      "footer": "Este es un mensaje automatizado. Por favor, no respondas."
+    }
+  }
+}

@@ -1,0 +1,562 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// PLATFORM-LEVEL TABLES
+// ============================================================================
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  password  String
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  status    String   @default("active") // 'active', 'suspended', 'deleted'
+  
+  // MFA
+  mfaEnabled Boolean  @default(false) @map("mfa_enabled")
+  mfaSecret  String?  @map("mfa_secret")
+  
+  // Preferences
+  preferredLanguage String @default("es") @map("preferred_language")
+  
+  // Audit
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenantUsers      TenantUser[]
+  employees        Employee[]
+  sessionsCreated  AuditLog[]       @relation("AuditLogUser")
+  
+  @@map("users")
+}
+
+// ============================================================================
+// TENANT MANAGEMENT
+// ============================================================================
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique // URL-safe identifier for path-based routing
+  legalName String   @map("legal_name")
+  taxId     String?  @map("tax_id") // CIF/NIF (encrypted)
+  email     String
+  phone     String?
+  address   String?
+  
+  // Branding
+  logoUrl        String? @map("logo_url")
+  primaryColor   String? @map("primary_color")
+  secondaryColor String? @map("secondary_color")
+  
+  // Localization
+  timezone String @default("Europe/Madrid")
+  locale   String @default("es-ES")
+  currency String @default("EUR")
+  
+  // Configuration (JSONB)
+  settings Json?
+  
+  // SMTP Configuration (tenant-specific)
+  smtpHost     String?  @map("smtp_host")
+  smtpPort     Int?     @map("smtp_port")
+  smtpSecure   Boolean? @map("smtp_secure")
+  smtpUser     String?  @map("smtp_user")
+  smtpPassword String?  @map("smtp_password")
+  smtpFromName String?  @map("smtp_from_name")
+  smtpFromEmail String? @map("smtp_from_email")
+  
+  // Subscription
+  subscriptionStatus String @default("active") @map("subscription_status") // 'trial', 'active', 'suspended', 'cancelled'
+  subscriptionPlan   String? @map("subscription_plan")
+  maxEmployees       Int?    @map("max_employees")
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenantUsers           TenantUser[]
+  tenantModules         TenantModule[]
+  employees             Employee[]
+  departments           Department[]
+  timeEntries           TimeEntry[]
+  leaveRequests         LeaveRequest[]
+  schedules             Schedule[]
+  shifts                Shift[]
+  shiftAssignments      ShiftAssignment[]
+  shiftTemplates        ShiftTemplate[]
+  employeeAvailabilities EmployeeAvailability[]
+  auditLogs             AuditLog[]
+  
+  @@index([slug])
+  @@index([subscriptionStatus], map: "idx_tenants_status")
+  @@map("tenants")
+}
+
+model TenantUser {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+  role     String // 'admin', 'manager', 'employee'
+  
+  // Audit
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("tenant_users")
+}
+
+model TenantModule {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  
+  // Module identification
+  moduleKey String @map("module_key") // 'advanced_scheduling', 'compliance_pack', etc.
+  
+  // Enablement
+  enabled    Boolean   @default(true)
+  enabledAt  DateTime  @default(now()) @map("enabled_at")
+  enabledBy  String?   @map("enabled_by") @db.Uuid
+  disabledAt DateTime? @map("disabled_at")
+  disabledBy String?   @map("disabled_by") @db.Uuid
+  
+  // Trial tracking
+  trialUntil    DateTime? @map("trial_until")
+  trialStartedAt DateTime? @map("trial_started_at")
+  
+  // Configuration (JSONB)
+  config Json?
+  
+  // Audit
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, moduleKey])
+  @@index([tenantId])
+  @@index([trialUntil])
+  @@map("tenant_modules")
+}
+
+// ============================================================================
+// EMPLOYEE MANAGEMENT
+// ============================================================================
+
+model Department {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  
+  name        String
+  description String?
+  parentId    String? @map("parent_id") @db.Uuid
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent     Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children   Department[] @relation("DepartmentHierarchy")
+  employees  Employee[]
+  
+  @@index([tenantId])
+  @@index([parentId])
+  @@map("departments")
+}
+
+model Employee {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  userId   String @map("user_id") @db.Uuid // Link to User table
+  
+  // Personal info
+  nationalId      String  @map("national_id") // DNI/NIE (encrypted)
+  socialSecurity  String  @map("social_security") // Encrypted
+  phone           String?
+  emergencyContact String? @map("emergency_contact")
+  
+  // Employment
+  employeeNumber String?   @unique @map("employee_number")
+  departmentId   String?   @map("department_id") @db.Uuid
+  position       String?
+  contractType   String    @map("contract_type") // 'indefinido', 'temporal', etc.
+  hireDate       DateTime  @map("hire_date")
+  terminationDate DateTime? @map("termination_date")
+  
+  // Work schedule
+  workSchedule String @default("full-time") @map("work_schedule")
+  
+  // Status
+  status String @default("active") // 'active', 'on_leave', 'terminated'
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenant             Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department         Department?          @relation(fields: [departmentId], references: [id])
+  timeEntries        TimeEntry[]
+  leaveRequests      LeaveRequest[]
+  shifts             Shift[]
+  shiftAssignments   ShiftAssignment[]
+  employeeAvailability EmployeeAvailability[]
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([departmentId])
+  @@map("employees")
+}
+
+// ============================================================================
+// TIME TRACKING
+// ============================================================================
+
+model TimeEntry {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  employeeId String @map("employee_id") @db.Uuid
+  
+  // Timing
+  clockIn  DateTime  @map("clock_in")
+  clockOut DateTime? @map("clock_out")
+  
+  // Break tracking
+  breakMinutes Int @default(0) @map("break_minutes")
+  
+  // Location (event-only geolocation)
+  clockInLat  Float?  @map("clock_in_lat")
+  clockInLng  Float?  @map("clock_in_lng")
+  clockOutLat Float?  @map("clock_out_lat")
+  clockOutLng Float?  @map("clock_out_lng")
+  
+  // Calculated fields
+  totalHours    Float?  @map("total_hours")
+  overtimeHours Float?  @map("overtime_hours")
+  
+  // Status
+  status String @default("active") // 'active', 'corrected', 'deleted'
+  
+  // Notes
+  notes String?
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([clockIn])
+  @@map("time_entries")
+}
+
+// ============================================================================
+// LEAVE MANAGEMENT
+// ============================================================================
+
+model LeaveRequest {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  employeeId String @map("employee_id") @db.Uuid
+  
+  // Leave details
+  leaveType  String   @map("leave_type") // 'vacation', 'sick', 'personal', etc.
+  startDate  DateTime @map("start_date")
+  endDate    DateTime @map("end_date")
+  totalDays  Float    @map("total_days")
+  
+  // Approval
+  status       String    @default("pending") // 'pending', 'approved', 'rejected'
+  approvedBy   String?   @map("approved_by") @db.Uuid
+  approvedAt   DateTime? @map("approved_at")
+  rejectedBy   String?   @map("rejected_by") @db.Uuid
+  rejectedAt   DateTime? @map("rejected_at")
+  rejectionReason String? @map("rejection_reason")
+  
+  // Notes
+  notes String?
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([status])
+  @@map("leave_requests")
+}
+
+// ============================================================================
+// SCHEDULING (Advanced Scheduling Module)
+// ============================================================================
+
+model Schedule {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  
+  // Schedule period
+  title     String
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  
+  // Status workflow
+  status      String    @default("draft") @map("status") // 'draft', 'published', 'locked'
+  publishedAt DateTime? @map("published_at")
+  publishedBy String?   @map("published_by") @db.Uuid
+  lockedAt    DateTime? @map("locked_at")
+  lockedBy    String?   @map("locked_by") @db.Uuid
+  unlockReason String?  @map("unlock_reason")
+  
+  // Scope (optional filtering)
+  departmentId String? @map("department_id") @db.Uuid
+  location     String?
+  
+  // Metadata (JSONB)
+  notes    String?
+  metadata Json?
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String    @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shifts Shift[]
+  
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, startDate, endDate])
+  @@map("schedules")
+}
+
+model Shift {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  scheduleId String @map("schedule_id") @db.Uuid
+  
+  // Timing
+  startTime    DateTime @map("start_time")
+  endTime      DateTime @map("end_time")
+  breakMinutes Int      @default(0) @map("break_minutes")
+  
+  // Work details
+  role       String?
+  location   String?
+  workCenter String? @map("work_center")
+  
+  // Assignment
+  employeeId       String? @map("employee_id") @db.Uuid
+  assignmentStatus String  @default("unassigned") @map("assignment_status") // 'unassigned', 'assigned', 'accepted', 'swapped'
+  
+  // Conflict detection
+  hasConflicts    Boolean @default(false) @map("has_conflicts")
+  conflictDetails Json?   @map("conflict_details")
+  
+  // UI/UX
+  color String?
+  notes String?
+  
+  // Metadata (JSONB)
+  metadata Json?
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  schedule     Schedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  employee     Employee?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  assignments  ShiftAssignment[]
+  
+  @@index([tenantId])
+  @@index([tenantId, scheduleId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, startTime, endTime])
+  @@map("shifts")
+}
+
+model ShiftAssignment {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  shiftId    String @map("shift_id") @db.Uuid
+  employeeId String @map("employee_id") @db.Uuid
+  
+  // Assignment
+  assignedBy String   @map("assigned_by") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  
+  // Status tracking
+  status         String    @default("pending") // 'pending', 'accepted', 'declined', 'swapped'
+  acceptedAt     DateTime? @map("accepted_at")
+  declinedAt     DateTime? @map("declined_at")
+  declineReason  String?   @map("decline_reason")
+  
+  // Swap tracking
+  swappedToEmployeeId String?   @map("swapped_to_employee_id") @db.Uuid
+  swapRequestedAt     DateTime? @map("swap_requested_at")
+  swapApprovedBy      String?   @map("swap_approved_by") @db.Uuid
+  swapApprovedAt      DateTime? @map("swap_approved_at")
+  
+  // Metadata
+  notes    String?
+  metadata Json?
+  
+  // Audit
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([shiftId])
+  @@index([employeeId])
+  @@map("shift_assignments")
+}
+
+model ShiftTemplate {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  
+  // Template details
+  name        String
+  description String?
+  
+  // Timing (relative)
+  startTime    DateTime @map("start_time") @db.Time
+  endTime      DateTime @map("end_time") @db.Time
+  breakMinutes Int      @default(0) @map("break_minutes")
+  
+  // Work details
+  role       String?
+  location   String?
+  workCenter String? @map("work_center")
+  
+  // UI/UX
+  color String?
+  
+  // Metadata (JSONB)
+  metadata Json?
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy String    @map("created_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@map("shift_templates")
+}
+
+model EmployeeAvailability {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  employeeId String @map("employee_id") @db.Uuid
+  
+  // Day of week (0 = Sunday, 6 = Saturday)
+  dayOfWeek Int    @map("day_of_week")
+  
+  // Availability status
+  status String @default("available") // 'available', 'unavailable', 'preferred'
+  
+  // Time window (NULL = all day)
+  startTime DateTime? @map("start_time") @db.Time
+  endTime   DateTime? @map("end_time") @db.Time
+  
+  // Metadata
+  notes    String?
+  metadata Json?
+  
+  // Audit
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@unique([tenantId, employeeId, dayOfWeek, startTime, endTime])
+  @@index([tenantId])
+  @@index([tenantId, employeeId])
+  @@map("employee_availability")
+}
+
+// ============================================================================
+// AUDIT & COMPLIANCE
+// ============================================================================
+
+model AuditLog {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  
+  // Actor
+  userId    String @map("user_id") @db.Uuid
+  userEmail String @map("user_email")
+  
+  // Action
+  action       String // 'create', 'update', 'delete', 'login', 'export', etc.
+  resourceType String @map("resource_type") // 'time_entry', 'employee', 'schedule', etc.
+  resourceId   String @map("resource_id") @db.Uuid
+  
+  // Changes (JSONB)
+  changesBefore Json? @map("changes_before")
+  changesAfter  Json? @map("changes_after")
+  
+  // Context
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  metadata  Json?
+  
+  // Audit
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation("AuditLogUser", fields: [userId], references: [id])
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -1,0 +1,52 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "invalidCredentials": "Invalid credentials",
+    "welcome": "Welcome back"
+  },
+  "employee": {
+    "employee": "Employee",
+    "employees": "Employees",
+    "addEmployee": "Add Employee",
+    "editEmployee": "Edit Employee",
+    "deleteEmployee": "Delete Employee",
+    "employeeNumber": "Employee Number",
+    "position": "Position",
+    "hireDate": "Hire Date",
+    "contractType": "Contract Type",
+    "status": "Status",
+    "active": "Active",
+    "onLeave": "On Leave",
+    "terminated": "Terminated"
+  },
+  "email": {
+    "welcome": {
+      "subject": "Welcome to {{tenantName}} - Your Account Details",
+      "greeting": "Hello {{firstName}},",
+      "intro": "Welcome to {{tenantName}}! Your employee account has been created.",
+      "credentials": "Your login credentials:",
+      "companyCode": "Company Code",
+      "email": "Email",
+      "temporaryPassword": "Temporary Password",
+      "loginUrl": "Login URL",
+      "changePassword": "Please change your password after your first login.",
+      "needHelp": "Need help? Contact your manager or IT support.",
+      "footer": "This is an automated message. Please do not reply."
+    }
+  }
+}

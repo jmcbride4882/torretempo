@@ -1,0 +1,82 @@
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.page-description {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.coming-soon {
+  background: white;
+  border-radius: 1rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.coming-soon svg {
+  color: #cbd5e1;
+  margin-bottom: 1.5rem;
+}
+
+.coming-soon h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+}
+
+.coming-soon p {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0 0 1.5rem 0;
+}
+
+.coming-soon ul {
+  display: inline-block;
+  text-align: left;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.coming-soon ul li {
+  font-size: 0.95rem;
+  color: #475569;
+  padding: 0.5rem 0;
+  font-weight: 500;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.coming-soon ul li::before {
+  content: "⏳";
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .coming-soon {
+    padding: 3rem 1.5rem;
+  }
+}
