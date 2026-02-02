@@ -9,6 +9,11 @@
   position: relative;
   font-size: 0.8rem;
   min-height: 48px;
+  max-height: 72px; /* Fixed maximum height */
+  overflow: hidden; /* Hide content that exceeds bounds */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .shift-card:hover {
@@ -87,6 +92,9 @@
   font-weight: 600;
   color: #1e293b;
   margin-bottom: 0.25rem;
+  white-space: nowrap; /* Time should never wrap */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .shift-employee-name {
@@ -95,12 +103,18 @@
   font-size: 0.75rem;
   margin-bottom: 0.25rem;
   display: none; /* Hidden on desktop - shown only on mobile */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .shift-role {
   color: #475569;
   font-size: 0.75rem;
   margin-bottom: 0.125rem;
+  white-space: nowrap; /* Prevent role from wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .shift-location {
@@ -109,6 +123,9 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  white-space: nowrap; /* Prevent location from wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .shift-conflict-indicator {
@@ -248,6 +265,7 @@
   .shift-card {
     padding: 0.75rem;
     min-height: 56px;
+    max-height: 90px; /* Slightly taller on mobile for touch targets */
   }
 
   .shift-time {

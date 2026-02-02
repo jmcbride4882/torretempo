@@ -15,10 +15,9 @@
 
 .calendar-header {
   display: grid;
-  grid-template-columns: minmax(150px, 220px) repeat(7, 1fr) minmax(
-      150px,
-      220px
-    ); /* Employee columns: min 150px, max 220px to force wrapping */
+  grid-template-columns:
+    minmax(150px, 220px) repeat(7, minmax(100px, 140px))
+    minmax(150px, 220px); /* Day columns: max 140px each */
   background: #f8fafc;
   border-bottom: 2px solid #e2e8f0;
   position: sticky;
@@ -66,10 +65,9 @@
 
 .calendar-row {
   display: grid;
-  grid-template-columns: minmax(150px, 220px) repeat(7, 1fr) minmax(
-      150px,
-      220px
-    ); /* Employee columns: min 150px, max 220px to force wrapping */
+  grid-template-columns:
+    minmax(150px, 220px) repeat(7, minmax(100px, 140px))
+    minmax(150px, 220px); /* Day columns: max 140px each */
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -261,10 +259,9 @@
 @media (max-width: 1200px) {
   .calendar-header,
   .calendar-row {
-    grid-template-columns: minmax(120px, 180px) repeat(7, 1fr) minmax(
-        120px,
-        180px
-      ); /* Smaller screens: reduce employee column width */
+    grid-template-columns:
+      minmax(120px, 180px) repeat(7, minmax(90px, 120px))
+      minmax(120px, 180px); /* Smaller screens: day columns max 120px */
   }
 
   .employee-cell {
@@ -286,10 +283,10 @@
   /* Tablet view only - NOT mobile */
   .calendar-header,
   .calendar-row {
-    grid-template-columns: minmax(100px, 160px) repeat(7, 1fr) minmax(
-        100px,
-        160px
-      ); /* Tablet: max 160px to force wrapping */
+    grid-template-columns: minmax(100px, 160px) repeat(
+        7,
+        minmax(80px, 110px)
+      ) minmax(100px, 160px); /* Tablet: day columns max 110px */
   }
 
   /* REMOVED: .employee-details { display: none; } - Names should ALWAYS show on desktop/tablet */
