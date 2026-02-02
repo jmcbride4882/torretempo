@@ -787,6 +787,7 @@ export default function SchedulingPage() {
         onDelete={selectedShift ? handleDeleteShift : undefined}
         shift={selectedShift}
         employees={employees}
+        locations={locations}
         defaultDate={defaultShiftDate || undefined}
         defaultEmployeeId={defaultEmployeeId}
         conflicts={selectedShift?.conflictDetails}
