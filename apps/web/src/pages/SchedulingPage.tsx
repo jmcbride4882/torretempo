@@ -653,64 +653,90 @@ export default function SchedulingPage() {
         return;
       }
 
-      // Capture as canvas with high quality
+      // FIX 1: Ensure fonts are loaded before capture
+      await document.fonts.ready;
+      // Small delay to ensure browser rendering is complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // FIX 2: Capture with font rendering fixes
       const canvas = await html2canvas(calendarElement, {
         backgroundColor: "#ffffff",
         scale: 2, // Higher quality
         logging: false,
         useCORS: true,
+        allowTaint: false,
+        onclone: (clonedDoc) => {
+          // Force employee name rendering
+          const employeeNames = clonedDoc.querySelectorAll(".employee-name");
+          employeeNames.forEach((el) => {
+            const original = el as HTMLElement;
+            const computed = window.getComputedStyle(original);
+            original.style.fontFamily = computed.fontFamily;
+            original.style.fontSize = computed.fontSize;
+            original.style.fontWeight = computed.fontWeight;
+            original.style.color = computed.color;
+            original.style.visibility = "visible";
+            original.style.display = "block";
+          });
+
+          // Also fix employee position text
+          const employeePositions =
+            clonedDoc.querySelectorAll(".employee-position");
+          employeePositions.forEach((el) => {
+            const original = el as HTMLElement;
+            const computed = window.getComputedStyle(original);
+            original.style.fontFamily = computed.fontFamily;
+            original.style.fontSize = computed.fontSize;
+            original.style.color = computed.color;
+          });
+        },
       });
 
-      // Convert to blob
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          showToast(t("schedule.shareError"), "error");
-          return;
-        }
+      // FIX 3: Use synchronous conversion for PWA compatibility
+      const dataUrl = canvas.toDataURL("image/png", 0.95);
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "schedule.png", { type: "image/png" });
 
-        const file = new File([blob], "schedule.png", { type: "image/png" });
-
-        // Mobile: Use Web Share API if available
-        if (
-          navigator.share &&
-          navigator.canShare &&
-          navigator.canShare({ files: [file] })
-        ) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: t("schedule.shareTitle"),
-              text: t("schedule.shareText"),
-            });
-            showToast(t("schedule.shareSuccess"), "success");
-          } catch (err: any) {
-            // User cancelled share or error occurred
-            if (err.name !== "AbortError") {
-              console.error("Share failed:", err);
-              showToast(t("schedule.shareError"), "error");
-            }
+      // Mobile: Use Web Share API if available
+      if (
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] })
+      ) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: t("schedule.shareTitle"),
+            text: t("schedule.shareText"),
+          });
+          showToast(t("schedule.shareSuccess"), "success");
+        } catch (err: any) {
+          // User cancelled share or error occurred
+          if (err.name !== "AbortError") {
+            console.error("Share failed:", err);
+            showToast(t("schedule.shareError"), "error");
           }
-        } else {
-          // Desktop: Open WhatsApp Web with message
-          const weekRange = formatWeekRange(currentWeekStart);
-          const message = encodeURIComponent(
-            `${t("schedule.shareText")} ${weekRange}`,
-          );
-          const whatsappUrl = `https://wa.me/?text=${message}`;
-
-          // Download image for manual sharing
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `schedule-${format(currentWeekStart, "yyyy-MM-dd")}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-
-          // Open WhatsApp Web
-          window.open(whatsappUrl, "_blank");
-          showToast(t("schedule.imageDownloaded"), "success");
         }
-      }, "image/png");
+      } else {
+        // Desktop: Open WhatsApp Web with message
+        const weekRange = formatWeekRange(currentWeekStart);
+        const message = encodeURIComponent(
+          `${t("schedule.shareText")} ${weekRange}`,
+        );
+        const whatsappUrl = `https://wa.me/?text=${message}`;
+
+        // Download image for manual sharing
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `schedule-${format(currentWeekStart, "yyyy-MM-dd")}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        // Open WhatsApp Web
+        window.open(whatsappUrl, "_blank");
+        showToast(t("schedule.imageDownloaded"), "success");
+      }
     } catch (err) {
       console.error("Failed to share schedule:", err);
       showToast(t("schedule.shareError"), "error");

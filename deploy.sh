@@ -100,6 +100,8 @@ tar -czf "/tmp/$ARCHIVE_NAME" \
     --exclude='coverage' \
     --exclude='.turbo' \
     --exclude='*.log' \
+    --exclude='*.bak' \
+    --exclude='*.bak.*' \
     .
 
 print_success "Archive created: $(du -h /tmp/$ARCHIVE_NAME | cut -f1)"
