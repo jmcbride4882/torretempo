@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { startOfWeek, addWeeks, subWeeks, format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import html2canvas from "html2canvas";
 import { scheduleService } from "../services/scheduleService";
 import { employeeService } from "../services/employeeService";
 import { tenantService } from "../services/tenantService";
@@ -637,6 +638,104 @@ export default function SchedulingPage() {
     window.print();
   };
 
+  // Share schedule to WhatsApp
+  const handleShareWhatsApp = async () => {
+    try {
+      // Show loading toast
+      showToast(t("schedule.capturingImage"), "info");
+
+      // Find the schedule calendar element
+      const calendarElement = document.querySelector(
+        ".schedule-calendar.desktop",
+      ) as HTMLElement;
+      if (!calendarElement) {
+        showToast(t("schedule.shareError"), "error");
+        return;
+      }
+
+      // Capture as canvas with high quality
+      const canvas = await html2canvas(calendarElement, {
+        backgroundColor: "#ffffff",
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+      });
+
+      // Convert to blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          showToast(t("schedule.shareError"), "error");
+          return;
+        }
+
+        const file = new File([blob], "schedule.png", { type: "image/png" });
+
+        // Mobile: Use Web Share API if available
+        if (
+          navigator.share &&
+          navigator.canShare &&
+          navigator.canShare({ files: [file] })
+        ) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: t("schedule.shareTitle"),
+              text: t("schedule.shareText"),
+            });
+            showToast(t("schedule.shareSuccess"), "success");
+          } catch (err: any) {
+            // User cancelled share or error occurred
+            if (err.name !== "AbortError") {
+              console.error("Share failed:", err);
+              showToast(t("schedule.shareError"), "error");
+            }
+          }
+        } else {
+          // Desktop: Open WhatsApp Web with message
+          const weekRange = formatWeekRange(currentWeekStart);
+          const message = encodeURIComponent(
+            `${t("schedule.shareText")} ${weekRange}`,
+          );
+          const whatsappUrl = `https://wa.me/?text=${message}`;
+
+          // Download image for manual sharing
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `schedule-${format(currentWeekStart, "yyyy-MM-dd")}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+
+          // Open WhatsApp Web
+          window.open(whatsappUrl, "_blank");
+          showToast(t("schedule.imageDownloaded"), "success");
+        }
+      }, "image/png");
+    } catch (err) {
+      console.error("Failed to share schedule:", err);
+      showToast(t("schedule.shareError"), "error");
+    }
+  };
+
+  // Helper function to format week range for share message
+  const formatWeekRange = (startDate: Date) => {
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 6);
+
+    const startDay = startDate.getDate();
+    const endDay = endDate.getDate();
+    const startMonth = startDate.toLocaleDateString("es-ES", {
+      month: "short",
+    });
+    const endMonth = endDate.toLocaleDateString("es-ES", { month: "short" });
+    const year = startDate.getFullYear();
+
+    if (startMonth === endMonth) {
+      return `${startDay}-${endDay} ${startMonth} ${year}`;
+    }
+    return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${year}`;
+  };
+
   // Move shift (drag and drop)
   const handleShiftMove = async (
     shiftId: string,
@@ -748,6 +847,7 @@ export default function SchedulingPage() {
         onNextWeek={handleNextWeek}
         onCreateSchedule={handleCreateSchedule}
         onPrint={handlePrint}
+        onShareWhatsApp={handleShareWhatsApp}
         currentWeekStart={currentWeekStart}
         loading={loading}
         canManage={canManageEmployees()}

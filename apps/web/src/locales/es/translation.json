@@ -235,6 +235,13 @@
     "swapError": "Error al procesar solicitud de cambio",
     "shiftDetails": "Detalles del Turno",
     "time": "Hora",
-    "noEmployeesAvailable": "No hay empleados disponibles para intercambio"
+    "noEmployeesAvailable": "No hay empleados disponibles para intercambio",
+    "shareWhatsApp": "Compartir en WhatsApp",
+    "shareTitle": "Horario de Trabajo",
+    "shareText": "Horario de trabajo para la semana",
+    "capturingImage": "Capturando horario...",
+    "shareSuccess": "Compartido exitosamente",
+    "shareError": "Error al compartir horario",
+    "imageDownloaded": "Imagen del horario descargada. Revisa WhatsApp Web para compartir."
   }
 }

@@ -235,6 +235,13 @@
     "swapError": "Error processing swap request",
     "shiftDetails": "Shift Details",
     "time": "Time",
-    "noEmployeesAvailable": "No employees available for swap"
+    "noEmployeesAvailable": "No employees available for swap",
+    "shareWhatsApp": "Share on WhatsApp",
+    "shareTitle": "Work Schedule",
+    "shareText": "Work schedule for week",
+    "capturingImage": "Capturing schedule...",
+    "shareSuccess": "Shared successfully",
+    "shareError": "Error sharing schedule",
+    "imageDownloaded": "Schedule image downloaded. Check WhatsApp Web to share."
   }
 }
