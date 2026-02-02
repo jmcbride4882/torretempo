@@ -798,6 +798,7 @@ export default function SchedulingPage() {
         <ShiftContextMenu
           position={contextMenuPosition}
           onClose={closeContextMenu}
+          onEdit={() => handleShiftClick(contextMenuShift)}
           onCopy={() => handleCopyShift(contextMenuShift)}
           onCut={() => handleCutShift(contextMenuShift)}
           onPaste={() => {
