@@ -10,6 +10,7 @@ import { useAuthorization } from "../hooks/useAuthorization";
 import ScheduleHeader from "../components/scheduling/ScheduleHeader";
 import ScheduleCalendar from "../components/scheduling/ScheduleCalendar";
 import ShiftModal from "../components/scheduling/ShiftModal";
+import SwapShiftModal from "../components/scheduling/SwapShiftModal";
 import ShiftContextMenu, {
   type ContextMenuPosition,
 } from "../components/scheduling/ShiftContextMenu";
@@ -55,6 +56,10 @@ export default function SchedulingPage() {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [defaultShiftDate, setDefaultShiftDate] = useState<Date | null>(null);
   const [defaultEmployeeId, setDefaultEmployeeId] = useState<string>("");
+
+  // Swap modal state
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+  const [swapShift, setSwapShift] = useState<Shift | null>(null);
 
   // Mobile state
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -217,33 +222,27 @@ export default function SchedulingPage() {
 
   // Request swap for a shift
   const handleRequestSwap = useCallback(
-    async (shift: Shift) => {
+    (shift: Shift) => {
       if (!shift.employeeId) {
         showToast("Cannot swap unassigned shift", "error");
         return;
       }
 
-      // For now, use a simple prompt to select target employee
-      // TODO: Replace with proper modal UI
-      const targetEmployeeId = window.prompt(
-        t("schedule.swapWith") +
-          ":\n\n" +
-          employees
-            .map((e) => `${e.id}: ${e.user.firstName} ${e.user.lastName}`)
-            .join("\n") +
-          "\n\nEnter employee ID:",
-      );
+      setSwapShift(shift);
+      setIsSwapModalOpen(true);
+    },
+    [showToast],
+  );
 
-      if (!targetEmployeeId || targetEmployeeId.trim() === "") {
-        return; // User cancelled
-      }
-
-      const reason = window.prompt(t("schedule.swapReasonPlaceholder"));
+  // Handle swap submission
+  const handleSwapSubmit = useCallback(
+    async (targetEmployeeId: string, reason?: string) => {
+      if (!swapShift) return;
 
       try {
         await shiftSwapService.create({
-          shiftId: shift.id,
-          requestedTo: targetEmployeeId.trim(),
+          shiftId: swapShift.id,
+          requestedTo: targetEmployeeId,
           reason: reason || undefined,
         });
 
@@ -256,7 +255,7 @@ export default function SchedulingPage() {
         );
       }
     },
-    [employees, t, showToast],
+    [swapShift, t, showToast],
   );
 
   // Handle right-click on shift card to show context menu
@@ -791,6 +790,15 @@ export default function SchedulingPage() {
         defaultEmployeeId={defaultEmployeeId}
         conflicts={selectedShift?.conflictDetails}
         isLocked={schedule?.status === "locked"}
+      />
+
+      {/* Swap shift modal */}
+      <SwapShiftModal
+        isOpen={isSwapModalOpen}
+        onClose={() => setIsSwapModalOpen(false)}
+        onSubmit={handleSwapSubmit}
+        shift={swapShift}
+        employees={employees}
       />
 
       {/* Context menu for shift actions */}
