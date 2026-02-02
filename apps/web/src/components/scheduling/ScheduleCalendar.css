@@ -16,8 +16,8 @@
 .calendar-header {
   display: grid;
   grid-template-columns:
-    minmax(150px, 220px) repeat(7, minmax(100px, 140px))
-    minmax(150px, 220px); /* Day columns: max 140px each */
+    minmax(150px, 220px) repeat(7, minmax(120px, 180px))
+    minmax(150px, 220px); /* Day columns: max 180px for full shift times */
   background: #f8fafc;
   border-bottom: 2px solid #e2e8f0;
   position: sticky;
@@ -66,8 +66,8 @@
 .calendar-row {
   display: grid;
   grid-template-columns:
-    minmax(150px, 220px) repeat(7, minmax(100px, 140px))
-    minmax(150px, 220px); /* Day columns: max 140px each */
+    minmax(150px, 220px) repeat(7, minmax(120px, 180px))
+    minmax(150px, 220px); /* Day columns: max 180px for full shift times */
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -260,8 +260,8 @@
   .calendar-header,
   .calendar-row {
     grid-template-columns:
-      minmax(120px, 180px) repeat(7, minmax(90px, 120px))
-      minmax(120px, 180px); /* Smaller screens: day columns max 120px */
+      minmax(120px, 180px) repeat(7, minmax(110px, 150px))
+      minmax(120px, 180px); /* Smaller screens: day columns max 150px */
   }
 
   .employee-cell {
@@ -285,8 +285,8 @@
   .calendar-row {
     grid-template-columns: minmax(100px, 160px) repeat(
         7,
-        minmax(80px, 110px)
-      ) minmax(100px, 160px); /* Tablet: day columns max 110px */
+        minmax(100px, 130px)
+      ) minmax(100px, 160px); /* Tablet: day columns max 130px */
   }
 
   /* REMOVED: .employee-details { display: none; } - Names should ALWAYS show on desktop/tablet */

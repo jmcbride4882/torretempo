@@ -9,7 +9,7 @@
   position: relative;
   font-size: 0.8rem;
   min-height: 48px;
-  max-height: 72px; /* Fixed maximum height */
+  max-height: 80px; /* Increased to 80px to show more content */
   overflow: hidden; /* Hide content that exceeds bounds */
   display: flex;
   flex-direction: column;
@@ -92,6 +92,7 @@
   font-weight: 600;
   color: #1e293b;
   margin-bottom: 0.25rem;
+  font-size: 0.8rem; /* Ensure time is readable */
   white-space: nowrap; /* Time should never wrap */
   overflow: hidden;
   text-overflow: ellipsis;
