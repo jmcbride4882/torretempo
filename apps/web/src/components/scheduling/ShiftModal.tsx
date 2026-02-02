@@ -18,33 +18,53 @@ interface ShiftModalProps {
   shift?: Shift | null;
   employees: Employee[];
   locations?: string[];
+  tenantRoles?: Array<{ name: string; color: string }>; // Tenant-configured roles
   defaultDate?: Date;
   defaultEmployeeId?: string;
   conflicts?: Conflict[];
   isLocked?: boolean;
 }
 
-const SHIFT_COLORS = [
-  { value: "#6366f1", name: "Indigo" },
-  { value: "#8b5cf6", name: "Violeta" },
-  { value: "#ec4899", name: "Rosa" },
-  { value: "#ef4444", name: "Rojo" },
-  { value: "#f59e0b", name: "Naranja" },
-  { value: "#10b981", name: "Verde" },
-  { value: "#06b6d4", name: "Cian" },
-  { value: "#3b82f6", name: "Azul" },
+// Default roles and colors (used as fallback when tenant hasn't configured custom roles)
+export const DEFAULT_ROLES = [
+  // Management (Purple/Indigo)
+  { name: "General Manager", color: "#6366f1" },
+  { name: "Manager", color: "#8b5cf6" },
+  { name: "Assistant Manager", color: "#a78bfa" },
+  { name: "Supervisor", color: "#c4b5fd" },
+
+  // Kitchen (Red/Orange)
+  { name: "Head Chef", color: "#dc2626" },
+  { name: "Sous Chef", color: "#ef4444" },
+  { name: "Chef", color: "#f87171" },
+  { name: "Cook", color: "#f59e0b" },
+  { name: "Kitchen Porter", color: "#fb923c" },
+
+  // Bar (Green)
+  { name: "Bar Manager", color: "#059669" },
+  { name: "Bartender", color: "#10b981" },
+
+  // Front of House (Blue)
+  { name: "Receptionist", color: "#0284c7" },
+  { name: "Waiter/Waitress", color: "#3b82f6" },
+  { name: "Runner/Busser", color: "#60a5fa" },
+
+  // Specialized (Various)
+  { name: "Lifeguard", color: "#06b6d4" },
+  { name: "Maintenance", color: "#f59e0b" },
+  { name: "Accountant", color: "#1e293b" },
+  { name: "Cleaning", color: "#94a3b8" },
+  { name: "Security", color: "#475569" },
 ];
 
-const COMMON_ROLES = [
-  "Camarero/a",
-  "Bartender",
-  "Chef",
-  "Cocinero/a",
-  "Recepcionista",
-  "Limpieza",
-  "Seguridad",
-  "Manager",
-];
+// Helper function to get color for a role from the roles array
+export const getColorForRole = (
+  role: string,
+  roles: Array<{ name: string; color: string }>,
+): string => {
+  const foundRole = roles.find((r) => r.name === role);
+  return foundRole?.color || "#6366f1"; // Fallback to indigo
+};
 
 export default function ShiftModal({
   isOpen,
@@ -54,6 +74,7 @@ export default function ShiftModal({
   shift,
   employees,
   locations = [],
+  tenantRoles = DEFAULT_ROLES, // Use tenant roles or fallback to defaults
   defaultDate,
   defaultEmployeeId,
   conflicts,
@@ -247,16 +268,24 @@ export default function ShiftModal({
               />
             </div>
             <div className="form-group">
-              <label>{t("schedule.role")}</label>
+              <label>
+                {t("schedule.role")} <span className="required">*</span>
+              </label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => {
+                  const selectedRole = e.target.value;
+                  setRole(selectedRole);
+                  // Automatically set color based on tenant's configured role
+                  setColor(getColorForRole(selectedRole, tenantRoles));
+                }}
                 disabled={isLocked}
+                required
               >
                 <option value="">{t("schedule.selectRole")}</option>
-                {COMMON_ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
+                {tenantRoles.map((r) => (
+                  <option key={r.name} value={r.name}>
+                    {r.name}
                   </option>
                 ))}
               </select>
@@ -310,24 +339,7 @@ export default function ShiftModal({
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>{t("schedule.color")}</label>
-              <div className="color-picker">
-                {SHIFT_COLORS.map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    className={`color-option ${color === c.value ? "selected" : ""}`}
-                    style={{ backgroundColor: c.value }}
-                    onClick={() => !isLocked && setColor(c.value)}
-                    title={c.name}
-                    disabled={isLocked}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* Color is automatically assigned based on role - no manual selection needed */}
 
           <div className="form-row">
             <div className="form-group">

@@ -12,9 +12,11 @@ import ScheduleHeader from "../components/scheduling/ScheduleHeader";
 import ScheduleCalendar from "../components/scheduling/ScheduleCalendar";
 import ShiftModal from "../components/scheduling/ShiftModal";
 import SwapShiftModal from "../components/scheduling/SwapShiftModal";
+import RoleLegend from "../components/scheduling/RoleLegend";
 import ShiftContextMenu, {
   type ContextMenuPosition,
 } from "../components/scheduling/ShiftContextMenu";
+import { DEFAULT_ROLES } from "../components/scheduling/ShiftModal";
 import type { ClipboardMode } from "../components/scheduling/ShiftCard";
 import type {
   Schedule,
@@ -46,6 +48,8 @@ export default function SchedulingPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
+  const [tenantRoles, setTenantRoles] =
+    useState<Array<{ name: string; color: string }>>(DEFAULT_ROLES); // Default roles, will be replaced with tenant-specific roles
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentWeekStart, setCurrentWeekStart] = useState(
@@ -380,8 +384,10 @@ export default function SchedulingPage() {
     try {
       const tenant = await tenantService.getSettings();
       setLocations(tenant.settings?.locations || []);
+      // Load tenant-configured roles or use defaults
+      setTenantRoles(tenant.settings?.roles || DEFAULT_ROLES);
     } catch (err: any) {
-      console.error("Failed to load locations:", err);
+      console.error("Failed to load tenant settings:", err);
     }
   };
 
@@ -725,6 +731,9 @@ export default function SchedulingPage() {
         </div>
       </div>
 
+      {/* Role Color Legend */}
+      <RoleLegend roles={tenantRoles} />
+
       <ScheduleHeader
         schedule={schedule}
         hasConflicts={hasConflicts}
@@ -815,6 +824,7 @@ export default function SchedulingPage() {
         shift={selectedShift}
         employees={employees}
         locations={locations}
+        tenantRoles={tenantRoles}
         defaultDate={defaultShiftDate || undefined}
         defaultEmployeeId={defaultEmployeeId}
         conflicts={selectedShift?.conflictDetails}
