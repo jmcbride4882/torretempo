@@ -16,8 +16,8 @@
 .calendar-header {
   display: grid;
   grid-template-columns:
-    minmax(150px, 220px) repeat(7, minmax(120px, 180px))
-    minmax(150px, 220px); /* Day columns: max 180px for full shift times */
+    minmax(200px, 280px) repeat(7, minmax(160px, 240px))
+    minmax(200px, 280px); /* MUCH WIDER: Employee 280px, Days 240px */
   background: #f8fafc;
   border-bottom: 2px solid #e2e8f0;
   position: sticky;
@@ -66,8 +66,8 @@
 .calendar-row {
   display: grid;
   grid-template-columns:
-    minmax(150px, 220px) repeat(7, minmax(120px, 180px))
-    minmax(150px, 220px); /* Day columns: max 180px for full shift times */
+    minmax(200px, 280px) repeat(7, minmax(160px, 240px))
+    minmax(200px, 280px); /* MUCH WIDER: Employee 280px, Days 240px */
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -260,8 +260,8 @@
   .calendar-header,
   .calendar-row {
     grid-template-columns:
-      minmax(120px, 180px) repeat(7, minmax(110px, 150px))
-      minmax(120px, 180px); /* Smaller screens: day columns max 150px */
+      minmax(180px, 240px) repeat(7, minmax(140px, 200px))
+      minmax(180px, 240px); /* Medium screens: Employee 240px, Days 200px */
   }
 
   .employee-cell {
@@ -283,10 +283,9 @@
   /* Tablet view only - NOT mobile */
   .calendar-header,
   .calendar-row {
-    grid-template-columns: minmax(100px, 160px) repeat(
-        7,
-        minmax(100px, 130px)
-      ) minmax(100px, 160px); /* Tablet: day columns max 130px */
+    grid-template-columns:
+      minmax(160px, 220px) repeat(7, minmax(130px, 180px))
+      minmax(160px, 220px); /* Tablet: Employee 220px, Days 180px */
   }
 
   /* REMOVED: .employee-details { display: none; } - Names should ALWAYS show on desktop/tablet */
@@ -341,10 +340,10 @@
   .schedule-calendar.mobile .calendar-header,
   .schedule-calendar.mobile .calendar-row {
     display: grid !important;
-    grid-template-columns: minmax(130px, max-content) repeat(7, 100px) minmax(
-        130px,
+    grid-template-columns: minmax(180px, max-content) repeat(7, 160px) minmax(
+        180px,
         max-content
-      ) !important; /* Employee columns auto-size based on content */
+      ) !important; /* MOBILE: Employee 180px+, Days 160px (was 100px) */
   }
 
   .schedule-calendar.mobile .employee-cell {

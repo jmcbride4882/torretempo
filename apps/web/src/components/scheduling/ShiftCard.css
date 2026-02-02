@@ -1,15 +1,15 @@
 .shift-card {
   background: white;
   border-radius: 6px;
-  padding: 0.5rem 0.625rem;
+  padding: 0.625rem 0.75rem; /* Increased padding for more breathing room */
   border-left: 4px solid #6366f1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   cursor: grab;
   transition: all 0.15s ease;
   position: relative;
-  font-size: 0.8rem;
-  min-height: 48px;
-  max-height: 80px; /* Increased to 80px to show more content */
+  font-size: 0.85rem; /* Slightly larger text */
+  min-height: 56px;
+  max-height: 100px; /* Much taller - 100px to show all content */
   overflow: hidden; /* Hide content that exceeds bounds */
   display: flex;
   flex-direction: column;
@@ -91,8 +91,8 @@
 .shift-time {
   font-weight: 600;
   color: #1e293b;
-  margin-bottom: 0.25rem;
-  font-size: 0.8rem; /* Ensure time is readable */
+  margin-bottom: 0.3rem;
+  font-size: 0.875rem; /* Larger time text */
   white-space: nowrap; /* Time should never wrap */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -111,8 +111,8 @@
 
 .shift-role {
   color: #475569;
-  font-size: 0.75rem;
-  margin-bottom: 0.125rem;
+  font-size: 0.8rem; /* Larger role text */
+  margin-bottom: 0.2rem;
   white-space: nowrap; /* Prevent role from wrapping */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -120,7 +120,7 @@
 
 .shift-location {
   color: #94a3b8;
-  font-size: 0.7rem;
+  font-size: 0.75rem; /* Larger location text */
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -264,9 +264,9 @@
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .shift-card {
-    padding: 0.75rem;
-    min-height: 56px;
-    max-height: 90px; /* Slightly taller on mobile for touch targets */
+    padding: 0.875rem;
+    min-height: 64px;
+    max-height: 110px; /* MOBILE: Much taller for better readability */
   }
 
   .shift-time {
