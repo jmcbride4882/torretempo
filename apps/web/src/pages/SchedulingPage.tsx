@@ -644,53 +644,39 @@ export default function SchedulingPage() {
       // Show loading toast
       showToast(t("schedule.capturingImage"), "info");
 
-      // Find the schedule calendar (it changes className mobile/desktop based on isMobile)
+      // Store current mobile state
+      const wasMobileView = isMobile;
+
+      console.log(
+        "Share WhatsApp: Starting capture, is mobile:",
+        wasMobileView,
+      );
+
+      // CRITICAL FIX: Force parent component to desktop mode for rendering
+      if (wasMobileView) {
+        // Temporarily set isMobile to false to force desktop grid render
+        setIsMobile(false);
+
+        // Wait for React to re-render with desktop grid (not mobile list)
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      // Now find the desktop-rendered calendar
       let calendarElement = document.querySelector(
-        ".schedule-calendar",
+        ".schedule-calendar.desktop",
       ) as HTMLElement;
 
       if (!calendarElement) {
-        const errorMsg = "Schedule calendar element not found in DOM";
+        const errorMsg =
+          "Desktop calendar element not found after forcing desktop mode";
         console.error(errorMsg);
+        // Restore mobile state before returning
+        if (wasMobileView) setIsMobile(true);
         showToast(t("schedule.shareError") + ": " + errorMsg, "error");
         return;
       }
 
-      // Store original state
-      const originalClassName = calendarElement.className;
-      const originalDisplay = calendarElement.style.display;
-      const originalPosition = calendarElement.style.position;
-      const originalLeft = calendarElement.style.left;
-      const originalTop = calendarElement.style.top;
-      const originalZIndex = calendarElement.style.zIndex;
-      const wasMobileView = calendarElement.classList.contains("mobile");
-
-      console.log(
-        "Share WhatsApp: Calendar found, is mobile view:",
-        wasMobileView,
-      );
-
-      // FORCE desktop view for capture (even on mobile)
-      if (wasMobileView) {
-        // Change className from "mobile" to "desktop"
-        calendarElement.className = calendarElement.className.replace(
-          "mobile",
-          "desktop",
-        );
-
-        // Show off-screen to force desktop layout rendering
-        calendarElement.style.display = "block";
-        calendarElement.style.position = "absolute";
-        calendarElement.style.left = "-9999px";
-        calendarElement.style.top = "0";
-        calendarElement.style.zIndex = "-1";
-        calendarElement.style.visibility = "visible";
-
-        // Wait for browser to re-render with desktop layout
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      }
-
-      console.log("Capturing calendar in desktop mode...");
+      console.log("Desktop calendar found, preparing capture...");
 
       // FIX 1: Ensure fonts are loaded before capture
       await document.fonts.ready;
@@ -830,15 +816,9 @@ export default function SchedulingPage() {
         canvas.height,
       );
 
-      // Restore original state (including mobile className if needed)
+      // Restore mobile view if it was mobile originally
       if (wasMobileView) {
-        calendarElement.className = originalClassName; // Restore mobile class
-        calendarElement.style.display = originalDisplay;
-        calendarElement.style.position = originalPosition;
-        calendarElement.style.left = originalLeft;
-        calendarElement.style.top = originalTop;
-        calendarElement.style.zIndex = originalZIndex;
-        calendarElement.style.visibility = "";
+        setIsMobile(true);
       }
 
       // FIX 4: Use synchronous conversion for PWA compatibility
@@ -900,6 +880,11 @@ export default function SchedulingPage() {
         isPWA: window.matchMedia("(display-mode: standalone)").matches,
         userAgent: navigator.userAgent,
       });
+
+      // Ensure we restore mobile state even on error
+      if (window.innerWidth < 768) {
+        setIsMobile(true);
+      }
     }
   };
 
