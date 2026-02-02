@@ -79,14 +79,17 @@
   padding: 0.75rem 1rem;
   border-right: 1px solid #e2e8f0;
   display: flex;
-  align-items: center; /* Center vertically for better alignment */
+  align-items: flex-start; /* Top-align when text wraps */
   min-height: 80px; /* Match drop-cell height for alignment */
+  overflow: visible; /* Allow content to expand */
 }
 
 .employee-info {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Top-align when text wraps */
   gap: 0.75rem;
+  width: 100%; /* Ensure full width available */
+  min-width: 0; /* Allow flex shrink */
 }
 
 .employee-avatar {
@@ -129,7 +132,9 @@
 .employee-details {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  min-width: 0 !important; /* Critical for text wrapping in flex containers */
+  flex: 1; /* Take available space */
+  overflow: visible !important;
 }
 
 .employee-name {
@@ -278,12 +283,16 @@
       ); /* Employee LEFT (dynamic) + 7 days + Employee RIGHT (dynamic) */
   }
 
-  .employee-details {
-    display: none; /* Hide names on tablet to save space */
-  }
+  /* REMOVED: .employee-details { display: none; } - Names should ALWAYS show on desktop/tablet */
 
   .employee-info {
-    gap: 0;
+    gap: 0.5rem; /* Reduced gap for tablet */
+  }
+
+  .employee-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.7rem;
   }
 }
 
