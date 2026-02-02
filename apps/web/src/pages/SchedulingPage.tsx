@@ -200,8 +200,10 @@ export default function SchedulingPage() {
         if (copiedShift.mode === "cut") {
           await scheduleService.deleteShift(originalShift.id);
           setShifts((prev) => prev.filter((s) => s.id !== originalShift.id));
-          setCopiedShift(null); // Clear clipboard after cut+paste
         }
+
+        // Clear clipboard after paste (both copy and cut)
+        setCopiedShift(null);
 
         showToast(t("schedule.shiftPasted"), "success");
         setPasteTargetCell(null);
