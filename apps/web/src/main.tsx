@@ -21,15 +21,15 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
-// NUCLEAR CACHE CLEARING - Version 3.1.0 (2026-02-02 19:00)
+// NUCLEAR CACHE CLEARING - Version 3.2.0 (2026-02-02 22:10)
 // ============================================================================
-const APP_VERSION = "3.1.0-20260202-1900";
+const APP_VERSION = "3.2.0-20260202-2210";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  TORRE TEMPO v${APP_VERSION}  ║
-║  Mobile Week Grid Fix - Portrait Mode                         ║
+║  Desktop Alignment + WhatsApp Share Fix                       ║
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
