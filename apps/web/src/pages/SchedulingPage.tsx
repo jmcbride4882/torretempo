@@ -650,16 +650,22 @@ export default function SchedulingPage() {
       ) as HTMLElement;
 
       if (!desktopCalendar) {
-        showToast(t("schedule.shareError"), "error");
-        console.error("Desktop calendar not found");
+        const errorMsg = "Desktop calendar element not found in DOM";
+        console.error(errorMsg);
+        showToast(t("schedule.shareError") + ": " + errorMsg, "error");
         return;
       }
 
       // Temporarily make desktop view visible for capture (if hidden on mobile)
       const originalDisplay = desktopCalendar.style.display;
       const originalPosition = desktopCalendar.style.position;
+      const originalLeft = desktopCalendar.style.left;
+      const originalTop = desktopCalendar.style.top;
+      const originalZIndex = desktopCalendar.style.zIndex;
       const wasHidden =
         window.getComputedStyle(desktopCalendar).display === "none";
+
+      console.log("Share WhatsApp: Desktop calendar found, hidden:", wasHidden);
 
       if (wasHidden) {
         // Temporarily show desktop view off-screen
@@ -668,9 +674,12 @@ export default function SchedulingPage() {
         desktopCalendar.style.left = "-9999px";
         desktopCalendar.style.top = "0";
         desktopCalendar.style.zIndex = "-1";
+
+        // Wait for browser to render
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
 
-      console.log("Capturing desktop calendar (was hidden:", wasHidden, ")");
+      console.log("Capturing desktop calendar...");
 
       // FIX 1: Ensure fonts are loaded before capture
       await document.fonts.ready;
@@ -708,9 +717,11 @@ export default function SchedulingPage() {
       const canvas = await html2canvas(desktopCalendar, {
         backgroundColor: "#ffffff",
         scale: 2, // Higher quality
-        logging: true, // Enable logging to debug
+        logging: false, // Disable logging in production
         useCORS: true,
         allowTaint: false,
+        width: desktopCalendar.scrollWidth, // Capture full width including scroll
+        windowWidth: Math.max(1200, desktopCalendar.scrollWidth), // Ensure wide enough for names
         onclone: (clonedDoc) => {
           // CRITICAL FIX: Force employee-details to be visible (hidden on mobile by default)
           const employeeDetailsContainers =
@@ -719,18 +730,22 @@ export default function SchedulingPage() {
             const container = el as HTMLElement;
             container.style.display = "flex";
             container.style.flexDirection = "column";
-            container.style.minWidth = "0";
+            container.style.minWidth = "120px"; // Ensure minimum width for full names
+            container.style.width = "auto";
+            container.style.maxWidth = "none"; // Remove max-width constraint
             container.style.visibility = "visible";
             container.style.opacity = "1";
           });
 
-          // Force employee-info containers to be visible
+          // Force employee-info containers to be visible with full width
           const employeeInfoContainers =
             clonedDoc.querySelectorAll(".employee-info");
           employeeInfoContainers.forEach((el) => {
             const container = el as HTMLElement;
             container.style.display = "flex";
             container.style.visibility = "visible";
+            container.style.width = "100%";
+            container.style.minWidth = "0";
           });
 
           // Apply captured styles to cloned employee names
@@ -746,8 +761,13 @@ export default function SchedulingPage() {
               clonedEl.style.color = styles.color;
               clonedEl.style.lineHeight = styles.lineHeight;
               clonedEl.style.visibility = "visible";
-              clonedEl.style.display = "inline"; // Changed from block to inline
+              clonedEl.style.display = "block"; // Changed to block for full width
               clonedEl.style.opacity = "1";
+              // FIX: Remove text truncation to show full names
+              clonedEl.style.whiteSpace = "normal";
+              clonedEl.style.overflow = "visible";
+              clonedEl.style.textOverflow = "clip";
+              clonedEl.style.wordBreak = "break-word";
             }
           });
 
@@ -763,6 +783,10 @@ export default function SchedulingPage() {
               clonedEl.style.color = styles.color;
               clonedEl.style.visibility = "visible";
               clonedEl.style.opacity = "1";
+              // FIX: Remove text truncation for positions too
+              clonedEl.style.whiteSpace = "normal";
+              clonedEl.style.overflow = "visible";
+              clonedEl.style.textOverflow = "clip";
             }
           });
 
@@ -788,13 +812,20 @@ export default function SchedulingPage() {
         },
       });
 
+      console.log(
+        "Canvas captured successfully, size:",
+        canvas.width,
+        "x",
+        canvas.height,
+      );
+
       // Restore original display state if it was hidden
       if (wasHidden) {
         desktopCalendar.style.display = originalDisplay;
         desktopCalendar.style.position = originalPosition;
-        desktopCalendar.style.left = "";
-        desktopCalendar.style.top = "";
-        desktopCalendar.style.zIndex = "";
+        desktopCalendar.style.left = originalLeft;
+        desktopCalendar.style.top = originalTop;
+        desktopCalendar.style.zIndex = originalZIndex;
       }
 
       // FIX 4: Use synchronous conversion for PWA compatibility
@@ -843,9 +874,19 @@ export default function SchedulingPage() {
         window.open(whatsappUrl, "_blank");
         showToast(t("schedule.imageDownloaded"), "success");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to share schedule:", err);
-      showToast(t("schedule.shareError"), "error");
+      const errorMessage = err?.message || err?.toString() || "Unknown error";
+      showToast(t("schedule.shareError") + ": " + errorMessage, "error");
+
+      // Log detailed error info
+      console.error("Error details:", {
+        name: err?.name,
+        message: err?.message,
+        stack: err?.stack,
+        isPWA: window.matchMedia("(display-mode: standalone)").matches,
+        userAgent: navigator.userAgent,
+      });
     }
   };
 
