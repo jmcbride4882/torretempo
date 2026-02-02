@@ -19,6 +19,7 @@ import { useAuthorization } from "../hooks/useAuthorization";
 import { useAuthStore } from "../stores/authStore";
 import ScheduleHeader from "../components/scheduling/ScheduleHeader";
 import ScheduleCalendar from "../components/scheduling/ScheduleCalendar";
+import MyShiftsToday from "../components/scheduling/MyShiftsToday";
 import ShiftModal from "../components/scheduling/ShiftModal";
 import SwapShiftModal from "../components/scheduling/SwapShiftModal";
 import RoleLegend from "../components/scheduling/RoleLegend";
@@ -1212,6 +1213,9 @@ export default function SchedulingPage() {
         loading={loading}
         canManage={canManageEmployees()}
       />
+
+      {/* My Shifts Today Widget - Shows current employee's shifts for today */}
+      <MyShiftsToday shifts={shifts} currentEmployeeId={currentEmployeeId} />
 
       {!schedule && !loading && (
         <div className="empty-schedule">

@@ -252,6 +252,14 @@
     "generatingPDF": "Generating PDF...",
     "pdfGenerated": "PDF downloaded successfully",
     "printError": "Error generating PDF",
-    "locale": "en-US"
+    "locale": "en-US",
+    "myShiftsToday": "My Shifts Today",
+    "clockInOut": "Clock In/Out",
+    "shiftStartingSoon": "Shift starting soon!",
+    "shiftActive": "Active Now",
+    "clockInNow": "Clock In Now",
+    "clockOut": "Clock Out",
+    "noShiftsToday": "You have no scheduled shifts today",
+    "startUnscheduledShift": "Start Unscheduled Shift"
   }
 }

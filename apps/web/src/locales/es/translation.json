@@ -252,6 +252,14 @@
     "generatingPDF": "Generando PDF...",
     "pdfGenerated": "PDF descargado exitosamente",
     "printError": "Error al generar PDF",
-    "locale": "es-ES"
+    "locale": "es-ES",
+    "myShiftsToday": "Mis Turnos de Hoy",
+    "clockInOut": "Fichar Entrada/Salida",
+    "shiftStartingSoon": "¡Tu turno comienza pronto!",
+    "shiftActive": "Activo Ahora",
+    "clockInNow": "Fichar Ahora",
+    "clockOut": "Fichar Salida",
+    "noShiftsToday": "No tienes turnos programados hoy",
+    "startUnscheduledShift": "Iniciar Turno No Programado"
   }
 }
