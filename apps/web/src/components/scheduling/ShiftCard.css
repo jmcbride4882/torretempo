@@ -1,0 +1,265 @@
+.shift-card {
+  background: white;
+  border-radius: 6px;
+  padding: 0.5rem 0.625rem;
+  border-left: 4px solid #6366f1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: grab;
+  transition: all 0.15s ease;
+  position: relative;
+  font-size: 0.8rem;
+  min-height: 48px;
+}
+
+.shift-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.shift-card:active {
+  cursor: grabbing;
+}
+
+.shift-card.dragging {
+  opacity: 0.9;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  transform: rotate(3deg);
+  z-index: 1000;
+}
+
+.shift-card.locked {
+  cursor: default;
+}
+
+.shift-card.locked:hover {
+  transform: none;
+}
+
+/* Conflict states */
+.shift-card.has-error {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.shift-card.has-error::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #dc2626;
+  border-radius: 6px;
+  pointer-events: none;
+  animation: pulse-error 2s infinite;
+}
+
+.shift-card.has-warning {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.shift-card.has-warning::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid #f59e0b;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+@keyframes pulse-error {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.shift-time {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.shift-role {
+  color: #475569;
+  font-size: 0.75rem;
+  margin-bottom: 0.125rem;
+}
+
+.shift-location {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.shift-conflict-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shift-card.has-warning .shift-conflict-indicator {
+  color: #f59e0b;
+}
+
+/* Selected state */
+.shift-card.selected {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Copied state - subtle blue border/highlight */
+.shift-card.copied {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow:
+    0 0 0 2px #3b82f6,
+    0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.shift-card.copied::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+  animation: copyPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes copyPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Cut state - dashed border and reduced opacity */
+.shift-card.cut {
+  opacity: 0.5;
+  border-style: dashed;
+  border-width: 2px;
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  box-shadow: 0 0 0 1px #f59e0b;
+}
+
+.shift-card.cut::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: #f59e0b;
+  border-radius: 50%;
+  animation: cutBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes cutBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Shift swap button - Mobile-first design */
+.shift-swap-button {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  padding: 0;
+}
+
+.shift-swap-button:hover {
+  background: #6366f1;
+  color: white;
+  transform: scale(1.1);
+}
+
+.shift-swap-button:active {
+  transform: scale(0.95);
+}
+
+.shift-swap-button svg {
+  flex-shrink: 0;
+}
+
+/* On desktop, hide button unless hovering over shift */
+@media (min-width: 769px) {
+  .shift-swap-button {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .shift-card:hover .shift-swap-button {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .shift-card {
+    padding: 0.75rem;
+    min-height: 56px;
+  }
+
+  .shift-time {
+    font-size: 0.9rem;
+  }
+
+  .shift-role {
+    font-size: 0.8rem;
+  }
+
+  .shift-location {
+    font-size: 0.75rem;
+  }
+
+  /* Mobile: Button always visible and larger for easy tapping */
+  .shift-swap-button {
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+    bottom: 6px;
+    right: 6px;
+  }
+}

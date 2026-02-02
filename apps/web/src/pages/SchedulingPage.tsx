@@ -7,6 +7,7 @@ import { employeeService } from "../services/employeeService";
 import { tenantService } from "../services/tenantService";
 import { shiftSwapService } from "../services/shiftSwapService";
 import { useAuthorization } from "../hooks/useAuthorization";
+import { useAuthStore } from "../stores/authStore";
 import ScheduleHeader from "../components/scheduling/ScheduleHeader";
 import ScheduleCalendar from "../components/scheduling/ScheduleCalendar";
 import ShiftModal from "../components/scheduling/ShiftModal";
@@ -38,6 +39,7 @@ interface ToastMessage {
 export default function SchedulingPage() {
   const { t } = useTranslation();
   const { canManageEmployees } = useAuthorization();
+  const { user } = useAuthStore();
 
   // State
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -73,6 +75,13 @@ export default function SchedulingPage() {
 
   // Toast notification state
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Get current user's employee ID for swap button visibility
+  const currentEmployeeId = useMemo(() => {
+    if (!user) return null;
+    const currentEmployee = employees.find((emp) => emp.userId === user.id);
+    return currentEmployee?.id || null;
+  }, [user, employees]);
 
   // Target cell for paste operation (when clicking on empty cell)
   const [pasteTargetCell, setPasteTargetCell] = useState<{
@@ -769,6 +778,8 @@ export default function SchedulingPage() {
           onCellClick={handleCellClick}
           onShiftMove={handleShiftMove}
           onShiftContextMenu={handleShiftContextMenu}
+          onShiftSwapRequest={handleRequestSwap}
+          currentEmployeeId={currentEmployeeId}
           isLocked={schedule.status === "locked" || !canEdit}
           isMobile={isMobile}
           selectedDay={selectedDay}
