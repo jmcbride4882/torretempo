@@ -93,7 +93,7 @@ async function sendSwapRequestEmail(
         language,
         variables,
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         logger.error(
           { error, swapRequestId: swapRequest.id },
           "Failed to send swap request email",
@@ -132,7 +132,7 @@ async function sendSwapRequestEmail(
             requesterId: requester.id,
           },
         )
-        .catch((error) => {
+        .catch((error: unknown) => {
           logger.error(
             { error, swapRequestId: swapRequest.id },
             "Failed to send swap request push notification",
@@ -147,7 +147,7 @@ async function sendSwapRequestEmail(
         "Swap request push notification queued",
       );
     }
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       { error, swapRequestId: swapRequest.id },
       "Error preparing swap request email",
