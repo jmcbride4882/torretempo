@@ -376,23 +376,19 @@ export default function SchedulingPage() {
       const startDateStr = format(currentWeekStart, "yyyy-MM-dd");
       const endDateStr = format(weekEnd, "yyyy-MM-dd");
 
-      // Try to find existing schedule for this week and location
+      // Try to find existing schedule for this week (one schedule per week for entire business)
       const schedules = await scheduleService.getAll({
         startDate: startDateStr,
         endDate: endDateStr,
       });
 
-      // Filter by location if one is selected
-      const filteredSchedules = selectedLocation
-        ? schedules.filter((s) => s.location === selectedLocation)
-        : schedules;
-
-      if (filteredSchedules.length > 0) {
-        // Use the first matching schedule
-        const existingSchedule = filteredSchedules[0];
+      if (schedules.length > 0) {
+        // Use the first matching schedule (should only be one per week)
+        const existingSchedule = schedules[0];
         setSchedule(existingSchedule);
 
-        // Load shifts for this schedule
+        // Load ALL shifts for this schedule
+        // Location filtering happens in render, not in data loading
         const scheduleShifts = await scheduleService.getAllShiftsForSchedule(
           existingSchedule.id,
         );
@@ -418,12 +414,10 @@ export default function SchedulingPage() {
       const weekEndAdjusted = new Date(weekEnd);
       weekEndAdjusted.setDate(weekEndAdjusted.getDate() - 1); // End on Sunday
 
-      const locationSuffix = selectedLocation ? ` - ${selectedLocation}` : "";
       const newSchedule = await scheduleService.create({
-        title: `${t("schedule.weekOf")} ${format(currentWeekStart, "d MMM", { locale: es })}${locationSuffix}`,
+        title: `${t("schedule.weekOf")} ${format(currentWeekStart, "d MMM", { locale: es })}`,
         startDate: currentWeekStart.toISOString(),
         endDate: weekEndAdjusted.toISOString(),
-        location: selectedLocation || undefined,
       });
 
       setSchedule(newSchedule);
@@ -710,6 +704,7 @@ export default function SchedulingPage() {
         schedule={schedule}
         hasConflicts={hasConflicts}
         conflictCount={conflictCount}
+        selectedLocation={selectedLocation}
         onPublish={handlePublish}
         onUnpublish={handleUnpublish}
         onLock={handleLock}
@@ -765,7 +760,11 @@ export default function SchedulingPage() {
       {schedule && (
         <ScheduleCalendar
           weekStart={currentWeekStart}
-          shifts={shifts}
+          shifts={
+            selectedLocation
+              ? shifts.filter((s) => s.location === selectedLocation)
+              : shifts
+          }
           employees={employees}
           onShiftClick={handleShiftClick}
           onCellClick={handleCellClick}
