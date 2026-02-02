@@ -249,6 +249,9 @@
     "shareSuccess": "Compartido exitosamente",
     "shareError": "Error al compartir horario",
     "imageDownloaded": "Imagen del horario descargada. Revisa WhatsApp Web para compartir.",
+    "generatingPDF": "Generando PDF...",
+    "pdfGenerated": "PDF descargado exitosamente",
+    "printError": "Error al generar PDF",
     "locale": "es-ES"
   }
 }

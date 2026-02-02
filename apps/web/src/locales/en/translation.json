@@ -249,6 +249,9 @@
     "shareSuccess": "Shared successfully",
     "shareError": "Error sharing schedule",
     "imageDownloaded": "Schedule image downloaded. Check WhatsApp Web to share.",
+    "generatingPDF": "Generating PDF...",
+    "pdfGenerated": "PDF downloaded successfully",
+    "printError": "Error generating PDF",
     "locale": "en-US"
   }
 }

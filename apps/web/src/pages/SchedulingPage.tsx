@@ -1,8 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { startOfWeek, addWeeks, subWeeks, format, parseISO } from "date-fns";
+import {
+  startOfWeek,
+  addWeeks,
+  subWeeks,
+  addDays,
+  format,
+  parseISO,
+} from "date-fns";
 import { es } from "date-fns/locale";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { scheduleService } from "../services/scheduleService";
 import { employeeService } from "../services/employeeService";
 import { tenantService } from "../services/tenantService";
@@ -644,9 +652,236 @@ export default function SchedulingPage() {
     }
   };
 
-  // Print schedule
-  const handlePrint = () => {
-    window.print();
+  // Print schedule - Generate professional PDF
+  const handlePrint = async () => {
+    try {
+      // Show loading toast
+      showToast(t("schedule.generatingPDF"), "info");
+
+      console.log("=== PDF Generation Started ===");
+
+      // Find the calendar element
+      const calendarElement = document.querySelector(
+        ".schedule-calendar",
+      ) as HTMLElement;
+
+      if (!calendarElement) {
+        const errorMsg = "Calendar element not found";
+        console.error(errorMsg);
+        showToast(t("schedule.printError") + ": " + errorMsg, "error");
+        return;
+      }
+
+      console.log("Calendar found:", calendarElement.className);
+
+      // Ensure fonts loaded
+      await document.fonts.ready;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Get the FULL scrollable width of the calendar
+      const fullCalendarWidth = calendarElement.scrollWidth;
+      const fullCalendarHeight = calendarElement.scrollHeight;
+
+      console.log("Calendar dimensions:", {
+        width: fullCalendarWidth,
+        height: fullCalendarHeight,
+      });
+
+      // Capture calendar at HIGH resolution (scale: 3 for crisp print quality)
+      const canvas = await html2canvas(calendarElement, {
+        backgroundColor: "#ffffff",
+        scale: 3, // High DPI for print quality
+        logging: false,
+        useCORS: true,
+        allowTaint: false,
+        width: fullCalendarWidth,
+        height: fullCalendarHeight,
+        windowWidth: fullCalendarWidth + 100,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
+        onclone: (clonedDoc) => {
+          // Force full width in cloned document
+          const clonedCalendar = clonedDoc.querySelector(
+            ".schedule-calendar",
+          ) as HTMLElement;
+          if (clonedCalendar) {
+            clonedCalendar.style.overflow = "visible";
+            clonedCalendar.style.width = `${fullCalendarWidth}px`;
+            clonedCalendar.style.maxWidth = "none";
+          }
+
+          // Ensure grid expands to full natural width
+          const clonedGrid = clonedDoc.querySelector(
+            ".calendar-grid",
+          ) as HTMLElement;
+          if (clonedGrid) {
+            clonedGrid.style.minWidth = `${fullCalendarWidth}px`;
+            clonedGrid.style.width = `${fullCalendarWidth}px`;
+          }
+        },
+      });
+
+      console.log("Canvas captured:", {
+        width: canvas.width,
+        height: canvas.height,
+      });
+
+      // Convert canvas to image data
+      const imgData = canvas.toDataURL("image/png", 1.0);
+
+      // Calculate PDF dimensions
+      // Use A4 Landscape for wide schedules (297mm x 210mm)
+      const pdfOrientation = "landscape";
+      const pdfFormat = "a4";
+
+      // A4 landscape: 297mm width, 210mm height
+      const pdfWidth = 297;
+      const pdfHeight = 210;
+
+      // Margins
+      const marginLeft = 10;
+      const marginTop = 20; // Space for header
+      const marginRight = 10;
+      const marginBottom = 10;
+
+      const contentWidth = pdfWidth - marginLeft - marginRight;
+      const contentHeight = pdfHeight - marginTop - marginBottom;
+
+      // Calculate image scaling to fit page width
+      const imgWidth = contentWidth;
+      const imgHeight = (canvas.height / canvas.width) * imgWidth;
+
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: pdfOrientation,
+        unit: "mm",
+        format: pdfFormat,
+        compress: true,
+      });
+
+      // Add professional header
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.text("Torre Tempo - Schedule", marginLeft, 12);
+
+      // Add week range
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      const weekRangeText = `Week: ${format(currentWeekStart, "MMM dd", {
+        locale: t("common.language") === "es" ? es : undefined,
+      })} - ${format(addDays(currentWeekStart, 6), "MMM dd, yyyy", {
+        locale: t("common.language") === "es" ? es : undefined,
+      })}`;
+      pdf.text(weekRangeText, pdfWidth / 2, 12, { align: "center" });
+
+      // Add generation date
+      pdf.setFontSize(8);
+      pdf.text(
+        `Generated: ${format(new Date(), "MMM dd, yyyy HH:mm")}`,
+        pdfWidth - marginRight,
+        12,
+        { align: "right" },
+      );
+
+      // Add calendar image
+      let yPosition = marginTop;
+
+      // If image is taller than one page, split into multiple pages
+      if (imgHeight > contentHeight) {
+        let remainingHeight = imgHeight;
+        let srcY = 0;
+
+        while (remainingHeight > 0) {
+          const sliceHeight = Math.min(contentHeight, remainingHeight);
+          const srcHeight = (sliceHeight / imgWidth) * canvas.width;
+
+          // Create a temporary canvas for this slice
+          const sliceCanvas = document.createElement("canvas");
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = srcHeight;
+          const sliceCtx = sliceCanvas.getContext("2d");
+
+          if (sliceCtx) {
+            sliceCtx.drawImage(
+              canvas,
+              0,
+              srcY,
+              canvas.width,
+              srcHeight,
+              0,
+              0,
+              canvas.width,
+              srcHeight,
+            );
+
+            const sliceImgData = sliceCanvas.toDataURL("image/png", 1.0);
+            pdf.addImage(
+              sliceImgData,
+              "PNG",
+              marginLeft,
+              yPosition,
+              imgWidth,
+              sliceHeight,
+            );
+          }
+
+          remainingHeight -= sliceHeight;
+          srcY += srcHeight;
+
+          if (remainingHeight > 0) {
+            pdf.addPage();
+            yPosition = marginTop;
+          }
+        }
+      } else {
+        // Single page - fits completely
+        pdf.addImage(
+          imgData,
+          "PNG",
+          marginLeft,
+          yPosition,
+          imgWidth,
+          imgHeight,
+        );
+      }
+
+      // Add footer to all pages
+      const pageCount = pdf.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(
+          `© ${new Date().getFullYear()} Lakeside La Torre (Murcia) Group SL - Designed by John McBride`,
+          pdfWidth / 2,
+          pdfHeight - 5,
+          { align: "center" },
+        );
+        pdf.text(
+          `Page ${i} of ${pageCount}`,
+          pdfWidth - marginRight,
+          pdfHeight - 5,
+          { align: "right" },
+        );
+      }
+
+      // Generate filename
+      const filename = `TorreTempo_Schedule_${format(currentWeekStart, "yyyy-MM-dd")}.pdf`;
+
+      // Save PDF
+      pdf.save(filename);
+
+      console.log("PDF generated successfully:", filename);
+      showToast(t("schedule.pdfGenerated"), "success");
+    } catch (err: any) {
+      console.error("Failed to generate PDF:", err);
+      showToast(
+        t("schedule.printError") + ": " + (err.message || "Unknown error"),
+        "error",
+      );
+    }
   };
 
   // Share schedule to WhatsApp
