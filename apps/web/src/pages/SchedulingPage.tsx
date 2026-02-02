@@ -644,42 +644,53 @@ export default function SchedulingPage() {
       // Show loading toast
       showToast(t("schedule.capturingImage"), "info");
 
-      // ALWAYS capture desktop view (even on mobile)
-      const desktopCalendar = document.querySelector(
-        ".schedule-calendar.desktop",
+      // Find the schedule calendar (it changes className mobile/desktop based on isMobile)
+      let calendarElement = document.querySelector(
+        ".schedule-calendar",
       ) as HTMLElement;
 
-      if (!desktopCalendar) {
-        const errorMsg = "Desktop calendar element not found in DOM";
+      if (!calendarElement) {
+        const errorMsg = "Schedule calendar element not found in DOM";
         console.error(errorMsg);
         showToast(t("schedule.shareError") + ": " + errorMsg, "error");
         return;
       }
 
-      // Temporarily make desktop view visible for capture (if hidden on mobile)
-      const originalDisplay = desktopCalendar.style.display;
-      const originalPosition = desktopCalendar.style.position;
-      const originalLeft = desktopCalendar.style.left;
-      const originalTop = desktopCalendar.style.top;
-      const originalZIndex = desktopCalendar.style.zIndex;
-      const wasHidden =
-        window.getComputedStyle(desktopCalendar).display === "none";
+      // Store original state
+      const originalClassName = calendarElement.className;
+      const originalDisplay = calendarElement.style.display;
+      const originalPosition = calendarElement.style.position;
+      const originalLeft = calendarElement.style.left;
+      const originalTop = calendarElement.style.top;
+      const originalZIndex = calendarElement.style.zIndex;
+      const wasMobileView = calendarElement.classList.contains("mobile");
 
-      console.log("Share WhatsApp: Desktop calendar found, hidden:", wasHidden);
+      console.log(
+        "Share WhatsApp: Calendar found, is mobile view:",
+        wasMobileView,
+      );
 
-      if (wasHidden) {
-        // Temporarily show desktop view off-screen
-        desktopCalendar.style.display = "block";
-        desktopCalendar.style.position = "absolute";
-        desktopCalendar.style.left = "-9999px";
-        desktopCalendar.style.top = "0";
-        desktopCalendar.style.zIndex = "-1";
+      // FORCE desktop view for capture (even on mobile)
+      if (wasMobileView) {
+        // Change className from "mobile" to "desktop"
+        calendarElement.className = calendarElement.className.replace(
+          "mobile",
+          "desktop",
+        );
 
-        // Wait for browser to render
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        // Show off-screen to force desktop layout rendering
+        calendarElement.style.display = "block";
+        calendarElement.style.position = "absolute";
+        calendarElement.style.left = "-9999px";
+        calendarElement.style.top = "0";
+        calendarElement.style.zIndex = "-1";
+        calendarElement.style.visibility = "visible";
+
+        // Wait for browser to re-render with desktop layout
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
-      console.log("Capturing desktop calendar...");
+      console.log("Capturing calendar in desktop mode...");
 
       // FIX 1: Ensure fonts are loaded before capture
       await document.fonts.ready;
@@ -688,7 +699,7 @@ export default function SchedulingPage() {
 
       // FIX 2: Capture styles from ORIGINAL elements BEFORE cloning
       const originalEmployeeNames =
-        desktopCalendar.querySelectorAll(".employee-name");
+        calendarElement.querySelectorAll(".employee-name");
       const employeeNameStyles = Array.from(originalEmployeeNames).map((el) => {
         const computed = window.getComputedStyle(el as Element);
         return {
@@ -701,7 +712,7 @@ export default function SchedulingPage() {
       });
 
       const originalEmployeePositions =
-        desktopCalendar.querySelectorAll(".employee-position");
+        calendarElement.querySelectorAll(".employee-position");
       const employeePositionStyles = Array.from(originalEmployeePositions).map(
         (el) => {
           const computed = window.getComputedStyle(el as Element);
@@ -714,14 +725,14 @@ export default function SchedulingPage() {
       );
 
       // FIX 3: Capture with font rendering fixes
-      const canvas = await html2canvas(desktopCalendar, {
+      const canvas = await html2canvas(calendarElement, {
         backgroundColor: "#ffffff",
         scale: 2, // Higher quality
         logging: false, // Disable logging in production
         useCORS: true,
         allowTaint: false,
-        width: desktopCalendar.scrollWidth, // Capture full width including scroll
-        windowWidth: Math.max(1200, desktopCalendar.scrollWidth), // Ensure wide enough for names
+        width: Math.max(1200, calendarElement.scrollWidth), // Capture full width
+        windowWidth: 1400, // Force wide viewport to show all columns
         onclone: (clonedDoc) => {
           // CRITICAL FIX: Force employee-details to be visible (hidden on mobile by default)
           const employeeDetailsContainers =
@@ -819,13 +830,15 @@ export default function SchedulingPage() {
         canvas.height,
       );
 
-      // Restore original display state if it was hidden
-      if (wasHidden) {
-        desktopCalendar.style.display = originalDisplay;
-        desktopCalendar.style.position = originalPosition;
-        desktopCalendar.style.left = originalLeft;
-        desktopCalendar.style.top = originalTop;
-        desktopCalendar.style.zIndex = originalZIndex;
+      // Restore original state (including mobile className if needed)
+      if (wasMobileView) {
+        calendarElement.className = originalClassName; // Restore mobile class
+        calendarElement.style.display = originalDisplay;
+        calendarElement.style.position = originalPosition;
+        calendarElement.style.left = originalLeft;
+        calendarElement.style.top = originalTop;
+        calendarElement.style.zIndex = originalZIndex;
+        calendarElement.style.visibility = "";
       }
 
       // FIX 4: Use synchronous conversion for PWA compatibility
