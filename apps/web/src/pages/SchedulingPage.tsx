@@ -644,170 +644,49 @@ export default function SchedulingPage() {
       // Show loading toast
       showToast(t("schedule.capturingImage"), "info");
 
-      console.log("Share WhatsApp: Starting capture, is mobile:", isMobile);
+      console.log("=== WhatsApp Share (Simplified) ===");
+      console.log("isMobile:", isMobile);
+      console.log("Window width:", window.innerWidth);
 
-      // Find the calendar to capture
-      // On mobile: Use hidden desktop calendar, on desktop: Use visible calendar
-      let calendarElement: HTMLElement | null;
-
-      if (isMobile) {
-        // Mobile: Find hidden desktop calendar
-        const hiddenContainer = document.getElementById(
-          "hidden-desktop-calendar",
-        );
-        if (hiddenContainer) {
-          calendarElement = hiddenContainer.querySelector(
-            ".schedule-calendar",
-          ) as HTMLElement;
-        } else {
-          calendarElement = null;
-        }
-        console.log("Mobile: Looking for hidden desktop calendar");
-      } else {
-        // Desktop: Use visible calendar
-        calendarElement = document.querySelector(
-          ".schedule-calendar.desktop",
-        ) as HTMLElement;
-        console.log("Desktop: Using visible calendar");
-      }
+      // Find the visible calendar (now mobile shows grid too!)
+      const calendarElement = document.querySelector(
+        ".schedule-calendar",
+      ) as HTMLElement;
 
       if (!calendarElement) {
-        const errorMsg = `Calendar element not found (isMobile: ${isMobile})`;
+        const errorMsg = "Calendar element not found";
         console.error(errorMsg);
         showToast(t("schedule.shareError") + ": " + errorMsg, "error");
         return;
       }
 
-      console.log("Calendar found, preparing capture...");
+      console.log("Calendar found:", calendarElement.className);
 
-      // FIX 1: Ensure fonts are loaded before capture
+      // Ensure fonts loaded
       await document.fonts.ready;
-      // Small delay to ensure browser rendering is complete
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // FIX 2: Capture styles from ORIGINAL elements BEFORE cloning
-      const originalEmployeeNames =
-        calendarElement.querySelectorAll(".employee-name");
-      const employeeNameStyles = Array.from(originalEmployeeNames).map((el) => {
-        const computed = window.getComputedStyle(el as Element);
-        return {
-          fontFamily: computed.fontFamily,
-          fontSize: computed.fontSize,
-          fontWeight: computed.fontWeight,
-          color: computed.color,
-          lineHeight: computed.lineHeight,
-        };
-      });
-
-      const originalEmployeePositions =
-        calendarElement.querySelectorAll(".employee-position");
-      const employeePositionStyles = Array.from(originalEmployeePositions).map(
-        (el) => {
-          const computed = window.getComputedStyle(el as Element);
-          return {
-            fontFamily: computed.fontFamily,
-            fontSize: computed.fontSize,
-            color: computed.color,
-          };
-        },
-      );
-
-      // FIX 3: Capture with font rendering fixes
+      // Capture the calendar
       const canvas = await html2canvas(calendarElement, {
         backgroundColor: "#ffffff",
-        scale: 2, // Higher quality
-        logging: false, // Disable logging in production
+        scale: 2,
+        logging: false,
         useCORS: true,
         allowTaint: false,
-        width: Math.max(1200, calendarElement.scrollWidth), // Capture full width
-        windowWidth: 1400, // Force wide viewport to show all columns
+        width: calendarElement.scrollWidth, // Capture full scrollable width
+        height: calendarElement.scrollHeight,
+        windowWidth: Math.max(1200, calendarElement.scrollWidth),
         onclone: (clonedDoc) => {
-          // CRITICAL FIX: Force employee-details to be visible (hidden on mobile by default)
-          const employeeDetailsContainers =
+          // Ensure employee details are visible
+          const employeeDetails =
             clonedDoc.querySelectorAll(".employee-details");
-          employeeDetailsContainers.forEach((el) => {
-            const container = el as HTMLElement;
-            container.style.display = "flex";
-            container.style.flexDirection = "column";
-            container.style.minWidth = "120px"; // Ensure minimum width for full names
-            container.style.width = "auto";
-            container.style.maxWidth = "none"; // Remove max-width constraint
-            container.style.visibility = "visible";
-            container.style.opacity = "1";
-          });
-
-          // Force employee-info containers to be visible with full width
-          const employeeInfoContainers =
-            clonedDoc.querySelectorAll(".employee-info");
-          employeeInfoContainers.forEach((el) => {
-            const container = el as HTMLElement;
-            container.style.display = "flex";
-            container.style.visibility = "visible";
-            container.style.width = "100%";
-            container.style.minWidth = "0";
-          });
-
-          // Apply captured styles to cloned employee names
-          const clonedEmployeeNames =
-            clonedDoc.querySelectorAll(".employee-name");
-          clonedEmployeeNames.forEach((el, index) => {
-            const clonedEl = el as HTMLElement;
-            const styles = employeeNameStyles[index];
-            if (styles) {
-              clonedEl.style.fontFamily = styles.fontFamily;
-              clonedEl.style.fontSize = styles.fontSize;
-              clonedEl.style.fontWeight = styles.fontWeight;
-              clonedEl.style.color = styles.color;
-              clonedEl.style.lineHeight = styles.lineHeight;
-              clonedEl.style.visibility = "visible";
-              clonedEl.style.display = "block"; // Changed to block for full width
-              clonedEl.style.opacity = "1";
-              // FIX: Remove text truncation to show full names
-              clonedEl.style.whiteSpace = "normal";
-              clonedEl.style.overflow = "visible";
-              clonedEl.style.textOverflow = "clip";
-              clonedEl.style.wordBreak = "break-word";
-            }
-          });
-
-          // Apply styles to cloned employee positions
-          const clonedEmployeePositions =
-            clonedDoc.querySelectorAll(".employee-position");
-          clonedEmployeePositions.forEach((el, index) => {
-            const clonedEl = el as HTMLElement;
-            const styles = employeePositionStyles[index];
-            if (styles) {
-              clonedEl.style.fontFamily = styles.fontFamily;
-              clonedEl.style.fontSize = styles.fontSize;
-              clonedEl.style.color = styles.color;
-              clonedEl.style.visibility = "visible";
-              clonedEl.style.opacity = "1";
-              // FIX: Remove text truncation for positions too
-              clonedEl.style.whiteSpace = "normal";
-              clonedEl.style.overflow = "visible";
-              clonedEl.style.textOverflow = "clip";
-            }
-          });
-
-          // AGGRESSIVE FIX: Force all text to be visible
-          const allTextElements = clonedDoc.querySelectorAll(
-            "span, p, h1, h2, h3, h4, h5, h6, div",
-          );
-          allTextElements.forEach((el) => {
+          employeeDetails.forEach((el) => {
             const element = el as HTMLElement;
-            if (element.textContent && element.textContent.trim() !== "") {
-              element.style.opacity = "1";
-              element.style.visibility = "visible";
-              element.style.color = element.style.color || "#000";
-            }
+            element.style.display = "flex";
+            element.style.visibility = "visible";
           });
 
-          // Debug logging
-          console.log("Cloned employee names:", clonedEmployeeNames.length);
-          console.log(
-            "Employee name styles applied:",
-            employeeNameStyles.length,
-          );
+          console.log("Captured employee details:", employeeDetails.length);
         },
       });
 
@@ -1080,41 +959,6 @@ export default function SchedulingPage() {
           copiedShift={copiedShift}
           selectedShiftId={selectedShift?.id || null}
         />
-      )}
-
-      {/* Hidden desktop calendar for WhatsApp capture on mobile */}
-      {schedule && isMobile && (
-        <div
-          id="hidden-desktop-calendar"
-          className="capture-calendar-container"
-          style={{
-            position: "absolute",
-            left: "-9999px",
-            top: "0",
-            width: "1400px",
-            visibility: "visible",
-            pointerEvents: "none",
-          }}
-        >
-          <ScheduleCalendar
-            weekStart={currentWeekStart}
-            shifts={
-              selectedLocation
-                ? shifts.filter((s) => s.location === selectedLocation)
-                : shifts
-            }
-            employees={employees}
-            onShiftClick={() => {}}
-            onCellClick={() => {}}
-            onShiftMove={() => {}}
-            currentEmployeeId={currentEmployeeId}
-            isLocked={true}
-            isMobile={false}
-            selectedDay={0}
-            copiedShift={null}
-            selectedShiftId={null}
-          />
-        </div>
       )}
 
       <ShiftModal

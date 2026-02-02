@@ -1,13 +1,13 @@
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore } from "../stores/authStore";
 
 /**
  * Comprehensive RBAC Authorization Hook
- * 
+ *
  * Two-Tier Role Hierarchy:
- * 
+ *
  * PLATFORM TIER:
  *   PLATFORM_ADMIN (Torre Tempo owner - god mode)
- * 
+ *
  * TENANT TIER:
  *   OWNER (Business owner) > ADMIN > MANAGER > EMPLOYEE
  */
@@ -15,31 +15,37 @@ export function useAuthorization() {
   const { user } = useAuthStore();
 
   // ===== PLATFORM ROLE CHECKS =====
-  const isPlatformAdmin = () => user?.role === 'PLATFORM_ADMIN';
+  const isPlatformAdmin = () => user?.role?.toUpperCase() === "PLATFORM_ADMIN";
 
   // ===== TENANT ROLE CHECKS =====
-  const isOwner = () => user?.role === 'OWNER';
-  const isAdmin = () => user?.role === 'ADMIN';
-  const isManager = () => user?.role === 'MANAGER';
-  const isEmployee = () => user?.role === 'EMPLOYEE';
+  const isOwner = () => user?.role?.toUpperCase() === "OWNER";
+  const isAdmin = () => user?.role?.toUpperCase() === "ADMIN";
+  const isManager = () => user?.role?.toUpperCase() === "MANAGER";
+  const isEmployee = () => user?.role?.toUpperCase() === "EMPLOYEE";
 
   // ===== ROLE COMBINATIONS =====
   const isOwnerOrAdmin = () => isPlatformAdmin() || isOwner() || isAdmin();
   const isAdminOrManager = () => isPlatformAdmin() || isAdmin() || isManager();
   const isManagerOrEmployee = () => isManager() || isEmployee();
-  const isStaff = () => isPlatformAdmin() || isOwner() || isAdmin() || isManager(); // Has administrative access
+  const isStaff = () =>
+    isPlatformAdmin() || isOwner() || isAdmin() || isManager(); // Has administrative access
 
   const hasRole = (...roles: string[]) => {
-    return user?.role && roles.includes(user.role);
+    if (!user?.role) return false;
+    // Platform admin bypasses all role checks
+    if (user.role === "PLATFORM_ADMIN") return true;
+    // Case-insensitive role comparison
+    const userRoleUpper = user.role.toUpperCase();
+    return roles.some((role) => role.toUpperCase() === userRoleUpper);
   };
 
   // Role hierarchy check: does user have at least this role level?
   const hasRoleLevel = (requiredRole: string) => {
     // Platform admin bypasses all checks
     if (isPlatformAdmin()) return true;
-    
-    const hierarchy = ['EMPLOYEE', 'MANAGER', 'ADMIN', 'OWNER'];
-    const userLevel = hierarchy.indexOf(user?.role || '');
+
+    const hierarchy = ["EMPLOYEE", "MANAGER", "ADMIN", "OWNER"];
+    const userLevel = hierarchy.indexOf(user?.role || "");
     const requiredLevel = hierarchy.indexOf(requiredRole);
     return userLevel >= requiredLevel;
   };
@@ -149,7 +155,7 @@ export function useAuthorization() {
   return {
     // User info
     user,
-    
+
     // Role checks
     isPlatformAdmin,
     isOwner,

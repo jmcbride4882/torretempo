@@ -1,8 +1,42 @@
 # TORRE TEMPO - PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-02-01  
-**Status:** Greenfield (Planning Phase)  
+**Updated:** 2026-02-02  
+**Status:** 🚧 Early Development (Foundation Complete ~40%)  
 **Project:** Multi-Tenant SaaS Time Tracking & Scheduling System
+
+---
+
+## 🎯 ACTUAL IMPLEMENTATION STATUS
+
+### ✅ COMPLETE (Working & Deployed)
+
+- **Database Schema:** 100% complete Prisma schema with all models (TimeEntry, Employee, Schedule, etc.)
+- **Backend Core (~30%):** Authentication + Employee Management REST API
+  - `auth.routes.ts` - Login, register, refresh tokens
+  - `employee.routes.ts` - Full CRUD with role-based filtering
+  - Middleware: JWT auth, RBAC (isAdminOrManager)
+- **Frontend Core (~50%):** React SPA with core UI
+  - Dashboard, Login, Employees, Profile, Settings pages (FUNCTIONAL)
+  - i18n (Spanish/English), PWA manifest, Zustand store
+  - Employee management UI with CRUD operations
+
+### 🚧 IN PROGRESS (Placeholders Only)
+
+- **Time Tracking:** Schema ✅, Backend ❌, Frontend placeholder "Coming Soon"
+- **Scheduling:** Schema ✅, Backend ❌, Frontend placeholder "Coming Soon"
+- **Leave Requests:** Schema ✅, Backend ❌, Frontend placeholder "Coming Soon"
+
+### ❌ NOT STARTED
+
+- Mobile app (React Native) - empty placeholder
+- Reporting & exports
+- Add-on modules (advanced scheduling, compliance pack, etc.)
+
+### 🔥 IMMEDIATE PRIORITIES
+
+1. **Time Tracking Implementation** - Clock in/out with geolocation (NEXT TASK)
+2. Scheduling module (Deputy-style drag-drop calendar)
+3. Leave request workflow
 
 ---
 
@@ -38,34 +72,37 @@ Torre-Tempo/
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-|------|----------|-------|
-| **Product requirements** | `docs/spec.md` | LOCKED spec - read first |
-| **API design** | `docs/api-contract.md` | REST endpoints, auth, error handling |
-| **Database schema** | `docs/data-model.md` | PostgreSQL schema, RLS policies |
-| **GDPR/labor law** | `docs/compliance.md` | Spanish compliance requirements |
-| **Permissions model** | `docs/permissions.md` | RBAC definitions |
-| **Backend API** | `apps/api/` | When implemented: Express routes |
-| **Frontend** | `apps/web/` | When implemented: React SPA |
-| **Mobile** | `apps/mobile/` | When implemented: React Native |
+| Task                     | Location               | Notes                                |
+| ------------------------ | ---------------------- | ------------------------------------ |
+| **Product requirements** | `docs/spec.md`         | LOCKED spec - read first             |
+| **API design**           | `docs/api-contract.md` | REST endpoints, auth, error handling |
+| **Database schema**      | `docs/data-model.md`   | PostgreSQL schema, RLS policies      |
+| **GDPR/labor law**       | `docs/compliance.md`   | Spanish compliance requirements      |
+| **Permissions model**    | `docs/permissions.md`  | RBAC definitions                     |
+| **Backend API**          | `apps/api/`            | When implemented: Express routes     |
+| **Frontend**             | `apps/web/`            | When implemented: React SPA          |
+| **Mobile**               | `apps/mobile/`         | When implemented: React Native       |
 
 ---
 
 ## ARCHITECTURE PRINCIPLES
 
 ### Multi-Tenancy (Non-Negotiable)
+
 - **Path-based:** `https://torretempo.com/t/{tenantSlug}/...`
 - **Tenant isolation:** Row-level security (PostgreSQL RLS) + logical partitioning
 - **No per-tenant code:** All configuration via UI/database
 - **Tenant context:** Extracted from URL path, validated by middleware, injected into request
 
 ### Compliance First (Blocking)
+
 - **Immutable audit:** Append-only time entries, corrections tracked separately
 - **Event-only geo:** GPS captured ONLY on clock in/out, never continuous
 - **4-year retention:** Automatic enforcement, soft deletes only
 - **Signed exports:** Digital signatures for labor inspection (add-on module)
 
 ### Security (Non-Negotiable)
+
 - **JWT auth:** Short-lived access tokens + refresh tokens
 - **MFA:** TOTP via speakeasy (optional per tenant)
 - **Row-level security:** PostgreSQL RLS enforces tenant isolation at DB level
@@ -76,6 +113,7 @@ Torre-Tempo/
 ## CONVENTIONS
 
 ### File Organization
+
 ```
 apps/api/src/
 ├── middleware/       # Auth, tenant context, rate limiting
@@ -100,6 +138,7 @@ apps/web/src/
 ```
 
 ### TypeScript Style
+
 - **Strict mode:** `"strict": true` in tsconfig.json
 - **No implicit any:** Explicit types always
 - **Interfaces over types:** For object shapes (consistency)
@@ -108,6 +147,7 @@ apps/web/src/
 - **No `@ts-ignore`:** Fix the root cause, don't suppress
 
 ### Naming Conventions
+
 - **Files:** kebab-case (`time-entry.service.ts`)
 - **Classes:** PascalCase (`TimeEntryService`)
 - **Functions/vars:** camelCase (`getTimeEntry`, `userId`)
@@ -116,23 +156,25 @@ apps/web/src/
 - **Types:** PascalCase with `Type` suffix only if needed (`TenantSettingsType`)
 
 ### Import Order
+
 ```typescript
 // 1. External libraries
-import express from 'express';
-import { z } from 'zod';
+import express from "express";
+import { z } from "zod";
 
 // 2. Internal modules (grouped)
-import { getTenantById } from '@/services/tenant.service';
-import { TimeEntryRepository } from '@/repositories/time-entry.repository';
+import { getTenantById } from "@/services/tenant.service";
+import { TimeEntryRepository } from "@/repositories/time-entry.repository";
 
 // 3. Types
-import type { Tenant, TimeEntry } from '@/types';
+import type { Tenant, TimeEntry } from "@/types";
 
 // 4. Relative imports last
-import { validateRequest } from '../middleware/validator';
+import { validateRequest } from "../middleware/validator";
 ```
 
 ### Error Handling
+
 - **API responses:** Always use standardized error format (see `api-contract.md`)
 - **Try-catch:** Wrap async operations, propagate with context
 - **Logging:** Winston/Pino for structured logs (include `tenantId`, `userId`, `requestId`)
@@ -145,15 +187,18 @@ import { validateRequest } from '../middleware/validator';
 try {
   const timeEntry = await timeEntryRepo.findById(id, tenantId);
   if (!timeEntry) {
-    return res.status(404).json({ error: 'Time entry not found', code: 'TIME_ENTRY_NOT_FOUND' });
+    return res
+      .status(404)
+      .json({ error: "Time entry not found", code: "TIME_ENTRY_NOT_FOUND" });
   }
 } catch (error) {
-  logger.error('Failed to fetch time entry', { error, tenantId, entryId: id });
-  return res.status(500).json({ error: 'Internal server error' });
+  logger.error("Failed to fetch time entry", { error, tenantId, entryId: id });
+  return res.status(500).json({ error: "Internal server error" });
 }
 ```
 
 ### Database Access
+
 - **Tenant-scoped queries:** ALWAYS filter by `tenant_id`
 - **No raw SQL:** Use ORM (Prisma/TypeORM) except for complex analytics
 - **Transactions:** Use for multi-step operations (clock in + geolocation insert)
@@ -165,6 +210,7 @@ try {
 ## ANTI-PATTERNS (THIS PROJECT)
 
 ### NEVER DO
+
 - ❌ **Skip tenant validation:** Every query MUST filter by tenant_id
 - ❌ **Continuous geolocation:** Only capture GPS on clock in/out events
 - ❌ **Edit time entries:** Append-only model, corrections tracked separately
@@ -175,6 +221,7 @@ try {
 - ❌ **Type suppression:** No `as any`, `@ts-ignore`, `@ts-expect-error`
 
 ### COMPLIANCE VIOLATIONS (Blocking)
+
 - ❌ **Missing audit trail:** Every change logged with user, timestamp, reason
 - ❌ **Pre-4-year deletion:** Data must be retained for 4 years minimum
 - ❌ **Unsigned exports:** Labor inspection exports require digital signatures (paid add-on)
@@ -187,6 +234,7 @@ try {
 **⚠️ TO BE IMPLEMENTED** (Project is in planning phase)
 
 ### Backend (apps/api)
+
 ```bash
 # Install
 npm install
@@ -211,6 +259,7 @@ npm start                      # Production server
 ```
 
 ### Frontend (apps/web)
+
 ```bash
 # Install
 npm install
@@ -228,6 +277,7 @@ npm run preview                # Preview production build
 ```
 
 ### Mobile (apps/mobile)
+
 ```bash
 # Install
 npm install
@@ -247,12 +297,14 @@ npm run build:android          # Android APK
 ## DEVELOPMENT WORKFLOW
 
 ### Getting Started
+
 1. **Read specs:** `docs/spec.md` (LOCKED), `docs/api-contract.md`, `docs/data-model.md`
 2. **Understand multi-tenancy:** Path-based routing, tenant middleware
 3. **Review compliance:** `docs/compliance.md` - Spanish labor law is non-negotiable
 4. **Check permissions:** `docs/permissions.md` - RBAC model
 
 ### Feature Implementation
+
 1. **Check spec first:** Is it in `docs/spec.md`? Follow exactly.
 2. **Database changes:** Update Prisma schema, create migration
 3. **Backend:** Service layer (business logic) → Repository (data access) → Route (HTTP)
@@ -261,6 +313,7 @@ npm run build:android          # Android APK
 6. **Frontend:** API client → React hook → Component
 
 ### Testing Requirements
+
 - **Unit tests:** All services and utilities (90% coverage target)
 - **Integration tests:** API endpoints with test database
 - **E2E tests:** Critical user flows (clock in/out, leave requests)
@@ -271,10 +324,12 @@ npm run build:android          # Android APK
 ## INTERNATIONALIZATION (i18n)
 
 ### Supported Languages
+
 - **English (en)** - Default
 - **Spanish (es)** - Primary market
 
 ### Backend i18n
+
 - **Library:** i18next
 - **Translation files:** `apps/api/src/locales/{lang}/translation.json`
 - **Email templates:** `apps/api/src/templates/emails/{lang}/{template}.html`
@@ -282,6 +337,7 @@ npm run build:android          # Android APK
 - **Detection:** JWT token contains `language` claim, fallback to user's profile setting
 
 ### Frontend i18n
+
 - **Library:** react-i18next
 - **Translation files:** `apps/web/src/locales/{lang}/translation.json`
 - **Language switcher:** Available in user profile and header
@@ -289,6 +345,7 @@ npm run build:android          # Android APK
 - **SSR consideration:** Language detected from user preferences
 
 ### Translation Conventions
+
 - **Keys:** Nested JSON structure using dot notation
   - Example: `employees.form.firstName`, `common.save`, `errors.required`
 - **Plurals:** Use i18next plural syntax: `key`, `key_plural`
@@ -296,6 +353,7 @@ npm run build:android          # Android APK
 - **Never hardcode strings:** All user-facing text must be in translation files
 
 ### Email Templates
+
 - **Location:** `apps/api/src/templates/emails/{lang}/{template}.html`
 - **Templates:**
   - `welcome.html` - New employee welcome email with credentials
@@ -310,8 +368,9 @@ npm run build:android          # Android APK
 ## BRANDING & DESIGN
 
 ### Logo & Visual Identity
+
 - **Brand Name:** Torre Tempo
-- **Color Scheme:** 
+- **Color Scheme:**
   - Primary: Gradient `#6366f1` (indigo) → `#8b5cf6` (purple)
   - Secondary: `#1e293b` (dark slate)
   - Accent: `#f59e0b` (amber)
@@ -319,7 +378,9 @@ npm run build:android          # Android APK
 - **Typography:** System fonts (-apple-system, Segoe UI, Roboto)
 
 ### Copyright & Attribution
+
 All pages must include footer:
+
 ```
 © {year} Lakeside La Torre (Murcia) Group SL
 Designed and Developed by John McBride
@@ -330,6 +391,7 @@ Designed and Developed by John McBride
 **CRITICAL:** Torre Tempo must be a fully functional PWA for all devices.
 
 #### Requirements
+
 - **Mobile-First:** All UI/UX must be optimized for mobile devices
 - **Responsive:** Seamless experience on phone, tablet, desktop
 - **Offline-Capable:** Service worker for offline access (future enhancement)
@@ -337,12 +399,14 @@ Designed and Developed by John McBride
 - **Performance:** Fast loading, smooth animations on mobile
 
 #### Implementation
+
 - **Manifest:** `public/manifest.json` with app metadata
 - **Icons:** Multiple sizes (192x192, 512x512) for different devices
 - **Service Worker:** Cache static assets for offline access
 - **Meta Tags:** Proper viewport, theme-color, apple-touch-icon
 
 #### Mobile UI/UX Priorities
+
 1. **Touch-Friendly:** All buttons minimum 44px tap target
 2. **Thumb-Reachable:** Critical actions in bottom navigation
 3. **Fast:** < 3s initial load on 3G networks
@@ -354,6 +418,7 @@ Designed and Developed by John McBride
 ## EMAIL SYSTEM (SMTP)
 
 ### Configuration
+
 - **Library:** Nodemailer
 - **SMTP Provider:** Configurable via environment variables (works with any provider)
 - **Environment variables:**
@@ -368,6 +433,7 @@ Designed and Developed by John McBride
   ```
 
 ### Supported SMTP Providers
+
 - Gmail SMTP (smtp.gmail.com:587)
 - SendGrid (smtp.sendgrid.net:587)
 - Amazon SES (email-smtp.{region}.amazonaws.com:587)
@@ -375,6 +441,7 @@ Designed and Developed by John McBride
 - Custom SMTP servers
 
 ### Email Service Architecture
+
 - **Service:** `apps/api/src/services/email.service.ts`
 - **Template rendering:** Handlebars for HTML email templates
 - **Queue:** BullMQ for async email sending (prevents blocking requests)
@@ -382,6 +449,7 @@ Designed and Developed by John McBride
 - **Logging:** All emails logged with status (sent/failed/queued)
 
 ### Email Triggers
+
 - **Employee created:** Welcome email with login credentials
 - **Shift assigned:** Notification to employee
 - **Leave request submitted:** Notification to manager
@@ -390,6 +458,7 @@ Designed and Developed by John McBride
 - **Clock in/out anomaly:** Alert to manager (optional)
 
 ### User Language Preference
+
 - **Default language:** Spanish (es) for new users
 - **User can change:** Via profile settings
 - **Emails sent in:** User's preferred language
@@ -400,29 +469,34 @@ Designed and Developed by John McBride
 ## NOTES
 
 ### Current State (2026-02-01)
+
 - **Status:** Greenfield project, planning phase complete
 - **Codebase:** Empty placeholder structure
 - **Documentation:** ✅ Comprehensive specs in `docs/`
 - **Next steps:** Begin backend API implementation per `api-contract.md`
 
 ### Key Dependencies
+
 - PostgreSQL 15+ required (RLS support)
 - Node.js 20 LTS
 - Redis for caching + BullMQ job queue
 
 ### Monorepo Strategy
+
 - Three apps: api, web, mobile
 - Shared types package (to be created)
 - Shared validation schemas (to be created)
 - Consider using Turborepo or Nx for build orchestration
 
 ### Multi-Tenant Testing
+
 - Test with multiple tenants in parallel
 - Verify tenant context injection in all routes
 - Test PostgreSQL RLS policies enforce isolation
 - Test tenant slug edge cases (special chars, collisions)
 
 ### Compliance Testing
+
 - Geolocation: Verify event-only capture, no continuous tracking
 - Audit trail: Verify immutability, correction workflow
 - Retention: Test 4-year enforcement, soft delete only

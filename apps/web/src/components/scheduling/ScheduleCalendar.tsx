@@ -163,7 +163,8 @@ export default function ScheduleCalendar({
     onShiftMove(shiftId, updates);
   };
 
-  // Mobile day selector
+  // Mobile day selector (unused - now always showing grid)
+  // @ts-ignore - temporarily unused
   const renderDaySelector = () => {
     if (!isMobile) return null;
 
@@ -295,7 +296,8 @@ export default function ScheduleCalendar({
     );
   };
 
-  // Mobile: Single day view
+  // Mobile: Single day view (unused - now always showing grid)
+  // @ts-ignore - temporarily unused
   const renderDayView = () => {
     const currentDay = weekDays[selectedDay];
 
@@ -384,8 +386,8 @@ export default function ScheduleCalendar({
       onDragEnd={handleDragEnd}
     >
       <div className={`schedule-calendar ${isMobile ? "mobile" : "desktop"}`}>
-        {renderDaySelector()}
-        {isMobile ? renderDayView() : renderWeekGrid()}
+        {/* Mobile: Always show compact grid (no more single day view) */}
+        {renderWeekGrid()}
       </div>
 
       <DragOverlay>

@@ -298,9 +298,57 @@
 }
 
 @media (max-width: 768px) {
-  /* Mobile view is handled by isMobile prop */
-  .schedule-calendar.desktop {
-    display: none;
+  /* Mobile: Show compact grid with horizontal scrolling */
+  .schedule-calendar.mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .schedule-calendar.mobile .calendar-grid {
+    min-width: 800px; /* Force horizontal scroll */
+  }
+
+  .schedule-calendar.mobile .calendar-header,
+  .schedule-calendar.mobile .calendar-row {
+    grid-template-columns: 100px repeat(7, minmax(90px, 1fr));
+  }
+
+  .schedule-calendar.mobile .employee-cell {
+    padding: 0.5rem 0.5rem;
+  }
+
+  .schedule-calendar.mobile .employee-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.65rem;
+  }
+
+  .schedule-calendar.mobile .employee-details {
+    display: flex !important; /* Override hiding */
+    min-width: 0;
+  }
+
+  .schedule-calendar.mobile .employee-name {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .schedule-calendar.mobile .employee-position {
+    font-size: 0.65rem;
+  }
+
+  .schedule-calendar.mobile .header-cell {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .schedule-calendar.mobile .day-name {
+    font-size: 0.65rem;
+  }
+
+  .schedule-calendar.mobile .day-number {
+    font-size: 0.8rem;
   }
 }
 

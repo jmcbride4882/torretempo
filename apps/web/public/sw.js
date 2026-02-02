@@ -1,7 +1,7 @@
 // Torre Tempo Service Worker
-// Version 2.0.0 - Fixed aggressive caching of hashed assets
+// Version 2.1.0 - Force cache clear for WhatsApp share fix
 
-const CACHE_NAME = "torre-tempo-v2-20260202";
+const CACHE_NAME = "torre-tempo-v2.1-20260202-1800";
 const ASSETS_TO_CACHE = ["/", "/index.html", "/manifest.json", "/icon.svg"];
 
 // Install event - cache assets

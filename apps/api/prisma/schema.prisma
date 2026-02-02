@@ -96,6 +96,7 @@ model Tenant {
   shiftAssignments      ShiftAssignment[]
   shiftTemplates        ShiftTemplate[]
   employeeAvailabilities EmployeeAvailability[]
+  shiftSwapRequests     ShiftSwapRequest[]
   auditLogs             AuditLog[]
   
   @@index([slug])
@@ -223,6 +224,8 @@ model Employee {
   shifts             Shift[]
   shiftAssignments   ShiftAssignment[]
   employeeAvailability EmployeeAvailability[]
+  swapRequestsRequested ShiftSwapRequest[] @relation("SwapRequestRequester")
+  swapRequestsReceived  ShiftSwapRequest[] @relation("SwapRequestRequestee")
   
   @@index([tenantId])
   @@index([userId])
@@ -403,6 +406,8 @@ model Shift {
   schedule     Schedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   employee     Employee?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   assignments  ShiftAssignment[]
+  swapRequests ShiftSwapRequest[] @relation("SwapRequestShift")
+  targetSwapRequests ShiftSwapRequest[] @relation("SwapRequestTargetShift")
   
   @@index([tenantId])
   @@index([tenantId, scheduleId])
@@ -519,6 +524,61 @@ model EmployeeAvailability {
   @@index([tenantId])
   @@index([tenantId, employeeId])
   @@map("employee_availability")
+}
+
+model ShiftSwapRequest {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  
+  // Original shift to swap
+  shiftId    String @map("shift_id") @db.Uuid
+  
+  // Employees involved
+  requestedBy String @map("requested_by") @db.Uuid // Employee requesting the swap
+  requestedTo String @map("requested_to") @db.Uuid // Employee being asked to swap
+  
+  // Optional: Target shift (if swapping with another shift vs just giving away)
+  targetShiftId String? @map("target_shift_id") @db.Uuid
+  
+  // Status workflow
+  status String @default("pending") // 'pending', 'approved', 'rejected', 'cancelled'
+  
+  // Approvals (requires manager approval)
+  approvedBy String?   @map("approved_by") @db.Uuid
+  approvedAt DateTime? @map("approved_at")
+  
+  rejectedBy     String?   @map("rejected_by") @db.Uuid
+  rejectedAt     DateTime? @map("rejected_at")
+  rejectionReason String?  @map("rejection_reason")
+  
+  cancelledBy String?   @map("cancelled_by") @db.Uuid
+  cancelledAt DateTime? @map("cancelled_at")
+  
+  // Reason for swap request
+  reason String?
+  
+  // Metadata
+  notes    String?
+  metadata Json?
+  
+  // Audit
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  
+  // Relations
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shift         Shift    @relation("SwapRequestShift", fields: [shiftId], references: [id], onDelete: Cascade)
+  targetShift   Shift?   @relation("SwapRequestTargetShift", fields: [targetShiftId], references: [id], onDelete: SetNull)
+  requester     Employee @relation("SwapRequestRequester", fields: [requestedBy], references: [id], onDelete: Cascade)
+  requestee     Employee @relation("SwapRequestRequestee", fields: [requestedTo], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([shiftId])
+  @@index([requestedBy])
+  @@index([requestedTo])
+  @@index([status])
+  @@map("shift_swap_requests")
 }
 
 // ============================================================================
