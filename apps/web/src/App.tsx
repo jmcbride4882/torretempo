@@ -1,16 +1,16 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import EmployeesPage from './pages/EmployeesPage';
-import ProfilePage from './pages/ProfilePage';
-import TimeEntriesPage from './pages/TimeEntriesPage';
-import SchedulingPage from './pages/SchedulingPage';
-import LeaveRequestsPage from './pages/LeaveRequestsPage';
-import SettingsPage from './pages/SettingsPage';
-import ProtectedRoute from './components/ProtectedRoute';
-import DashboardLayout from './components/DashboardLayout';
-import InstallPrompt from './components/InstallPrompt';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
+import DashboardPage from "./pages/DashboardPage";
+import EmployeesPage from "./pages/EmployeesPage";
+import ProfilePage from "./pages/ProfilePage";
+import TimeEntriesPage from "./pages/TimeEntriesPage";
+import SchedulingPage from "./pages/SchedulingPage";
+import LeaveRequestsPage from "./pages/LeaveRequestsPage";
+import SettingsPage from "./pages/SettingsPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import DashboardLayout from "./components/DashboardLayout";
+import InstallPrompt from "./components/InstallPrompt";
 
 function App() {
   return (
@@ -32,7 +32,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/employees"
           element={
@@ -69,7 +69,7 @@ function App() {
         <Route
           path="/scheduling"
           element={
-            <ProtectedRoute requiredRoles={['admin', 'manager']}>
+            <ProtectedRoute>
               <DashboardLayout>
                 <SchedulingPage />
               </DashboardLayout>
@@ -91,7 +91,7 @@ function App() {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute requiredRoles={['admin', 'manager']}>
+            <ProtectedRoute requiredRoles={["OWNER", "ADMIN", "MANAGER"]}>
               <DashboardLayout>
                 <SettingsPage />
               </DashboardLayout>
