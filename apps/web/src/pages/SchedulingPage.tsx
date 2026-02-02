@@ -1086,6 +1086,7 @@ export default function SchedulingPage() {
       {schedule && isMobile && (
         <div
           id="hidden-desktop-calendar"
+          className="capture-calendar-container"
           style={{
             position: "absolute",
             left: "-9999px",
