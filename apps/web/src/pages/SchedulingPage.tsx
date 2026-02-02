@@ -644,51 +644,139 @@ export default function SchedulingPage() {
       // Show loading toast
       showToast(t("schedule.capturingImage"), "info");
 
-      // Find the schedule calendar element
-      const calendarElement = document.querySelector(
+      // Find the schedule calendar element (try desktop first, then mobile)
+      let calendarElement = document.querySelector(
         ".schedule-calendar.desktop",
       ) as HTMLElement;
+
+      // Fallback to mobile view if desktop not visible
+      if (!calendarElement || calendarElement.offsetParent === null) {
+        calendarElement = document.querySelector(
+          ".schedule-calendar.mobile",
+        ) as HTMLElement;
+      }
+
       if (!calendarElement) {
         showToast(t("schedule.shareError"), "error");
+        console.error("No calendar element found for capture");
         return;
       }
+
+      console.log("Capturing calendar:", calendarElement.className);
 
       // FIX 1: Ensure fonts are loaded before capture
       await document.fonts.ready;
       // Small delay to ensure browser rendering is complete
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // FIX 2: Capture with font rendering fixes
+      // FIX 2: Capture styles from ORIGINAL elements BEFORE cloning
+      const originalEmployeeNames =
+        calendarElement.querySelectorAll(".employee-name");
+      const employeeNameStyles = Array.from(originalEmployeeNames).map((el) => {
+        const computed = window.getComputedStyle(el);
+        return {
+          fontFamily: computed.fontFamily,
+          fontSize: computed.fontSize,
+          fontWeight: computed.fontWeight,
+          color: computed.color,
+          lineHeight: computed.lineHeight,
+        };
+      });
+
+      const originalEmployeePositions =
+        calendarElement.querySelectorAll(".employee-position");
+      const employeePositionStyles = Array.from(originalEmployeePositions).map(
+        (el) => {
+          const computed = window.getComputedStyle(el);
+          return {
+            fontFamily: computed.fontFamily,
+            fontSize: computed.fontSize,
+            color: computed.color,
+          };
+        },
+      );
+
+      // FIX 3: Capture with font rendering fixes
       const canvas = await html2canvas(calendarElement, {
         backgroundColor: "#ffffff",
         scale: 2, // Higher quality
-        logging: false,
+        logging: true, // Enable logging to debug
         useCORS: true,
         allowTaint: false,
         onclone: (clonedDoc) => {
-          // Force employee name rendering
-          const employeeNames = clonedDoc.querySelectorAll(".employee-name");
-          employeeNames.forEach((el) => {
-            const original = el as HTMLElement;
-            const computed = window.getComputedStyle(original);
-            original.style.fontFamily = computed.fontFamily;
-            original.style.fontSize = computed.fontSize;
-            original.style.fontWeight = computed.fontWeight;
-            original.style.color = computed.color;
-            original.style.visibility = "visible";
-            original.style.display = "block";
+          // CRITICAL FIX: Force employee-details to be visible (hidden on mobile by default)
+          const employeeDetailsContainers =
+            clonedDoc.querySelectorAll(".employee-details");
+          employeeDetailsContainers.forEach((el) => {
+            const container = el as HTMLElement;
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+            container.style.minWidth = "0";
+            container.style.visibility = "visible";
+            container.style.opacity = "1";
           });
 
-          // Also fix employee position text
-          const employeePositions =
-            clonedDoc.querySelectorAll(".employee-position");
-          employeePositions.forEach((el) => {
-            const original = el as HTMLElement;
-            const computed = window.getComputedStyle(original);
-            original.style.fontFamily = computed.fontFamily;
-            original.style.fontSize = computed.fontSize;
-            original.style.color = computed.color;
+          // Force employee-info containers to be visible
+          const employeeInfoContainers =
+            clonedDoc.querySelectorAll(".employee-info");
+          employeeInfoContainers.forEach((el) => {
+            const container = el as HTMLElement;
+            container.style.display = "flex";
+            container.style.visibility = "visible";
           });
+
+          // Apply captured styles to cloned employee names
+          const clonedEmployeeNames =
+            clonedDoc.querySelectorAll(".employee-name");
+          clonedEmployeeNames.forEach((el, index) => {
+            const clonedEl = el as HTMLElement;
+            const styles = employeeNameStyles[index];
+            if (styles) {
+              clonedEl.style.fontFamily = styles.fontFamily;
+              clonedEl.style.fontSize = styles.fontSize;
+              clonedEl.style.fontWeight = styles.fontWeight;
+              clonedEl.style.color = styles.color;
+              clonedEl.style.lineHeight = styles.lineHeight;
+              clonedEl.style.visibility = "visible";
+              clonedEl.style.display = "inline"; // Changed from block to inline
+              clonedEl.style.opacity = "1";
+            }
+          });
+
+          // Apply styles to cloned employee positions
+          const clonedEmployeePositions =
+            clonedDoc.querySelectorAll(".employee-position");
+          clonedEmployeePositions.forEach((el, index) => {
+            const clonedEl = el as HTMLElement;
+            const styles = employeePositionStyles[index];
+            if (styles) {
+              clonedEl.style.fontFamily = styles.fontFamily;
+              clonedEl.style.fontSize = styles.fontSize;
+              clonedEl.style.color = styles.color;
+              clonedEl.style.visibility = "visible";
+              clonedEl.style.opacity = "1";
+            }
+          });
+
+          // AGGRESSIVE FIX: Force all text to be visible
+          const allTextElements = clonedDoc.querySelectorAll(
+            "span, p, h1, h2, h3, h4, h5, h6, div",
+          );
+          allTextElements.forEach((el) => {
+            const element = el as HTMLElement;
+            if (element.textContent && element.textContent.trim() !== "") {
+              element.style.opacity = "1";
+              element.style.visibility = "visible";
+              element.style.color = element.style.color || "#000";
+            }
+          });
+
+          // Debug logging
+          console.log("Cloned employee names:", clonedEmployeeNames.length);
+          console.log(
+            "Employee name styles applied:",
+            employeeNameStyles.length,
+          );
         },
       });
 
