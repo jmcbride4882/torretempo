@@ -337,8 +337,8 @@
 
   body {
     background: white !important;
-    font-size: 11pt !important; /* Increased base font size */
-    line-height: 1.4 !important;
+    font-size: 9pt !important; /* Smaller for portrait to fit more */
+    line-height: 1.3 !important;
     color: #000 !important;
   }
 
@@ -418,9 +418,9 @@
   }
 
   .schedule-title {
-    font-size: 18pt !important; /* Larger title */
+    font-size: 14pt !important; /* Compact for portrait */
     color: #000 !important;
-    margin-right: 1rem !important;
+    margin-right: 0.5rem !important;
     font-weight: 700 !important;
   }
 
@@ -438,13 +438,13 @@
   }
 
   .current-week {
-    font-size: 12pt !important;
+    font-size: 10pt !important;
     color: #000 !important;
     text-align: left !important;
     min-width: auto !important;
   }
 
-  /* Calendar container - FORCE DESKTOP VIEW FOR ALL DEVICES */
+  /* Calendar container - FORCE DESKTOP GRID FOR ALL DEVICES */
   .schedule-calendar {
     background: white !important;
     box-shadow: none !important;
@@ -454,11 +454,8 @@
     display: block !important; /* Always show calendar */
   }
 
-  /* Hide mobile view, show desktop grid for ALL devices */
-  .schedule-calendar.mobile {
-    display: none !important;
-  }
-
+  /* CRITICAL FIX: Force mobile calendar to show and use desktop grid layout */
+  .schedule-calendar.mobile,
   .schedule-calendar.desktop {
     display: block !important;
     overflow: visible !important;
@@ -477,11 +474,18 @@
     flex-direction: column !important;
   }
 
-  /* Force grid layout for print */
-  .calendar-header,
-  .calendar-row {
+  /* Force grid layout for print - OPTIMIZED FOR PORTRAIT */
+  /* Apply to ALL calendar-header and calendar-row regardless of parent class */
+  .schedule-calendar .calendar-header,
+  .schedule-calendar .calendar-row,
+  .schedule-calendar.mobile .calendar-header,
+  .schedule-calendar.mobile .calendar-row,
+  .schedule-calendar.desktop .calendar-header,
+  .schedule-calendar.desktop .calendar-row {
     display: grid !important;
-    grid-template-columns: 1.8in repeat(7, 1fr) 1.8in !important; /* Employee columns: 1.8in, Days: equal width */
+    /* Portrait paper: ~8in width - 0.6in margins = 7.4in usable
+       Employee columns: 1.5in each (3in total) = 4.4in for 7 days = 0.63in per day */
+    grid-template-columns: 1.5in repeat(7, 0.63in) 1.5in !important;
   }
 
   /* Calendar header row */
@@ -492,7 +496,7 @@
   }
 
   .header-cell {
-    padding: 0.5rem 0.3rem !important;
+    padding: 0.3rem 0.15rem !important;
     border-right: 1px solid #999 !important;
   }
 
@@ -501,9 +505,10 @@
   }
 
   .header-cell.employee-header {
-    font-size: 10pt !important; /* Larger employee header */
+    font-size: 8pt !important; /* Compact for portrait */
     color: #000 !important;
     font-weight: 700 !important;
+    padding-left: 0.25rem !important;
   }
 
   .header-cell.day-header {
@@ -515,14 +520,14 @@
   }
 
   .header-cell .day-name {
-    font-size: 8pt !important; /* Larger day names */
+    font-size: 6pt !important; /* Smaller for portrait */
     color: #333 !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
   }
 
   .header-cell .day-number {
-    font-size: 11pt !important; /* Larger day numbers */
+    font-size: 8pt !important; /* Smaller for portrait */
     color: #000 !important;
     font-weight: 700 !important;
   }
@@ -543,38 +548,40 @@
 
   /* Employee cells */
   .employee-cell {
-    padding: 0.4rem 0.5rem !important;
+    padding: 0.25rem 0.3rem !important;
     border-right: 1px solid #999 !important;
     background: #fafafa !important;
-    min-height: 0.8in !important; /* Minimum row height for readability */
+    min-height: 0.65in !important; /* Smaller for portrait to fit more rows */
   }
 
   .employee-avatar {
-    width: 28px !important; /* Larger avatars */
-    height: 28px !important;
-    font-size: 9pt !important;
+    width: 22px !important; /* Smaller avatars for portrait */
+    height: 22px !important;
+    font-size: 7pt !important;
     background: #555 !important;
     color: white !important;
   }
 
   .unassigned-avatar {
-    width: 28px !important;
-    height: 28px !important;
+    width: 22px !important;
+    height: 22px !important;
     background: #ccc !important;
   }
 
   .employee-name {
-    font-size: 10pt !important; /* Larger employee names */
+    font-size: 8pt !important; /* Compact for portrait */
     color: #000 !important;
     font-weight: 600 !important;
     white-space: normal !important; /* Allow wrapping */
     word-break: break-word !important;
+    line-height: 1.2 !important;
   }
 
   .employee-position {
-    font-size: 8pt !important; /* Larger positions */
+    font-size: 6.5pt !important; /* Compact for portrait */
     color: #444 !important;
     white-space: normal !important; /* Allow wrapping */
+    line-height: 1.2 !important;
   }
 
   .employee-details {
@@ -591,8 +598,8 @@
   /* Day cells - Drop cells */
   .drop-cell {
     border-right: 1px solid #999 !important;
-    padding: 0.3rem !important;
-    min-height: 0.8in !important; /* Match employee cell height */
+    padding: 0.15rem !important;
+    min-height: 0.65in !important; /* Match employee cell height */
     background: white !important;
   }
 
@@ -604,19 +611,19 @@
     background: #f5f5f5 !important;
   }
 
-  /* Shift cards - print-friendly with larger text */
+  /* Shift cards - COMPACT for portrait printing */
   .shift-card {
     background: white !important;
     border: 1px solid #666 !important;
-    border-left: 3px solid #333 !important;
-    border-radius: 3px !important;
+    border-left: 2px solid #333 !important;
+    border-radius: 2px !important;
     box-shadow: none !important;
-    padding: 0.3rem 0.4rem !important;
-    margin: 0.2rem 0 !important;
+    padding: 0.15rem 0.2rem !important;
+    margin: 0.1rem 0 !important;
     cursor: default !important;
     transform: none !important;
     min-height: auto !important;
-    max-height: none !important; /* Remove height restrictions for print */
+    max-height: none !important;
     overflow: visible !important;
     page-break-inside: avoid !important;
   }
@@ -640,24 +647,30 @@
   }
 
   .shift-time {
-    font-size: 10pt !important; /* Larger shift times */
+    font-size: 7.5pt !important; /* Compact for portrait */
     font-weight: 700 !important;
     color: #000 !important;
-    margin-bottom: 0.15rem !important;
-    white-space: normal !important; /* Allow wrapping if needed */
+    margin-bottom: 0.08rem !important;
+    white-space: nowrap !important; /* Don't wrap times */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .shift-role {
-    font-size: 9pt !important; /* Larger role text */
+    font-size: 6.5pt !important; /* Compact for portrait */
     color: #333 !important;
-    margin-bottom: 0.1rem !important;
-    white-space: normal !important; /* Allow wrapping */
+    margin-bottom: 0.05rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .shift-location {
-    font-size: 8pt !important; /* Larger location text */
+    font-size: 6pt !important; /* Compact for portrait */
     color: #555 !important;
-    white-space: normal !important; /* Allow wrapping */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .shift-conflict-indicator,
