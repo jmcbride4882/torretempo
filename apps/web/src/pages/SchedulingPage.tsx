@@ -678,33 +678,60 @@ export default function SchedulingPage() {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Capture the calendar
+      // CRITICAL FIX: Calculate the ACTUAL full width before cloning
+      // The calendar has overflow-x: auto, so scrollWidth gives us the real content width
+      const fullCalendarWidth = calendarElement.scrollWidth;
+      console.log("Original calendar scrollWidth:", fullCalendarWidth);
+
       const canvas = await html2canvas(calendarElement, {
         backgroundColor: "#ffffff",
         scale: 2,
-        logging: false,
+        logging: true, // Enable logging to debug
         useCORS: true,
         allowTaint: false,
-        width: calendarElement.scrollWidth, // Capture full scrollable width
+        width: fullCalendarWidth, // Use the actual scrollable width
         height: calendarElement.scrollHeight,
-        windowWidth: Math.max(1200, calendarElement.scrollWidth),
+        windowWidth: fullCalendarWidth + 100, // Add padding to ensure full capture
+        x: 0, // Start from left edge
+        y: 0, // Start from top edge
+        scrollX: 0, // Reset any scroll offset
+        scrollY: 0,
         onclone: (clonedDoc) => {
-          // FIX: Remove overflow restriction to capture full width including Sunday
+          // Remove ALL overflow restrictions in the cloned document
           const clonedCalendar = clonedDoc.querySelector(
             ".schedule-calendar",
           ) as HTMLElement;
           if (clonedCalendar) {
-            clonedCalendar.style.overflowX = "visible";
-            clonedCalendar.style.width = "max-content";
+            clonedCalendar.style.overflow = "visible";
+            clonedCalendar.style.width = `${fullCalendarWidth}px`; // Set exact width
+            clonedCalendar.style.maxWidth = "none";
           }
 
-          // Ensure calendar grid expands to full width
+          // Ensure grid expands to full natural width
           const clonedGrid = clonedDoc.querySelector(
             ".calendar-grid",
           ) as HTMLElement;
           if (clonedGrid) {
-            clonedGrid.style.width = "max-content";
-            clonedGrid.style.minWidth = "1200px"; // Ensure full week is visible
+            clonedGrid.style.width = `${fullCalendarWidth}px`;
+            clonedGrid.style.minWidth = `${fullCalendarWidth}px`;
           }
+
+          // Remove overflow from header
+          const header = clonedDoc.querySelector(
+            ".calendar-header",
+          ) as HTMLElement;
+          if (header) {
+            header.style.overflow = "visible";
+            header.style.width = `${fullCalendarWidth}px`;
+          }
+
+          // Remove overflow from all rows
+          const rows = clonedDoc.querySelectorAll(".calendar-row");
+          rows.forEach((row) => {
+            const rowEl = row as HTMLElement;
+            rowEl.style.overflow = "visible";
+            rowEl.style.width = `${fullCalendarWidth}px`;
+          });
 
           // Ensure employee details are visible
           const employeeDetails =
@@ -715,8 +742,9 @@ export default function SchedulingPage() {
             element.style.visibility = "visible";
           });
 
+          console.log("Cloned calendar set to width:", fullCalendarWidth);
           console.log("Captured employee details:", employeeDetails.length);
-          console.log("Cloned calendar width:", clonedCalendar?.scrollWidth);
+          console.log("Total rows:", rows.length);
         },
       });
 
