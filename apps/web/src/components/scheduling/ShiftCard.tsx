@@ -55,10 +55,15 @@ export default function ShiftCard({
     onContextMenu?.(e);
   };
 
-  const handleSwapClick = (e: React.MouseEvent) => {
+  const handleSwapClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onSwapRequest?.();
+  };
+
+  // Prevent drag events from interfering with swap button on mobile
+  const handleSwapPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation(); // Stop drag handlers from capturing this event
   };
 
   const getConflictClass = () => {
@@ -117,6 +122,8 @@ export default function ShiftCard({
         <button
           className="shift-swap-button"
           onClick={handleSwapClick}
+          onPointerDown={handleSwapPointerDown}
+          onTouchStart={(e) => e.stopPropagation()}
           title="Request shift swap"
           aria-label="Request shift swap"
         >

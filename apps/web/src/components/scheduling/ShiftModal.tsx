@@ -149,7 +149,11 @@ export default function ShiftModal({
       >
         <div className="modal-header">
           <h2>
-            {isEditing ? t("schedule.editShift") : t("schedule.createShift")}
+            {isLocked && isEditing
+              ? "View Shift Details"
+              : isEditing
+                ? t("schedule.editShift")
+                : t("schedule.createShift")}
           </h2>
           <button className="modal-close" onClick={onClose}>
             <svg

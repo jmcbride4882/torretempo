@@ -575,11 +575,9 @@ export default function SchedulingPage() {
     [schedule, copiedShift, handlePasteShift],
   );
 
-  // Open shift modal for editing
+  // Open shift modal for viewing/editing
   const handleShiftClick = useCallback((shift: Shift) => {
-    // Block employees from editing shifts
-    if (!canManageEmployees()) return;
-
+    // Everyone can VIEW shifts, but employees see read-only modal
     setSelectedShift(shift);
     setDefaultShiftDate(null);
     setDefaultEmployeeId("");
@@ -820,7 +818,7 @@ export default function SchedulingPage() {
         defaultDate={defaultShiftDate || undefined}
         defaultEmployeeId={defaultEmployeeId}
         conflicts={selectedShift?.conflictDetails}
-        isLocked={schedule?.status === "locked"}
+        isLocked={schedule?.status === "locked" || !canManageEmployees()}
       />
 
       {/* Swap shift modal */}

@@ -64,7 +64,7 @@ export default function SwapShiftModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h2>{t("schedule.requestSwap")}</h2>
+          <h2>Request Shift Swap</h2>
           <button className="modal-close" onClick={onClose}>
             <svg
               width="24"
@@ -81,7 +81,7 @@ export default function SwapShiftModal({
         </div>
 
         <div className="swap-shift-info">
-          <h3>{t("schedule.shiftDetails")}</h3>
+          <h3>Your Shift</h3>
           <div className="shift-details">
             <div className="detail-row">
               <span className="detail-label">{t("schedule.date")}:</span>
