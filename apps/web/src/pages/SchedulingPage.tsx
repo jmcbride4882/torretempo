@@ -644,44 +644,46 @@ export default function SchedulingPage() {
       // Show loading toast
       showToast(t("schedule.capturingImage"), "info");
 
-      // Store current mobile state
-      const wasMobileView = isMobile;
+      console.log("Share WhatsApp: Starting capture, is mobile:", isMobile);
 
-      console.log(
-        "Share WhatsApp: Starting capture, is mobile:",
-        wasMobileView,
-      );
+      // Find the calendar to capture
+      // On mobile: Use hidden desktop calendar, on desktop: Use visible calendar
+      let calendarElement: HTMLElement | null;
 
-      // CRITICAL FIX: Force parent component to desktop mode for rendering
-      if (wasMobileView) {
-        // Temporarily set isMobile to false to force desktop grid render
-        setIsMobile(false);
-
-        // Wait for React to re-render with desktop grid (not mobile list)
-        await new Promise((resolve) => setTimeout(resolve, 300));
+      if (isMobile) {
+        // Mobile: Find hidden desktop calendar
+        const hiddenContainer = document.getElementById(
+          "hidden-desktop-calendar",
+        );
+        if (hiddenContainer) {
+          calendarElement = hiddenContainer.querySelector(
+            ".schedule-calendar",
+          ) as HTMLElement;
+        } else {
+          calendarElement = null;
+        }
+        console.log("Mobile: Looking for hidden desktop calendar");
+      } else {
+        // Desktop: Use visible calendar
+        calendarElement = document.querySelector(
+          ".schedule-calendar.desktop",
+        ) as HTMLElement;
+        console.log("Desktop: Using visible calendar");
       }
 
-      // Now find the desktop-rendered calendar
-      let calendarElement = document.querySelector(
-        ".schedule-calendar.desktop",
-      ) as HTMLElement;
-
       if (!calendarElement) {
-        const errorMsg =
-          "Desktop calendar element not found after forcing desktop mode";
+        const errorMsg = `Calendar element not found (isMobile: ${isMobile})`;
         console.error(errorMsg);
-        // Restore mobile state before returning
-        if (wasMobileView) setIsMobile(true);
         showToast(t("schedule.shareError") + ": " + errorMsg, "error");
         return;
       }
 
-      console.log("Desktop calendar found, preparing capture...");
+      console.log("Calendar found, preparing capture...");
 
       // FIX 1: Ensure fonts are loaded before capture
       await document.fonts.ready;
       // Small delay to ensure browser rendering is complete
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // FIX 2: Capture styles from ORIGINAL elements BEFORE cloning
       const originalEmployeeNames =
@@ -816,11 +818,6 @@ export default function SchedulingPage() {
         canvas.height,
       );
 
-      // Restore mobile view if it was mobile originally
-      if (wasMobileView) {
-        setIsMobile(true);
-      }
-
       // FIX 4: Use synchronous conversion for PWA compatibility
       const dataUrl = canvas.toDataURL("image/png", 0.95);
       const blob = await (await fetch(dataUrl)).blob();
@@ -880,11 +877,6 @@ export default function SchedulingPage() {
         isPWA: window.matchMedia("(display-mode: standalone)").matches,
         userAgent: navigator.userAgent,
       });
-
-      // Ensure we restore mobile state even on error
-      if (window.innerWidth < 768) {
-        setIsMobile(true);
-      }
     }
   };
 
@@ -1088,6 +1080,40 @@ export default function SchedulingPage() {
           copiedShift={copiedShift}
           selectedShiftId={selectedShift?.id || null}
         />
+      )}
+
+      {/* Hidden desktop calendar for WhatsApp capture on mobile */}
+      {schedule && isMobile && (
+        <div
+          id="hidden-desktop-calendar"
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "0",
+            width: "1400px",
+            visibility: "visible",
+            pointerEvents: "none",
+          }}
+        >
+          <ScheduleCalendar
+            weekStart={currentWeekStart}
+            shifts={
+              selectedLocation
+                ? shifts.filter((s) => s.location === selectedLocation)
+                : shifts
+            }
+            employees={employees}
+            onShiftClick={() => {}}
+            onCellClick={() => {}}
+            onShiftMove={() => {}}
+            currentEmployeeId={currentEmployeeId}
+            isLocked={true}
+            isMobile={false}
+            selectedDay={0}
+            copiedShift={null}
+            selectedShiftId={null}
+          />
+        </div>
       )}
 
       <ShiftModal
