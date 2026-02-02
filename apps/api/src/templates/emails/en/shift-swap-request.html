@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: #334155;
+        margin: 0;
+        padding: 0;
+        background-color: #f8fafc;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        padding: 40px 20px;
+        text-align: center;
+        color: white;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+      }
+      .content {
+        padding: 40px 30px;
+      }
+      .greeting {
+        font-size: 18px;
+        font-weight: 500;
+        color: #1e293b;
+        margin-bottom: 20px;
+      }
+      .shift-details-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 25px 0;
+      }
+      .shift-details-box h3 {
+        margin: 0 0 15px 0;
+        font-size: 16px;
+        color: #475569;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+        padding: 10px;
+        background: white;
+        border-radius: 6px;
+      }
+      .detail-label {
+        font-weight: 500;
+        color: #64748b;
+      }
+      .detail-value {
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .reason-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 20px 0;
+        font-size: 14px;
+      }
+      .reason-box strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #92400e;
+      }
+      .button {
+        display: inline-block;
+        padding: 14px 28px;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+        margin: 10px 5px;
+      }
+      .button-secondary {
+        background: #ef4444;
+      }
+      .footer {
+        background: #f8fafc;
+        padding: 30px;
+        text-align: center;
+        color: #64748b;
+        font-size: 14px;
+        border-top: 1px solid #e2e8f0;
+      }
+      .footer-copyright {
+        margin-top: 15px;
+        font-size: 12px;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔄 Shift Swap Request</h1>
+      </div>
+      <div class="content">
+        <div class="greeting">Hi {{requesteeName}},</div>
+        <p>
+          You have received a shift swap request from
+          <strong>{{requesterName}}</strong>.
+        </p>
+
+        <div class="shift-details-box">
+          <h3>📅 Shift Details</h3>
+          <div class="detail-row">
+            <span class="detail-label">Date:</span>
+            <span class="detail-value">{{shiftDate}}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Time:</span>
+            <span class="detail-value">{{shiftTime}}</span>
+          </div>
+          {{#if shiftRole}}
+          <div class="detail-row">
+            <span class="detail-label">Role:</span>
+            <span class="detail-value">{{shiftRole}}</span>
+          </div>
+          {{/if}} {{#if shiftLocation}}
+          <div class="detail-row">
+            <span class="detail-label">Location:</span>
+            <span class="detail-value">{{shiftLocation}}</span>
+          </div>
+          {{/if}}
+        </div>
+
+        {{#if reason}}
+        <div class="reason-box">
+          <strong>📝 Request Reason:</strong>
+          {{reason}}
+        </div>
+        {{/if}}
+
+        <center>
+          <p style="margin: 30px 0 20px 0; color: #64748b">
+            Log in to Torre Tempo to accept or reject this request:
+          </p>
+          <a href="{{appUrl}}" class="button">View Request</a>
+        </center>
+
+        <p style="margin-top: 30px; color: #64748b; font-size: 14px">
+          This request is pending your response. If you don't wish to swap this
+          shift, you can reject it from the app.
+        </p>
+      </div>
+      <div class="footer">
+        <p>Torre Tempo - Shift Management System</p>
+        <div class="footer-copyright">
+          © {{year}} Lakeside La Torre (Murcia) Group SL<br />
+          Designed and Developed by John McBride
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

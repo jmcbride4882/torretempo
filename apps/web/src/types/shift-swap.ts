@@ -46,10 +46,11 @@ export interface ShiftSwapRequest {
 
 export interface CreateShiftSwapInput {
   shiftId: string;
-  requestedTo: string; // Employee ID
+  requestedTo?: string; // Employee ID (optional if broadcasting)
   targetShiftId?: string;
   reason?: string;
   notes?: string;
+  broadcastToRole?: boolean; // If true, broadcast to all employees with same role
 }
 
 export interface ApproveShiftSwapInput {

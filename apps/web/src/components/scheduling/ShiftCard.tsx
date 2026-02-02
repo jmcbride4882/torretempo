@@ -97,6 +97,9 @@ export default function ShiftCard({
       <div className="shift-time">
         {format(startTime, "HH:mm")} - {format(endTime, "HH:mm")}
       </div>
+      {shift.employeeName && (
+        <div className="shift-employee-name">{shift.employeeName}</div>
+      )}
       {shift.role && <div className="shift-role">{shift.role}</div>}
       {shift.location && <div className="shift-location">{shift.location}</div>}
       {shift.hasConflicts && (

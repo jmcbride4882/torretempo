@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
@@ -11,8 +12,58 @@ import SettingsPage from "./pages/SettingsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/DashboardLayout";
 import InstallPrompt from "./components/InstallPrompt";
+import { useAuthStore } from "./stores/authStore";
+import {
+  initOneSignal,
+  subscribeToNotifications,
+  setExternalUserId,
+} from "./services/oneSignal";
+import { userService } from "./services/userService";
 
 function App() {
+  const { user, isAuthenticated } = useAuthStore();
+
+  // Initialize OneSignal when user is authenticated
+  useEffect(() => {
+    const setupPushNotifications = async () => {
+      // Only initialize if user is authenticated and OneSignal App ID is configured
+      const appId = import.meta.env.VITE_ONESIGNAL_APP_ID;
+
+      if (!isAuthenticated || !user || !appId) {
+        return;
+      }
+
+      try {
+        // Initialize OneSignal SDK
+        await initOneSignal(appId);
+
+        // Small delay to ensure OneSignal is fully loaded
+        setTimeout(async () => {
+          try {
+            // Subscribe user to push notifications
+            const playerId = await subscribeToNotifications();
+
+            if (playerId) {
+              // Set external user ID for targeting
+              await setExternalUserId(user.id);
+
+              // Save player ID to backend
+              await userService.updateOneSignalPlayerId(playerId);
+
+              console.log("[App] Push notifications configured successfully");
+            }
+          } catch (error) {
+            console.error("[App] Failed to setup push notifications:", error);
+          }
+        }, 1000);
+      } catch (error) {
+        console.error("[App] Failed to initialize OneSignal:", error);
+      }
+    };
+
+    setupPushNotifications();
+  }, [isAuthenticated, user]);
+
   return (
     <BrowserRouter>
       <InstallPrompt />

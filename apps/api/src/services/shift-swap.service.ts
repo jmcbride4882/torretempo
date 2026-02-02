@@ -1,14 +1,19 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import { emailService } from "./email.service";
+import { oneSignalService } from "./onesignal.service";
+import { format } from "date-fns";
+import { logger } from "../utils/logger";
 
 const prisma = new PrismaClient();
 
 export interface CreateShiftSwapInput {
   shiftId: string;
   requestedBy: string; // Employee ID
-  requestedTo: string; // Employee ID
+  requestedTo?: string; // Employee ID (optional if broadcasting)
   targetShiftId?: string; // Optional: if swapping with another specific shift
   reason?: string;
   notes?: string;
+  broadcastToRole?: boolean; // If true, broadcast to all employees with same role
 }
 
 export interface ApproveShiftSwapInput {
@@ -31,7 +36,127 @@ export interface GetAllSwapRequestsFilters {
 }
 
 /**
- * Create a new shift swap request
+ * Send email notification to requestee about new swap request
+ */
+async function sendSwapRequestEmail(
+  tenantId: string,
+  swapRequest: any,
+): Promise<void> {
+  try {
+    const requestee = swapRequest.requestee;
+    const requester = swapRequest.requester;
+    const shift = swapRequest.shift;
+
+    if (!requestee?.user?.email || !requester?.user) {
+      logger.warn(
+        { swapRequestId: swapRequest.id },
+        "Cannot send swap request email: missing user data",
+      );
+      return;
+    }
+
+    // Get requestee's preferred language (default to Spanish)
+    const language = requestee.user.preferredLanguage || "es";
+
+    // Format shift date and time
+    const shiftStart = new Date(shift.startTime);
+    const shiftEnd = new Date(shift.endTime);
+    const shiftDate = format(shiftStart, "EEEE, d MMMM yyyy");
+    const shiftTime = `${format(shiftStart, "HH:mm")} - ${format(shiftEnd, "HH:mm")}`;
+
+    // Get app URL
+    const appUrl = process.env.APP_URL || "https://time.lsltgroup.es";
+
+    // Prepare email variables
+    const variables = {
+      requesteeName: requestee.user.firstName,
+      requesterName: `${requester.user.firstName} ${requester.user.lastName}`,
+      shiftDate,
+      shiftTime,
+      shiftRole: shift.role || "",
+      shiftLocation: shift.location || "",
+      reason: swapRequest.reason || "",
+      appUrl,
+    };
+
+    // Send email asynchronously (don't await to avoid blocking)
+    const subject =
+      language === "es"
+        ? "Solicitud de Intercambio de Turno"
+        : "Shift Swap Request";
+
+    emailService
+      .sendEmail(tenantId, {
+        to: requestee.user.email,
+        subject,
+        template: "shift-swap-request",
+        language,
+        variables,
+      })
+      .catch((error) => {
+        logger.error(
+          { error, swapRequestId: swapRequest.id },
+          "Failed to send swap request email",
+        );
+      });
+
+    logger.info(
+      {
+        swapRequestId: swapRequest.id,
+        to: requestee.user.email,
+      },
+      "Swap request email queued",
+    );
+
+    // Send push notification if user has OneSignal player ID
+    if (requestee.user.oneSignalPlayerId) {
+      const notificationTitle =
+        language === "es"
+          ? "Nueva Solicitud de Intercambio de Turno"
+          : "New Shift Swap Request";
+      const notificationMessage =
+        language === "es"
+          ? `${requester.user.firstName} ${requester.user.lastName} quiere intercambiar turnos`
+          : `${requester.user.firstName} ${requester.user.lastName} wants to swap shifts`;
+
+      // Send notification asynchronously (don't await to avoid blocking)
+      oneSignalService
+        .sendNotification(
+          [requestee.user.oneSignalPlayerId],
+          notificationTitle,
+          notificationMessage,
+          {
+            type: "shift_swap_request",
+            swapRequestId: swapRequest.id,
+            shiftId: shift.id,
+            requesterId: requester.id,
+          },
+        )
+        .catch((error) => {
+          logger.error(
+            { error, swapRequestId: swapRequest.id },
+            "Failed to send swap request push notification",
+          );
+        });
+
+      logger.info(
+        {
+          swapRequestId: swapRequest.id,
+          playerId: requestee.user.oneSignalPlayerId,
+        },
+        "Swap request push notification queued",
+      );
+    }
+  } catch (error) {
+    logger.error(
+      { error, swapRequestId: swapRequest.id },
+      "Error preparing swap request email",
+    );
+  }
+}
+
+/**
+ * Create a new shift swap request (or multiple if broadcasting)
  */
 export async function create(tenantId: string, input: CreateShiftSwapInput) {
   // Validate that the shift exists and belongs to the tenant
@@ -49,6 +174,94 @@ export async function create(tenantId: string, input: CreateShiftSwapInput) {
   // Validate that requester owns the shift
   if (shift.employeeId !== input.requestedBy) {
     throw new Error("Only the assigned employee can request a swap");
+  }
+
+  // If broadcasting to role
+  if (input.broadcastToRole) {
+    // Validate shift has a role
+    if (!shift.role) {
+      throw new Error(
+        "Cannot broadcast swap request: shift has no role assigned",
+      );
+    }
+
+    // Find all active employees with the same role (excluding the requester)
+    const employeesWithRole = await prisma.employee.findMany({
+      where: {
+        tenantId,
+        status: "active",
+        id: { not: input.requestedBy },
+        position: shift.role, // Match position to shift role
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (employeesWithRole.length === 0) {
+      throw new Error(`No active employees found with role: ${shift.role}`);
+    }
+
+    // Create swap requests for all matching employees
+    const swapRequests = await Promise.all(
+      employeesWithRole.map((employee) =>
+        prisma.shiftSwapRequest.create({
+          data: {
+            tenantId,
+            shiftId: input.shiftId,
+            requestedBy: input.requestedBy,
+            requestedTo: employee.id,
+            targetShiftId: input.targetShiftId,
+            reason: input.reason,
+            notes: input.notes,
+            status: "pending",
+          },
+          include: {
+            shift: {
+              include: {
+                employee: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+            targetShift: {
+              include: {
+                employee: {
+                  include: {
+                    user: true,
+                  },
+                },
+              },
+            },
+            requester: {
+              include: {
+                user: true,
+              },
+            },
+            requestee: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        }),
+      ),
+    );
+
+    // Send email notifications to all requestees (async, don't block)
+    swapRequests.forEach((swapRequest) => {
+      sendSwapRequestEmail(tenantId, swapRequest);
+    });
+
+    // Return the first one (for compatibility), but all are created
+    return swapRequests[0];
+  }
+
+  // Single employee swap request
+  if (!input.requestedTo) {
+    throw new Error("requestedTo is required when not broadcasting");
   }
 
   // Validate that requestee exists and belongs to the tenant
@@ -124,6 +337,9 @@ export async function create(tenantId: string, input: CreateShiftSwapInput) {
       },
     },
   });
+
+  // Send email notification to requestee (async, don't block)
+  sendSwapRequestEmail(tenantId, swapRequest);
 
   return swapRequest;
 }

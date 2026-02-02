@@ -2,7 +2,8 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow-x: auto; /* Allow horizontal scroll */
+  overflow-y: hidden;
 }
 
 /* Desktop Grid Layout */
@@ -13,7 +14,7 @@
 
 .calendar-header {
   display: grid;
-  grid-template-columns: 180px repeat(7, 1fr);
+  grid-template-columns: minmax(150px, auto) repeat(7, 1fr) minmax(150px, auto); /* Employee LEFT (dynamic) + 7 days + Employee RIGHT (dynamic) */
   background: #f8fafc;
   border-bottom: 2px solid #e2e8f0;
   position: sticky;
@@ -61,7 +62,7 @@
 
 .calendar-row {
   display: grid;
-  grid-template-columns: 180px repeat(7, 1fr);
+  grid-template-columns: minmax(150px, auto) repeat(7, 1fr) minmax(150px, auto); /* Employee LEFT (dynamic) + 7 days + Employee RIGHT (dynamic) */
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -259,14 +260,18 @@
   }
 }
 
-@media (max-width: 1024px) {
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Tablet view only - NOT mobile */
   .calendar-header,
   .calendar-row {
-    grid-template-columns: 120px repeat(7, 1fr);
+    grid-template-columns: minmax(100px, auto) repeat(7, 1fr) minmax(
+        100px,
+        auto
+      ); /* Employee LEFT (dynamic) + 7 days + Employee RIGHT (dynamic) */
   }
 
   .employee-details {
-    display: none;
+    display: none; /* Hide names on tablet to save space */
   }
 
   .employee-info {
@@ -305,16 +310,23 @@
   }
 
   .schedule-calendar.mobile .calendar-grid {
-    min-width: 800px; /* Force horizontal scroll */
+    min-width: fit-content; /* Auto-size based on content */
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .schedule-calendar.mobile .calendar-header,
   .schedule-calendar.mobile .calendar-row {
-    grid-template-columns: 100px repeat(7, minmax(90px, 1fr));
+    display: grid !important;
+    grid-template-columns: minmax(130px, max-content) repeat(7, 100px) minmax(
+        130px,
+        max-content
+      ) !important; /* Employee columns auto-size based on content */
   }
 
   .schedule-calendar.mobile .employee-cell {
     padding: 0.5rem 0.5rem;
+    /* No min-width - cell auto-sizes to content */
   }
 
   .schedule-calendar.mobile .employee-avatar {
@@ -323,20 +335,31 @@
     font-size: 0.65rem;
   }
 
+  .schedule-calendar.mobile .employee-info {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important; /* Top-align when text wraps */
+    gap: 0.5rem !important;
+  }
+
   .schedule-calendar.mobile .employee-details {
-    display: flex !important; /* Override hiding */
+    display: flex !important; /* Override tablet hiding */
+    flex-direction: column !important;
     min-width: 0;
+    flex: 1; /* Take remaining space */
   }
 
   .schedule-calendar.mobile .employee-name {
     font-size: 0.75rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal; /* Allow wrapping instead of ellipsis */
+    line-height: 1.2;
+    word-break: break-word; /* Break long names if needed */
   }
 
   .schedule-calendar.mobile .employee-position {
     font-size: 0.65rem;
+    white-space: normal; /* Allow wrapping */
+    line-height: 1.2;
   }
 
   .schedule-calendar.mobile .header-cell {
@@ -349,6 +372,15 @@
 
   .schedule-calendar.mobile .day-number {
     font-size: 0.8rem;
+  }
+
+  /* Mobile: Disable drag cursor - shifts are tap-only */
+  .schedule-calendar.mobile .shift-card {
+    cursor: pointer !important; /* Override grab cursor */
+  }
+
+  .schedule-calendar.mobile .shift-card:active {
+    cursor: pointer !important; /* Override grabbing cursor */
   }
 }
 

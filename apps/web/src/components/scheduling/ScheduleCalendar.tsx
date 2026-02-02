@@ -61,19 +61,23 @@ export default function ScheduleCalendar({
   const { t } = useTranslation();
   const [activeShift, setActiveShift] = useState<Shift | null>(null);
 
-  // Configure drag sensors
+  // Configure drag sensors - DISABLED on mobile to allow horizontal scrolling
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 300,
-        tolerance: 5,
-      },
-    }),
+    ...(isMobile
+      ? [] // Mobile: NO drag sensors (prevent conflict with horizontal scroll)
+      : [
+          useSensor(PointerSensor, {
+            activationConstraint: {
+              distance: 8,
+            },
+          }),
+          useSensor(TouchSensor, {
+            activationConstraint: {
+              delay: 300,
+              tolerance: 5,
+            },
+          }),
+        ]),
   );
 
   // Generate week days
@@ -208,6 +212,10 @@ export default function ScheduleCalendar({
               </span>
             </div>
           ))}
+          {/* Right-side employee header */}
+          <div className="header-cell employee-header">
+            {t("schedule.employee")}
+          </div>
         </div>
 
         {/* Unassigned row */}
@@ -249,6 +257,26 @@ export default function ScheduleCalendar({
               canPaste={!!copiedShift}
             />
           ))}
+          {/* Right-side employee cell */}
+          <div className="employee-cell">
+            <div className="employee-info">
+              <div className="unassigned-avatar">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+              </div>
+              <span className="employee-name">{t("schedule.unassigned")}</span>
+            </div>
+          </div>
         </div>
 
         {/* Employee rows */}
@@ -290,6 +318,25 @@ export default function ScheduleCalendar({
                 canPaste={!!copiedShift}
               />
             ))}
+            {/* Right-side employee cell */}
+            <div className="employee-cell">
+              <div className="employee-info">
+                <div className="employee-avatar">
+                  {employee.user.firstName.charAt(0)}
+                  {employee.user.lastName.charAt(0)}
+                </div>
+                <div className="employee-details">
+                  <span className="employee-name">
+                    {employee.user.firstName} {employee.user.lastName}
+                  </span>
+                  {employee.position && (
+                    <span className="employee-position">
+                      {employee.position}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -379,14 +426,24 @@ export default function ScheduleCalendar({
     );
   };
 
+  // DEBUG: Log render mode
+  console.log(`📅 ScheduleCalendar rendering:`, {
+    isMobile,
+    mode: isMobile ? "MOBILE" : "DESKTOP",
+    renderFunction: "renderWeekGrid (ALWAYS)",
+    dragAndDrop: isMobile ? "DISABLED (allows horizontal scroll)" : "ENABLED",
+    screenWidth: window.innerWidth,
+  });
+
   return (
     <DndContext
-      sensors={sensors}
+      sensors={sensors} // Empty on mobile = no drag-and-drop
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className={`schedule-calendar ${isMobile ? "mobile" : "desktop"}`}>
         {/* Mobile: Always show compact grid (no more single day view) */}
+        {/* Mobile: Drag-drop DISABLED - shifts are tap-only to avoid scroll conflict */}
         {renderWeekGrid()}
       </div>
 

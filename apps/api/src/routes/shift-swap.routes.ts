@@ -14,13 +14,24 @@ router.use(requireModule("advanced_scheduling"));
 // VALIDATION SCHEMAS
 // ============================================================================
 
-const createSwapRequestSchema = z.object({
-  shiftId: z.string().uuid("Invalid shift ID"),
-  requestedTo: z.string().uuid("Invalid employee ID"),
-  targetShiftId: z.string().uuid().optional(),
-  reason: z.string().optional(),
-  notes: z.string().optional(),
-});
+const createSwapRequestSchema = z
+  .object({
+    shiftId: z.string().uuid("Invalid shift ID"),
+    requestedTo: z.string().uuid("Invalid employee ID").optional(),
+    targetShiftId: z.string().uuid().optional(),
+    reason: z.string().optional(),
+    notes: z.string().optional(),
+    broadcastToRole: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      // Either requestedTo OR broadcastToRole must be specified
+      return data.requestedTo || data.broadcastToRole;
+    },
+    {
+      message: "Either requestedTo or broadcastToRole must be specified",
+    },
+  );
 
 const approveSwapRequestSchema = z.object({
   // Manager approval - userId comes from req.user
@@ -84,6 +95,7 @@ router.post("/shift-swaps", isStaff, async (req, res) => {
       targetShiftId: data.targetShiftId,
       reason: data.reason,
       notes: data.notes,
+      broadcastToRole: data.broadcastToRole,
     });
 
     logger.info("Shift swap request created", {

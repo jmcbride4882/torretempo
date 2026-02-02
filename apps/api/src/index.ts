@@ -12,6 +12,7 @@ import scheduleRoutes from "./routes/schedule.routes";
 import shiftSwapRoutes from "./routes/shift-swap.routes";
 import tenantRoutes from "./routes/tenant.routes";
 import roleRoutes from "./routes/role.routes";
+import userRoutes from "./routes/user.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +38,7 @@ app.use("/api/v1/schedule", authenticate, scheduleRoutes);
 app.use("/api/v1/schedule", authenticate, shiftSwapRoutes);
 app.use("/api/v1/tenant", authenticate, tenantRoutes);
 app.use("/api/v1/tenant/roles", authenticate, roleRoutes);
+app.use("/api/v1/users", authenticate, userRoutes);
 
 // Error handling
 app.use(notFoundHandler);

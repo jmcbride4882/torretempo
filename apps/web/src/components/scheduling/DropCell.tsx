@@ -37,7 +37,7 @@ export default function DropCell({
   onShiftClick,
   onShiftContextMenu,
   onShiftSwapRequest,
-  currentEmployeeId,
+  currentEmployeeId: _currentEmployeeId, // Unused - kept for interface compatibility
   isLocked,
   isMobile,
   copiedShift,
@@ -95,11 +95,7 @@ export default function DropCell({
               onClick={() => onShiftClick(shift)}
               onContextMenu={(e) => onShiftContextMenu?.(shift, e)}
               onSwapRequest={() => onShiftSwapRequest?.(shift)}
-              showSwapButton={Boolean(
-                currentEmployeeId &&
-                shift.employeeId === currentEmployeeId &&
-                !isLocked,
-              )}
+              showSwapButton={Boolean(shift.employeeId)} // Show for all assigned shifts, even when locked
               isLocked={isLocked}
               isSelected={selectedShiftId === shift.id}
               clipboardMode={

@@ -1,33 +1,33 @@
 // Torre Tempo Service Worker
-// Version 2.1.0 - Force cache clear for WhatsApp share fix
+// Version 3.0.0 - NUCLEAR CACHE BUSTING (Network-First Strategy)
 
-const CACHE_NAME = "torre-tempo-v2.1-20260202-1800";
-const ASSETS_TO_CACHE = ["/", "/index.html", "/manifest.json", "/icon.svg"];
+const CACHE_NAME = "torre-tempo-v3.0-20260202-1820";
+const STATIC_ASSETS = ["/manifest.json", "/icon.svg"];
 
-// Install event - cache assets
+// Install event - cache only static assets (NOT HTML/JS/CSS)
 self.addEventListener("install", (event) => {
-  console.log("[SW] Installing service worker...");
+  console.log("[SW v3] Installing with network-first strategy...");
 
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => {
-        console.log("[SW] Caching app shell");
-        return cache.addAll(ASSETS_TO_CACHE);
+        console.log("[SW v3] Caching static assets only");
+        return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
-        console.log("[SW] Service worker installed");
+        console.log("[SW v3] Service worker installed - skipping wait");
         return self.skipWaiting();
       })
       .catch((error) => {
-        console.error("[SW] Installation failed:", error);
+        console.error("[SW v3] Installation failed:", error);
       }),
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - NUKE ALL OLD CACHES
 self.addEventListener("activate", (event) => {
-  console.log("[SW] Activating service worker...");
+  console.log("[SW v3] Activating - deleting ALL old caches...");
 
   event.waitUntil(
     caches
@@ -37,19 +37,19 @@ self.addEventListener("activate", (event) => {
           cacheNames
             .filter((cacheName) => cacheName !== CACHE_NAME)
             .map((cacheName) => {
-              console.log("[SW] Deleting old cache:", cacheName);
+              console.log("[SW v3] 🗑️ NUKING old cache:", cacheName);
               return caches.delete(cacheName);
             }),
         );
       })
       .then(() => {
-        console.log("[SW] Service worker activated");
+        console.log("[SW v3] ✅ Service worker activated - claiming clients");
         return self.clients.claim();
       }),
   );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - NETWORK FIRST for everything except icons
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -64,50 +64,44 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Skip hashed assets (JS/CSS with version hash in filename)
-  // Vite generates filenames like: index-DxCAcxTs.js, index-BokcDq__.css
-  // These change on every build, so NO caching needed
-  if (url.pathname.match(/\/assets\/.*-[a-zA-Z0-9_-]+\.(js|css)$/)) {
-    console.log("[SW] Skipping cache for hashed asset:", request.url);
-    return; // Let browser handle (will fetch fresh)
-  }
-
+  // NETWORK FIRST STRATEGY (opposite of old cache-first)
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        console.log("[SW] Serving from cache:", request.url);
-        return cachedResponse;
-      }
+    fetch(request)
+      .then((response) => {
+        // Only cache static assets (manifest, icons) - NOT HTML/JS/CSS
+        const isStaticAsset =
+          response &&
+          response.status === 200 &&
+          (url.pathname.endsWith("manifest.json") ||
+            url.pathname.endsWith(".svg") ||
+            url.pathname.endsWith(".png") ||
+            url.pathname.endsWith(".ico"));
 
-      console.log("[SW] Fetching from network:", request.url);
-      return fetch(request)
-        .then((response) => {
-          // Only cache app shell (HTML, manifest, icons)
-          // Do NOT cache hashed assets (handled above)
-          const shouldCache =
-            response &&
-            response.status === 200 &&
-            (url.pathname === "/" ||
-              url.pathname.endsWith(".html") ||
-              url.pathname.endsWith("manifest.json") ||
-              url.pathname.endsWith(".svg") ||
-              url.pathname.endsWith(".png"));
+        if (isStaticAsset) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, responseClone);
+          });
+        }
 
-          if (shouldCache) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
+        return response;
+      })
+      .catch((error) => {
+        console.warn("[SW v3] Network failed, trying cache:", request.url);
 
-          return response;
-        })
-        .catch((error) => {
-          console.error("[SW] Fetch failed:", error);
-          // Return offline page if available
-          return caches.match("/offline.html");
-        });
-    }),
+        // Only use cache as fallback for static assets
+        if (
+          url.pathname.endsWith(".svg") ||
+          url.pathname.endsWith(".png") ||
+          url.pathname.endsWith("manifest.json")
+        ) {
+          return caches.match(request);
+        }
+
+        // For HTML/JS/CSS, don't serve stale cache - fail gracefully
+        console.error("[SW v3] No cache fallback for:", request.url);
+        throw error;
+      }),
   );
 });
 

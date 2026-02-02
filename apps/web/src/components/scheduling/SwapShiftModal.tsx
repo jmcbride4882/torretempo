@@ -8,7 +8,11 @@ import "./SwapShiftModal.css";
 interface SwapShiftModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (targetEmployeeId: string, reason?: string) => void;
+  onSubmit: (
+    targetEmployeeId: string | null,
+    reason?: string,
+    broadcastToRole?: boolean,
+  ) => void;
   shift: Shift | null;
   employees: Employee[];
 }
@@ -24,6 +28,7 @@ export default function SwapShiftModal({
   const [targetEmployeeId, setTargetEmployeeId] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [broadcastToRole, setBroadcastToRole] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -31,16 +36,32 @@ export default function SwapShiftModal({
       setTargetEmployeeId("");
       setReason("");
       setSubmitting(false);
+      setBroadcastToRole(false);
     }
   }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!targetEmployeeId) return;
+
+    // Validate: either specific employee or broadcast to role
+    if (!broadcastToRole && !targetEmployeeId) return;
+
+    // Validate: shift must have a role if broadcasting
+    if (broadcastToRole && !shift?.role) {
+      alert(
+        t("schedule.swapBroadcastNoRole") ||
+          "Cannot broadcast: shift has no role assigned",
+      );
+      return;
+    }
 
     setSubmitting(true);
     try {
-      await onSubmit(targetEmployeeId, reason || undefined);
+      await onSubmit(
+        broadcastToRole ? null : targetEmployeeId,
+        reason || undefined,
+        broadcastToRole,
+      );
       onClose();
     } finally {
       setSubmitting(false);
@@ -111,31 +132,105 @@ export default function SwapShiftModal({
         </div>
 
         <form onSubmit={handleSubmit}>
+          {/* Broadcast option toggle */}
           <div className="form-group">
-            <label htmlFor="targetEmployee">
-              {t("schedule.swapWith")} <span className="required">*</span>
-            </label>
-            <select
-              id="targetEmployee"
-              value={targetEmployeeId}
-              onChange={(e) => setTargetEmployeeId(e.target.value)}
-              required
-              disabled={submitting}
+            <label>{t("schedule.swapRequestType")}</label>
+            <div
+              className="radio-group"
+              style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}
             >
-              <option value="">{t("schedule.selectEmployee")}</option>
-              {availableEmployees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.user.firstName} {emp.user.lastName}
-                  {emp.position ? ` - ${emp.position}` : ""}
-                </option>
-              ))}
-            </select>
-            {availableEmployees.length === 0 && (
-              <p className="form-help-text error">
-                {t("schedule.noEmployeesAvailable")}
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="swapType"
+                  checked={!broadcastToRole}
+                  onChange={() => {
+                    setBroadcastToRole(false);
+                    setTargetEmployeeId("");
+                  }}
+                  disabled={submitting}
+                  style={{ marginRight: "0.5rem" }}
+                />
+                <span>{t("schedule.swapSpecificEmployee")}</span>
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="swapType"
+                  checked={broadcastToRole}
+                  onChange={() => {
+                    setBroadcastToRole(true);
+                    setTargetEmployeeId("");
+                  }}
+                  disabled={submitting || !shift?.role}
+                  style={{ marginRight: "0.5rem" }}
+                />
+                <span>{t("schedule.swapBroadcastToRole")}</span>
+              </label>
+            </div>
+            {shift?.role && broadcastToRole && (
+              <p
+                className="form-help-text"
+                style={{
+                  marginTop: "0.5rem",
+                  fontSize: "0.875rem",
+                  color: "#6366f1",
+                }}
+              >
+                {t("schedule.swapBroadcastHelpText")}{" "}
+                <strong>{shift.role}</strong>
+              </p>
+            )}
+            {!shift?.role && (
+              <p
+                className="form-help-text error"
+                style={{ marginTop: "0.5rem", fontSize: "0.875rem" }}
+              >
+                {t("schedule.swapBroadcastNoRole")}
               </p>
             )}
           </div>
+
+          {/* Employee dropdown (only shown when NOT broadcasting) */}
+          {!broadcastToRole && (
+            <div className="form-group">
+              <label htmlFor="targetEmployee">
+                {t("schedule.swapWith")} <span className="required">*</span>
+              </label>
+              <select
+                id="targetEmployee"
+                value={targetEmployeeId}
+                onChange={(e) => setTargetEmployeeId(e.target.value)}
+                required
+                disabled={submitting}
+              >
+                <option value="">{t("schedule.selectEmployee")}</option>
+                {availableEmployees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.user.firstName} {emp.user.lastName}
+                    {emp.position ? ` - ${emp.position}` : ""}
+                  </option>
+                ))}
+              </select>
+              {availableEmployees.length === 0 && (
+                <p className="form-help-text error">
+                  {t("schedule.noEmployeesAvailable")}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="swapReason">
@@ -164,9 +259,10 @@ export default function SwapShiftModal({
               type="submit"
               className="btn-primary"
               disabled={
-                !targetEmployeeId ||
                 submitting ||
-                availableEmployees.length === 0
+                (!broadcastToRole &&
+                  (!targetEmployeeId || availableEmployees.length === 0)) ||
+                (broadcastToRole && !shift?.role)
               }
             >
               {submitting

@@ -260,17 +260,28 @@ export default function SchedulingPage() {
 
   // Handle swap submission
   const handleSwapSubmit = useCallback(
-    async (targetEmployeeId: string, reason?: string) => {
+    async (
+      targetEmployeeId: string | null,
+      reason?: string,
+      broadcastToRole?: boolean,
+    ) => {
       if (!swapShift) return;
 
       try {
         await shiftSwapService.create({
           shiftId: swapShift.id,
-          requestedTo: targetEmployeeId,
+          requestedTo: targetEmployeeId || undefined,
           reason: reason || undefined,
+          broadcastToRole: broadcastToRole || undefined,
         });
 
-        showToast(t("schedule.swapRequestCreated"), "success");
+        showToast(
+          broadcastToRole
+            ? t("schedule.swapBroadcastCreated") ||
+                "Broadcast swap requests sent to all employees with same role"
+            : t("schedule.swapRequestCreated"),
+          "success",
+        );
       } catch (err: any) {
         console.error("Failed to create swap request:", err);
         showToast(
