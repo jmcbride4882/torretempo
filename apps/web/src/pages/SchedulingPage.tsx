@@ -59,6 +59,7 @@ export default function SchedulingPage() {
   const [locations, setLocations] = useState<string[]>([]);
   const [tenantRoles, setTenantRoles] =
     useState<Array<{ name: string; color: string }>>(DEFAULT_ROLES); // Default roles, will be replaced with tenant-specific roles
+  const [tenantName, setTenantName] = useState<string>(""); // Store tenant name for PDF
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentWeekStart, setCurrentWeekStart] = useState(
@@ -406,6 +407,8 @@ export default function SchedulingPage() {
       setLocations(tenant.settings?.locations || []);
       // Load tenant-configured roles or use defaults
       setTenantRoles(tenant.settings?.roles || DEFAULT_ROLES);
+      // Store tenant name for PDF generation
+      setTenantName(tenant.legalName || "");
     } catch (err: any) {
       console.error("Failed to load tenant settings:", err);
     }
@@ -761,27 +764,46 @@ export default function SchedulingPage() {
         compress: true,
       });
 
-      // Add professional header
+      // Add professional header with tenant and location
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.text("Torre Tempo - Schedule", marginLeft, 12);
+      pdf.setFontSize(16);
 
-      // Add week range
+      // Tenant name at top left
+      pdf.text(tenantName || "Torre Tempo", marginLeft, 10);
+
+      // Schedule title below tenant name
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      pdf.text("Work Schedule", marginLeft, 16);
+
+      // Location (if selected) - center top
+      if (selectedLocation) {
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(11);
+        pdf.text(`Location: ${selectedLocation}`, pdfWidth / 2, 10, {
+          align: "center",
+        });
+      }
+
+      // Week range - center
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(10);
-      const weekRangeText = `Week: ${format(currentWeekStart, "MMM dd", {
+      const weekRangeText = `${format(currentWeekStart, "MMM dd", {
         locale: t("common.language") === "es" ? es : undefined,
       })} - ${format(addDays(currentWeekStart, 6), "MMM dd, yyyy", {
         locale: t("common.language") === "es" ? es : undefined,
       })}`;
-      pdf.text(weekRangeText, pdfWidth / 2, 12, { align: "center" });
+      pdf.text(weekRangeText, pdfWidth / 2, selectedLocation ? 16 : 12, {
+        align: "center",
+      });
 
-      // Add generation date
+      // Add generation date - top right
       pdf.setFontSize(8);
+      pdf.setFont("helvetica", "normal");
       pdf.text(
         `Generated: ${format(new Date(), "MMM dd, yyyy HH:mm")}`,
         pdfWidth - marginRight,
-        12,
+        10,
         { align: "right" },
       );
 
