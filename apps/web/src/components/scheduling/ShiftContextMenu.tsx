@@ -18,6 +18,7 @@ interface ShiftContextMenuProps {
   onDelete: () => void;
   canPaste: boolean;
   isLocked?: boolean;
+  canManage?: boolean; // Only managers/admins can edit shifts
 }
 
 export default function ShiftContextMenu({
@@ -31,6 +32,7 @@ export default function ShiftContextMenu({
   onDelete,
   canPaste,
   isLocked,
+  canManage = true, // Default to true for backwards compatibility
 }: ShiftContextMenuProps) {
   const { t } = useTranslation();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -111,7 +113,8 @@ export default function ShiftContextMenu({
     }
   }, []);
 
-  const menuItems = [
+  // Build menu items based on user permissions
+  const allMenuItems = [
     {
       icon: (
         <svg
@@ -130,8 +133,9 @@ export default function ShiftContextMenu({
       shortcut: "",
       onClick: onEdit,
       disabled: isLocked,
+      managerOnly: true, // Only managers can edit
     },
-    { divider: true },
+    { divider: true, managerOnly: true },
     {
       icon: (
         <svg
@@ -150,6 +154,7 @@ export default function ShiftContextMenu({
       shortcut: "Ctrl+C",
       onClick: onCopy,
       disabled: isLocked,
+      managerOnly: true, // Only managers can copy
     },
     {
       icon: (
@@ -169,6 +174,7 @@ export default function ShiftContextMenu({
       shortcut: "Ctrl+X",
       onClick: onCut,
       disabled: isLocked,
+      managerOnly: true, // Only managers can cut
     },
     {
       icon: (
@@ -188,6 +194,7 @@ export default function ShiftContextMenu({
       shortcut: "Ctrl+V",
       onClick: onPaste,
       disabled: !canPaste || isLocked,
+      managerOnly: true, // Only managers can paste
     },
     { divider: true },
     {
@@ -209,8 +216,9 @@ export default function ShiftContextMenu({
       shortcut: "",
       onClick: onRequestSwap,
       disabled: isLocked,
+      managerOnly: false, // Everyone can request swaps
     },
-    { divider: true },
+    { divider: true, managerOnly: true },
     {
       icon: (
         <svg
@@ -232,8 +240,16 @@ export default function ShiftContextMenu({
       onClick: onDelete,
       disabled: isLocked,
       danger: true,
+      managerOnly: true, // Only managers can delete
     },
   ];
+
+  // Filter menu items based on permissions
+  const menuItems = canManage
+    ? allMenuItems
+    : allMenuItems.filter(
+        (item) => !("managerOnly" in item) || !item.managerOnly,
+      );
 
   return (
     <div

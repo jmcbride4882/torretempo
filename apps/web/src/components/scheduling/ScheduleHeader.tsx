@@ -18,6 +18,7 @@ interface ScheduleHeaderProps {
   onPrint: () => void;
   currentWeekStart: Date;
   loading?: boolean;
+  canManage?: boolean; // Whether user can manage schedules (hide manager-only buttons)
 }
 
 export default function ScheduleHeader({
@@ -36,6 +37,7 @@ export default function ScheduleHeader({
   onPrint,
   currentWeekStart,
   loading,
+  canManage = true, // Default to true for backwards compatibility
 }: ScheduleHeaderProps) {
   const { t } = useTranslation();
 
@@ -134,7 +136,8 @@ export default function ScheduleHeader({
             </button>
           )}
 
-          {schedule?.status === "draft" && (
+          {/* Manager-only buttons */}
+          {canManage && schedule?.status === "draft" && (
             <>
               <button
                 className="btn-secondary"
@@ -181,7 +184,7 @@ export default function ScheduleHeader({
             </>
           )}
 
-          {schedule?.status === "published" && (
+          {canManage && schedule?.status === "published" && (
             <>
               <button
                 className="btn-secondary"
@@ -222,7 +225,7 @@ export default function ScheduleHeader({
             </>
           )}
 
-          {schedule?.status === "locked" && (
+          {canManage && schedule?.status === "locked" && (
             <button
               className="btn-secondary"
               onClick={onUnlock}
@@ -243,7 +246,7 @@ export default function ScheduleHeader({
             </button>
           )}
 
-          {!schedule && (
+          {canManage && !schedule && (
             <button
               className="btn-primary"
               onClick={onCreateSchedule}

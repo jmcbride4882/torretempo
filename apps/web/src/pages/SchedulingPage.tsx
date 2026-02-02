@@ -121,6 +121,9 @@ export default function SchedulingPage() {
   // Copy shift to clipboard
   const handleCopyShift = useCallback(
     (shift: Shift) => {
+      // Block employees from copying shifts
+      if (!canManageEmployees()) return;
+
       setCopiedShift({ shift, mode: "copy" });
       setSelectedShift(shift);
       showToast(t("schedule.shiftCopied"), "success");
@@ -131,6 +134,9 @@ export default function SchedulingPage() {
   // Cut shift to clipboard
   const handleCutShift = useCallback(
     (shift: Shift) => {
+      // Block employees from cutting shifts (destructive operation)
+      if (!canManageEmployees()) return;
+
       setCopiedShift({ shift, mode: "cut" });
       setSelectedShift(shift);
       showToast(t("schedule.shiftCut"), "info");
@@ -141,6 +147,9 @@ export default function SchedulingPage() {
   // Delete shift by ID
   const handleDeleteShiftById = useCallback(
     async (shiftId: string) => {
+      // Block employees from deleting shifts
+      if (!canManageEmployees()) return;
+
       try {
         await scheduleService.deleteShift(shiftId);
         setShifts((prev) => prev.filter((s) => s.id !== shiftId));
@@ -163,7 +172,8 @@ export default function SchedulingPage() {
   // Paste shift to target cell
   const handlePasteShift = useCallback(
     async (targetDate: Date, targetEmployeeId: string) => {
-      if (!copiedShift || !schedule) return;
+      // Block employees from pasting shifts (creates new shift)
+      if (!copiedShift || !schedule || !canManageEmployees()) return;
 
       try {
         const originalShift = copiedShift.shift;
@@ -543,7 +553,9 @@ export default function SchedulingPage() {
   // Open shift modal for new shift, or paste if clipboard has data
   const handleCellClick = useCallback(
     (date: Date, employeeId: string) => {
-      if (!schedule || schedule.status === "locked") return;
+      // Block employees from creating/editing shifts
+      if (!schedule || schedule.status === "locked" || !canManageEmployees())
+        return;
 
       // Set paste target cell (for keyboard paste)
       setPasteTargetCell({ date, employeeId });
@@ -565,6 +577,9 @@ export default function SchedulingPage() {
 
   // Open shift modal for editing
   const handleShiftClick = useCallback((shift: Shift) => {
+    // Block employees from editing shifts
+    if (!canManageEmployees()) return;
+
     setSelectedShift(shift);
     setDefaultShiftDate(null);
     setDefaultEmployeeId("");
@@ -573,7 +588,8 @@ export default function SchedulingPage() {
 
   // Save shift (create or update)
   const handleSaveShift = async (data: CreateShiftInput | UpdateShiftInput) => {
-    if (!schedule) return;
+    // Block employees from saving shifts
+    if (!schedule || !canManageEmployees()) return;
 
     try {
       if (selectedShift) {
@@ -601,7 +617,8 @@ export default function SchedulingPage() {
 
   // Delete shift
   const handleDeleteShift = async () => {
-    if (!selectedShift) return;
+    // Block employees from deleting shifts
+    if (!selectedShift || !canManageEmployees()) return;
 
     try {
       await scheduleService.deleteShift(selectedShift.id);
@@ -621,7 +638,9 @@ export default function SchedulingPage() {
     shiftId: string,
     updates: UpdateShiftInput,
   ) => {
-    if (!schedule || schedule.status === "locked") return;
+    // Block employees from moving shifts
+    if (!schedule || schedule.status === "locked" || !canManageEmployees())
+      return;
 
     try {
       const updated = await scheduleService.updateShift(shiftId, updates);
@@ -724,6 +743,7 @@ export default function SchedulingPage() {
         onPrint={handlePrint}
         currentWeekStart={currentWeekStart}
         loading={loading}
+        canManage={canManageEmployees()}
       />
 
       {!schedule && !loading && (
@@ -832,6 +852,7 @@ export default function SchedulingPage() {
           onDelete={() => handleDeleteShiftById(contextMenuShift.id)}
           canPaste={!!copiedShift}
           isLocked={schedule?.status === "locked"}
+          canManage={canManageEmployees()}
         />
       )}
 
