@@ -242,6 +242,7 @@
     "capturingImage": "Capturando horario...",
     "shareSuccess": "Compartido exitosamente",
     "shareError": "Error al compartir horario",
-    "imageDownloaded": "Imagen del horario descargada. Revisa WhatsApp Web para compartir."
+    "imageDownloaded": "Imagen del horario descargada. Revisa WhatsApp Web para compartir.",
+    "locale": "es-ES"
   }
 }

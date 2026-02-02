@@ -242,6 +242,7 @@
     "capturingImage": "Capturing schedule...",
     "shareSuccess": "Shared successfully",
     "shareError": "Error sharing schedule",
-    "imageDownloaded": "Schedule image downloaded. Check WhatsApp Web to share."
+    "imageDownloaded": "Schedule image downloaded. Check WhatsApp Web to share.",
+    "locale": "en-US"
   }
 }

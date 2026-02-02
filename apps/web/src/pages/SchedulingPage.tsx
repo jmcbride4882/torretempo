@@ -644,25 +644,33 @@ export default function SchedulingPage() {
       // Show loading toast
       showToast(t("schedule.capturingImage"), "info");
 
-      // Find the schedule calendar element (try desktop first, then mobile)
-      let calendarElement = document.querySelector(
+      // ALWAYS capture desktop view (even on mobile)
+      const desktopCalendar = document.querySelector(
         ".schedule-calendar.desktop",
       ) as HTMLElement;
 
-      // Fallback to mobile view if desktop not visible
-      if (!calendarElement || calendarElement.offsetParent === null) {
-        calendarElement = document.querySelector(
-          ".schedule-calendar.mobile",
-        ) as HTMLElement;
-      }
-
-      if (!calendarElement) {
+      if (!desktopCalendar) {
         showToast(t("schedule.shareError"), "error");
-        console.error("No calendar element found for capture");
+        console.error("Desktop calendar not found");
         return;
       }
 
-      console.log("Capturing calendar:", calendarElement.className);
+      // Temporarily make desktop view visible for capture (if hidden on mobile)
+      const originalDisplay = desktopCalendar.style.display;
+      const originalPosition = desktopCalendar.style.position;
+      const wasHidden =
+        window.getComputedStyle(desktopCalendar).display === "none";
+
+      if (wasHidden) {
+        // Temporarily show desktop view off-screen
+        desktopCalendar.style.display = "block";
+        desktopCalendar.style.position = "absolute";
+        desktopCalendar.style.left = "-9999px";
+        desktopCalendar.style.top = "0";
+        desktopCalendar.style.zIndex = "-1";
+      }
+
+      console.log("Capturing desktop calendar (was hidden:", wasHidden, ")");
 
       // FIX 1: Ensure fonts are loaded before capture
       await document.fonts.ready;
@@ -671,9 +679,9 @@ export default function SchedulingPage() {
 
       // FIX 2: Capture styles from ORIGINAL elements BEFORE cloning
       const originalEmployeeNames =
-        calendarElement.querySelectorAll(".employee-name");
+        desktopCalendar.querySelectorAll(".employee-name");
       const employeeNameStyles = Array.from(originalEmployeeNames).map((el) => {
-        const computed = window.getComputedStyle(el);
+        const computed = window.getComputedStyle(el as Element);
         return {
           fontFamily: computed.fontFamily,
           fontSize: computed.fontSize,
@@ -684,10 +692,10 @@ export default function SchedulingPage() {
       });
 
       const originalEmployeePositions =
-        calendarElement.querySelectorAll(".employee-position");
+        desktopCalendar.querySelectorAll(".employee-position");
       const employeePositionStyles = Array.from(originalEmployeePositions).map(
         (el) => {
-          const computed = window.getComputedStyle(el);
+          const computed = window.getComputedStyle(el as Element);
           return {
             fontFamily: computed.fontFamily,
             fontSize: computed.fontSize,
@@ -697,7 +705,7 @@ export default function SchedulingPage() {
       );
 
       // FIX 3: Capture with font rendering fixes
-      const canvas = await html2canvas(calendarElement, {
+      const canvas = await html2canvas(desktopCalendar, {
         backgroundColor: "#ffffff",
         scale: 2, // Higher quality
         logging: true, // Enable logging to debug
@@ -780,10 +788,23 @@ export default function SchedulingPage() {
         },
       });
 
-      // FIX 3: Use synchronous conversion for PWA compatibility
+      // Restore original display state if it was hidden
+      if (wasHidden) {
+        desktopCalendar.style.display = originalDisplay;
+        desktopCalendar.style.position = originalPosition;
+        desktopCalendar.style.left = "";
+        desktopCalendar.style.top = "";
+        desktopCalendar.style.zIndex = "";
+      }
+
+      // FIX 4: Use synchronous conversion for PWA compatibility
       const dataUrl = canvas.toDataURL("image/png", 0.95);
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], "schedule.png", { type: "image/png" });
+
+      // Format week range for share message (both mobile and desktop)
+      const weekRange = formatWeekRange(currentWeekStart);
+      const shareMessage = `${t("schedule.shareText")} ${weekRange}`;
 
       // Mobile: Use Web Share API if available
       if (
@@ -795,7 +816,7 @@ export default function SchedulingPage() {
           await navigator.share({
             files: [file],
             title: t("schedule.shareTitle"),
-            text: t("schedule.shareText"),
+            text: shareMessage, // Now includes date range
           });
           showToast(t("schedule.shareSuccess"), "success");
         } catch (err: any) {
@@ -807,10 +828,7 @@ export default function SchedulingPage() {
         }
       } else {
         // Desktop: Open WhatsApp Web with message
-        const weekRange = formatWeekRange(currentWeekStart);
-        const message = encodeURIComponent(
-          `${t("schedule.shareText")} ${weekRange}`,
-        );
+        const message = encodeURIComponent(shareMessage);
         const whatsappUrl = `https://wa.me/?text=${message}`;
 
         // Download image for manual sharing
@@ -831,17 +849,20 @@ export default function SchedulingPage() {
     }
   };
 
-  // Helper function to format week range for share message
+  // Helper function to format week range for share message (respects i18n language)
   const formatWeekRange = (startDate: Date) => {
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 6);
 
     const startDay = startDate.getDate();
     const endDay = endDate.getDate();
-    const startMonth = startDate.toLocaleDateString("es-ES", {
+
+    // Use current i18n language for date formatting
+    const locale = t("schedule.locale"); // Get locale from translations
+    const startMonth = startDate.toLocaleDateString(locale, {
       month: "short",
     });
-    const endMonth = endDate.toLocaleDateString("es-ES", { month: "short" });
+    const endMonth = endDate.toLocaleDateString(locale, { month: "short" });
     const year = startDate.getFullYear();
 
     if (startMonth === endMonth) {
