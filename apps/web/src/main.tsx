@@ -23,15 +23,15 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
-// NUCLEAR CACHE CLEARING - Version 5.7.0 (2026-02-03 - UI REDESIGN)
+// NUCLEAR CACHE CLEARING - Version 5.7.1 (2026-02-03 - MOBILE UX FIXED)
 // ============================================================================
-const APP_VERSION = "5.7.0-20260203-1000-REDESIGN";
+const APP_VERSION = "5.7.1-20260203-1020-MOBILE-FIX";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  TORRE TEMPO v${APP_VERSION}  ║
-║  UI REDESIGN: Warm Modern Hospitality Design System Complete  ║
+║  MOBILE UX FIXED: Input spacing + footer layout corrected     ║
 ╚════════════════════════════════════════════════════════════════╝
 `);
 

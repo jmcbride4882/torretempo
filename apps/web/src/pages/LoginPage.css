@@ -666,6 +666,14 @@
    ======================================== */
 
 @media (min-width: 768px) and (max-width: 1023px) {
+  .login-page {
+    flex-direction: column; /* Stack vertically on tablet */
+  }
+
+  .login-branding {
+    display: none !important; /* Hide desktop branding on tablet */
+  }
+
   .login-form-section {
     background: linear-gradient(-45deg, #6366f1, #8b5cf6, #a855f7, #6366f1);
     background-size: 400% 400%;
@@ -689,6 +697,14 @@
    ======================================== */
 
 @media (max-width: 767px) {
+  .login-page {
+    flex-direction: column; /* CRITICAL: Stack vertically on mobile */
+  }
+
+  .login-branding {
+    display: none !important; /* CRITICAL: Hide desktop branding on mobile */
+  }
+
   .login-form-section {
     background: linear-gradient(-45deg, #6366f1, #8b5cf6, #a855f7, #6366f1);
     background-size: 400% 400%;
