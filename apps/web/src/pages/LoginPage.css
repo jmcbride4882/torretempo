@@ -464,7 +464,9 @@
 
 .input-icon {
   position: absolute;
-  left: 1rem;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
   width: 20px;
   height: 20px;
   color: var(--login-text-light);
@@ -476,7 +478,7 @@
 .form-input {
   width: 100%;
   height: 56px;
-  padding: 0 1rem 0 3rem;
+  padding: 0 1.25rem 0 3.75rem; /* Increased left padding from 3rem to 3.75rem */
   border: 2px solid var(--login-border);
   border-radius: var(--login-radius-input);
   font-size: 1rem;
@@ -489,7 +491,7 @@
 }
 
 .form-input-with-toggle {
-  padding-right: 3.5rem; /* Make room for toggle button */
+  padding-right: 4rem; /* Increased from 3.5rem for better spacing */
 }
 
 .form-input::placeholder {
@@ -691,73 +693,122 @@
     background: linear-gradient(-45deg, #6366f1, #8b5cf6, #a855f7, #6366f1);
     background-size: 400% 400%;
     animation: gradient-flow 15s ease infinite;
-    padding: 1.5rem;
+    padding: 1rem;
     justify-content: flex-start;
-    padding-top: 3rem;
+    padding-top: 2rem;
     width: 100%;
     box-sizing: border-box;
+    min-height: 100vh;
   }
 
   .login-container {
-    padding: 2rem 1.5rem;
+    padding: 2rem 1.25rem;
     max-width: 100%;
     width: 100%;
     box-sizing: border-box;
     animation: slide-up 0.4s ease-out;
+    border-radius: 20px; /* More rounded on mobile */
   }
 
   .login-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
   }
 
   .login-title {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
   }
 
   .login-subtitle {
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
 
   .demo-credentials-card {
-    padding: 0.875rem 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 2rem;
   }
 
   .login-form {
-    gap: 1rem;
+    gap: 1.25rem; /* More spacing between fields */
+  }
+
+  .form-label {
+    font-size: 0.9375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .input-wrapper {
+    margin-bottom: 0.25rem;
+  }
+
+  .input-icon {
+    left: 1rem;
   }
 
   .form-input {
-    height: 52px;
+    height: 56px; /* Keep 56px for better touch */
     font-size: 16px; /* Prevents iOS zoom */
     max-width: 100%;
     box-sizing: border-box;
+    padding: 0 1rem 0 3.5rem; /* Adjusted for mobile */
+    border-width: 2px;
+  }
+
+  .form-input-with-toggle {
+    padding-right: 3.75rem;
+  }
+
+  .password-toggle-btn {
+    right: 0.75rem;
+  }
+
+  .form-hint {
+    font-size: 0.8125rem;
+    margin-top: 0.375rem;
   }
 
   .btn-submit {
-    height: 52px;
+    height: 56px; /* Keep large for easy tapping */
     width: 100%;
     box-sizing: border-box;
+    font-size: 1rem;
+    margin-top: 0.5rem;
   }
 
   .login-footer {
-    margin-top: 1.25rem;
-    padding-top: 1.25rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
   }
 
   .login-links {
     flex-direction: column;
-    gap: 0;
+    gap: 0.5rem;
+    align-items: stretch;
   }
 
   .link-secondary {
     justify-content: center;
-    padding: 0.625rem 0;
+    padding: 0.75rem 0;
+    min-height: 48px; /* Better touch target */
+    display: flex;
+    align-items: center;
   }
 
   .page-footer {
     display: block;
     color: rgba(255, 255, 255, 0.85);
-    padding: 1.5rem 1rem;
+    padding: 2rem 1rem;
+  }
+
+  /* Ensure inputs are easily tappable */
+  .form-group {
+    margin-bottom: 0.5rem;
+  }
+
+  /* Error banner mobile optimization */
+  .error-banner {
+    padding: 1rem 1.25rem;
+    font-size: 0.9375rem;
   }
 }
 
@@ -808,6 +859,45 @@
 
   .page-footer {
     display: none;
+  }
+}
+
+/* ========================================
+   RESPONSIVE - EXTRA SMALL MOBILE (< 375px)
+   ======================================== */
+
+@media (max-width: 374px) {
+  .login-container {
+    padding: 1.5rem 1rem;
+    border-radius: 16px;
+  }
+
+  .login-title {
+    font-size: 1.5rem;
+  }
+
+  .login-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .demo-credentials-card {
+    padding: 0.875rem 1rem;
+  }
+
+  .form-input {
+    padding-left: 3.25rem;
+  }
+
+  .input-icon {
+    left: 0.875rem;
+  }
+
+  .form-input-with-toggle {
+    padding-right: 3.5rem;
+  }
+
+  .password-toggle-btn {
+    right: 0.625rem;
   }
 }
 
