@@ -23,15 +23,15 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
-// NUCLEAR CACHE CLEARING - Version 3.2.0 (2026-02-02 22:10)
+// NUCLEAR CACHE CLEARING - Version 5.3.1 (2026-02-03 - HOTFIX)
 // ============================================================================
-const APP_VERSION = "3.2.0-20260202-2210";
+const APP_VERSION = "5.3.1-20260203-0854-HOTFIX";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  TORRE TEMPO v${APP_VERSION}  ║
-║  Desktop Alignment + WhatsApp Share Fix                       ║
+║  HOTFIX: React Hook Ordering (Time Entries Fixed)             ║
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
