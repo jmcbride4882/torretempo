@@ -46,6 +46,7 @@ export default function TimeEntriesPage() {
       timestamp: string;
     } | null,
   });
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
 
   // Update current time every second
   useEffect(() => {
@@ -420,25 +421,6 @@ export default function TimeEntriesPage() {
       <div className="time-entries-page__header">
         <div className="time-entries-page__header-left">
           <h1 className="time-entries-page__title">{t("nav.timeEntries")}</h1>
-          <div className="time-entries-page__current-time">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            <span className="time-entries-page__current-time-value">
-              {format(currentTime, "HH:mm:ss")}
-            </span>
-            <span className="time-entries-page__current-date">
-              {format(currentTime, "EEEE, d MMMM yyyy")}
-            </span>
-          </div>
         </div>
         {geolocation.permissionStatus === "granted" && (
           <div className="time-entries-page__geo-status">
@@ -557,6 +539,61 @@ export default function TimeEntriesPage() {
 
           {/* Clock Button */}
           <div className="time-entries-page__clock-section">
+            {/* Date/Time Display */}
+            <div className="clock-section__datetime">
+              <div className="clock-section__time">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span className="time-value">
+                  {format(currentTime, "HH:mm:ss")}
+                </span>
+              </div>
+              <div className="clock-section__date">
+                {format(currentTime, "EEEE, d MMMM yyyy")}
+              </div>
+            </div>
+
+            {/* Location Selector */}
+            <div className="clock-section__location-selector">
+              <label
+                htmlFor="location-select"
+                className="location-selector__label"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                {t("timeTracking.selectLocation")}
+              </label>
+              <select
+                id="location-select"
+                className="location-selector__dropdown"
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+              >
+                <option value="">{t("timeTracking.chooseLocation")}</option>
+                <option value="main">Main Office</option>
+                <option value="warehouse">Warehouse</option>
+                <option value="retail">Retail Store</option>
+              </select>
+            </div>
+
             <ClockButton
               isClockedIn={!!currentEntry}
               isLoading={actionLoading}

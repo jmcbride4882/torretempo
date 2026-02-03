@@ -314,6 +314,8 @@
     "earlyClockInTitle": "You are clocking in {{minutes}} minutes early",
     "earlyClockInMessage": "Your shift starts at {{time}}. You should not clock in early unless authorized.",
     "clockInAnyway": "Clock In Anyway",
-    "earlyClockInBlocked": "You cannot clock in this early. Please wait until closer to your shift start time."
+    "earlyClockInBlocked": "You cannot clock in this early. Please wait until closer to your shift start time.",
+    "selectLocation": "Location",
+    "chooseLocation": "Choose your location..."
   }
 }

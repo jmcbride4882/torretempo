@@ -314,6 +314,8 @@
     "earlyClockInTitle": "Estás fichando {{minutes}} minutos antes",
     "earlyClockInMessage": "Tu turno comienza a las {{time}}. No deberías fichar antes de hora sin autorización.",
     "clockInAnyway": "Fichar de Todos Modos",
-    "earlyClockInBlocked": "No puedes fichar tan pronto. Por favor, espera hasta que se acerque la hora de inicio de tu turno."
+    "earlyClockInBlocked": "No puedes fichar tan pronto. Por favor, espera hasta que se acerque la hora de inicio de tu turno.",
+    "selectLocation": "Ubicación",
+    "chooseLocation": "Elige tu ubicación..."
   }
 }

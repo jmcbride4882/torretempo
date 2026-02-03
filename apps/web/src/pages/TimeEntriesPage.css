@@ -256,6 +256,85 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* Date/Time in Clock Section */
+.clock-section__datetime {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.clock-section__time {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.clock-section__time svg {
+  color: #94a3b8;
+}
+
+.clock-section__time .time-value {
+  font-family: "Courier New", monospace;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.05em;
+}
+
+.clock-section__date {
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Location Selector */
+.clock-section__location-selector {
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 1.5rem;
+}
+
+.location-selector__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.location-selector__label svg {
+  color: #3b82f6;
+}
+
+.location-selector__dropdown {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.location-selector__dropdown:hover {
+  border-color: #cbd5e1;
+}
+
+.location-selector__dropdown:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.location-selector__dropdown option {
+  padding: 0.5rem;
+}
+
 .time-entries-page__hint {
   margin-top: 1rem;
   font-size: 0.9rem;
