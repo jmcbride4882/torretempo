@@ -390,6 +390,13 @@ export default function TimeEntriesPage() {
     };
   }, [currentEntry, history]);
 
+  // Handle toast open state change (MUST be before early return)
+  const handleToastOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setToastMessage(null);
+    }
+  }, []);
+
   // Show appropriate view for managers/admins
   const showTeamView = canViewAllTimeEntries() || canViewTeamTimeEntries();
 
@@ -406,13 +413,6 @@ export default function TimeEntriesPage() {
       </div>
     );
   }
-
-  // Handle toast open state change
-  const handleToastOpenChange = useCallback((open: boolean) => {
-    if (!open) {
-      setToastMessage(null);
-    }
-  }, []);
 
   return (
     <Toast.Provider swipeDirection="right" duration={4000}>
