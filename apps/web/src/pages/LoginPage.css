@@ -3,12 +3,12 @@
    Warm Modern Hospitality SaaS Design System
    ======================================== */
 
-/* CSS Variables - Design System */
+/* CSS Variables - Design System (Charcoal & Coral) */
 :root {
-  --login-primary: #6366f1;
-  --login-primary-dark: #4f46e5;
-  --login-accent: #f59e0b;
-  --login-accent-dark: #d97706;
+  --login-primary: #374151;
+  --login-primary-dark: #1f2937;
+  --login-accent: #f87171;
+  --login-accent-dark: #ef4444;
   --login-bg-warm: #fafaf9;
   --login-bg-card: #ffffff;
   --login-text: #1e293b;
@@ -17,11 +17,11 @@
   --login-border: #e2e8f0;
   --login-error: #ef4444;
   --login-error-bg: #fef2f2;
-  --login-info-bg: #f0f9ff;
-  --login-info-border: #6366f1;
+  --login-info-bg: #fff5f5;
+  --login-info-border: #f87171;
   --login-shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.06);
   --login-shadow-medium: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --login-shadow-focus: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  --login-shadow-focus: 0 0 0 4px rgba(248, 113, 113, 0.15);
   --login-radius-card: 16px;
   --login-radius-input: 12px;
   --login-transition: 200ms ease-out;
@@ -144,7 +144,7 @@
   justify-content: center;
   align-items: center;
   padding: 3rem;
-  background: linear-gradient(-45deg, #6366f1, #8b5cf6, #a855f7, #6366f1);
+  background: linear-gradient(-45deg, #374151, #4b5563, #6b7280, #374151);
   background-size: 400% 400%;
   animation: gradient-flow 15s ease infinite;
   position: relative;
@@ -573,7 +573,11 @@
 .btn-submit {
   height: 56px;
   padding: 0 1.5rem;
-  background: linear-gradient(135deg, var(--login-primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(
+    135deg,
+    var(--login-primary) 0%,
+    var(--login-accent) 100%
+  );
   color: white;
   border: none;
   border-radius: var(--login-radius-input);
@@ -591,7 +595,7 @@
 
 .btn-submit:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 20px rgba(55, 65, 81, 0.4);
 }
 
 .btn-submit:active:not(:disabled) {
@@ -690,7 +694,7 @@
   }
 
   .login-form-section {
-    background: linear-gradient(-45deg, #6366f1, #8b5cf6, #a855f7, #6366f1);
+    background: linear-gradient(-45deg, #374151, #4b5563, #6b7280, #374151);
     background-size: 400% 400%;
     animation: gradient-flow 15s ease infinite;
     padding: 3rem;
@@ -721,7 +725,7 @@
   }
 
   .login-form-section {
-    background: linear-gradient(-45deg, #6366f1, #8b5cf6, #a855f7, #6366f1);
+    background: linear-gradient(-45deg, #374151, #4b5563, #6b7280, #374151);
     background-size: 400% 400%;
     animation: gradient-flow 15s ease infinite;
     padding: 1rem;

@@ -107,8 +107,8 @@ export default function LandingPage() {
                     x2="100%"
                     y2="100%"
                   >
-                    <stop offset="0%" stopColor="#6366f1" />
-                    <stop offset="100%" stopColor="#8b5cf6" />
+                    <stop offset="0%" stopColor="#374151" />
+                    <stop offset="100%" stopColor="#6b7280" />
                   </linearGradient>
                 </defs>
                 <rect width="32" height="32" rx="8" fill="url(#logoGradient)" />
@@ -193,7 +193,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                      "linear-gradient(135deg, #374151 0%, #4b5563 100%)",
                   }}
                 >
                   <svg
@@ -220,7 +220,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
+                      "linear-gradient(135deg, #f87171 0%, #fca5a5 100%)",
                   }}
                 >
                   <svg
@@ -318,7 +318,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                      "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
                   }}
                 >
                   <svg
@@ -351,7 +351,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+                      "linear-gradient(135deg, #4b5563 0%, #6b7280 100%)",
                   }}
                 >
                   <svg

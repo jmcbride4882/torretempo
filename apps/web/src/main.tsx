@@ -23,15 +23,15 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
-// NUCLEAR CACHE CLEARING - Version 5.7.4 (2026-02-03 - FORCE PADDING FIX)
+// NUCLEAR CACHE CLEARING - Version 5.8.0 (2026-02-03 - CHARCOAL & CORAL REDESIGN)
 // ============================================================================
-const APP_VERSION = "5.7.4-20260203-1116-FORCE-PADDING";
+const APP_VERSION = "5.8.0-20260203-1130-CHARCOAL-CORAL";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  TORRE TEMPO v${APP_VERSION}  ║
-║  FORCED PADDING: 64px left = 28px gap after icons             ║
+║  NEW DESIGN: Charcoal & Coral - Warm Professional             ║
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
