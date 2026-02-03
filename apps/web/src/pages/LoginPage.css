@@ -129,6 +129,9 @@
   min-height: 100vh;
   display: flex;
   background: var(--login-bg-warm);
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  width: 100%;
+  max-width: 100vw;
 }
 
 /* ========================================
@@ -477,6 +480,10 @@
   appearance: none;
 }
 
+.form-input-with-toggle {
+  padding-right: 3.5rem; /* Make room for toggle button */
+}
+
 .form-input::placeholder {
   color: var(--login-text-light);
   font-weight: 400;
@@ -507,6 +514,43 @@
   font-size: 0.8125rem;
   color: var(--login-text-muted);
   margin-top: -0.125rem;
+}
+
+/* Password Toggle Button */
+.password-toggle-btn {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--login-text-light);
+  transition: color var(--login-transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  z-index: 2;
+}
+
+.password-toggle-btn:hover:not(:disabled) {
+  color: var(--login-primary);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.password-toggle-btn:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.password-toggle-btn svg {
+  display: block;
 }
 
 /* ========================================
@@ -642,11 +686,15 @@
     padding: 1.5rem;
     justify-content: flex-start;
     padding-top: 3rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .login-container {
     padding: 2rem 1.5rem;
     max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
     animation: slide-up 0.4s ease-out;
   }
 
@@ -673,10 +721,14 @@
   .form-input {
     height: 52px;
     font-size: 16px; /* Prevents iOS zoom */
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .btn-submit {
     height: 52px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .login-footer {
@@ -717,12 +769,17 @@
   }
 
   .login-form-section {
-    flex: 0 0 55%;
+    flex: 1; /* Allow to take remaining space */
+    min-width: 0; /* Prevent flex overflow */
     padding: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .login-container {
     padding: 3rem;
+    width: 100%;
     max-width: 480px;
     animation: slide-in-right 0.6s ease-out;
   }
