@@ -15,11 +15,44 @@
   gap: 1rem;
 }
 
+.time-entries-page__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .time-entries-page__title {
   font-size: 1.75rem;
   font-weight: 700;
   color: #1e293b;
   margin: 0;
+}
+
+/* Current time display */
+.time-entries-page__current-time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.time-entries-page__current-time svg {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.time-entries-page__current-time-value {
+  font-family: "Courier New", monospace;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #1e293b;
+  letter-spacing: 0.05em;
+}
+
+.time-entries-page__current-date {
+  color: #94a3b8;
+  font-size: 0.85rem;
 }
 
 .time-entries-page__geo-status {

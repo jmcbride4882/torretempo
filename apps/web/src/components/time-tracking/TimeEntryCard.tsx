@@ -145,6 +145,24 @@ export default function TimeEntryCard({
           )}
         </div>
 
+        {/* Clock-in location address */}
+        {entry.clockInAddress && (
+          <div className="time-entry-card__address">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            <span>{entry.clockInAddress}</span>
+          </div>
+        )}
+
         {/* Location/Role info */}
         {(entry.shift?.location || entry.shift?.role) && (
           <div className="time-entry-card__meta">

@@ -43,8 +43,11 @@ export interface TimeEntry {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
-  // Computed field from API (current entry only)
+  // Computed fields from API (current entry only)
   elapsedMinutes?: number;
+  // Computed fields for UI (geocoded addresses)
+  clockInAddress?: string;
+  clockOutAddress?: string;
 }
 
 export interface TimeEntryStats {

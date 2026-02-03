@@ -131,6 +131,29 @@
   color: #f59e0b;
 }
 
+/* Clock-in address */
+.time-entry-card__address {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #f0f9ff;
+  border-left: 3px solid #3b82f6;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #1e40af;
+}
+
+.time-entry-card__address svg {
+  flex-shrink: 0;
+  color: #3b82f6;
+}
+
+.time-entry-card__address span {
+  line-height: 1.4;
+}
+
 /* Meta info (location/role) */
 .time-entry-card__meta {
   display: flex;

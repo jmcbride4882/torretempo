@@ -31,31 +31,29 @@ export default function TimeEntriesPage() {
   const [gettingLocation, setGettingLocation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Break management state
   const [breakLoading, setBreakLoading] = useState(false);
-
-  // Location display state
   const [locationAddress, setLocationAddress] = useState<string | null>(null);
   const [showLocationBanner, setShowLocationBanner] = useState(false);
-
-  // Early clock-in warning dialog state
-  const [earlyClockInDialog, setEarlyClockInDialog] = useState<{
-    open: boolean;
-    minutesEarly: number;
-    shiftStartTime: string;
-    pendingPosition: {
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [earlyClockInDialog, setEarlyClockInDialog] = useState({
+    open: false,
+    minutesEarly: 0,
+    shiftStartTime: "",
+    pendingPosition: null as {
       latitude: number;
       longitude: number;
       accuracy: number;
       timestamp: string;
-    } | null;
-  }>({
-    open: false,
-    minutesEarly: 0,
-    shiftStartTime: "",
-    pendingPosition: null,
+    } | null,
   });
+
+  // Update current time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Check if starting unscheduled shift from query param
   const startUnscheduled = searchParams.get("unscheduled") === "true";
@@ -98,6 +96,37 @@ export default function TimeEntriesPage() {
           })
           .catch(() => null), // Stats might fail if no data
       ]);
+
+      // Geocode current entry location if available
+      if (current && current.clockInLat && current.clockInLng) {
+        try {
+          const address = await reverseGeocode(
+            current.clockInLat,
+            current.clockInLng,
+          );
+          current.clockInAddress = address;
+        } catch {
+          // Ignore geocoding errors
+        }
+      }
+
+      // Geocode history entries locations (limit to first 3 to avoid rate limiting)
+      const entriesToGeocode = historyResponse.entries.slice(0, 3);
+      for (const entry of entriesToGeocode) {
+        if (entry.clockInLat && entry.clockInLng) {
+          try {
+            const address = await reverseGeocode(
+              entry.clockInLat,
+              entry.clockInLng,
+            );
+            entry.clockInAddress = address;
+          } catch {
+            // Ignore geocoding errors
+          }
+        }
+        // Add a small delay to respect rate limits (1 req/sec for Nominatim)
+        await new Promise((resolve) => setTimeout(resolve, 1100));
+      }
 
       setCurrentEntry(current);
       setHistory(historyResponse.entries);
@@ -389,7 +418,28 @@ export default function TimeEntriesPage() {
 
       {/* Header */}
       <div className="time-entries-page__header">
-        <h1 className="time-entries-page__title">{t("nav.timeEntries")}</h1>
+        <div className="time-entries-page__header-left">
+          <h1 className="time-entries-page__title">{t("nav.timeEntries")}</h1>
+          <div className="time-entries-page__current-time">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span className="time-entries-page__current-time-value">
+              {format(currentTime, "HH:mm:ss")}
+            </span>
+            <span className="time-entries-page__current-date">
+              {format(currentTime, "EEEE, d MMMM yyyy")}
+            </span>
+          </div>
+        </div>
         {geolocation.permissionStatus === "granted" && (
           <div className="time-entries-page__geo-status">
             <svg
