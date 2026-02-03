@@ -23,15 +23,15 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
-// NUCLEAR CACHE CLEARING - Version 5.7.1 (2026-02-03 - MOBILE UX FIXED)
+// NUCLEAR CACHE CLEARING - Version 5.7.3 (2026-02-03 - INPUT SPACING FIXED)
 // ============================================================================
-const APP_VERSION = "5.7.1-20260203-1020-MOBILE-FIX";
+const APP_VERSION = "5.7.3-20260203-1116-INPUT-FIX";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  TORRE TEMPO v${APP_VERSION}  ║
-║  MOBILE UX FIXED: Input spacing + footer layout corrected     ║
+║  INPUT SPACING FIXED: 20px gap between icon and text          ║
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
