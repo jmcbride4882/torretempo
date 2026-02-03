@@ -267,6 +267,9 @@ model TimeEntry {
   shiftId String? @map("shift_id") @db.Uuid
   entryType String @default("scheduled") @map("entry_type") // 'scheduled', 'unscheduled'
   
+  // Work location (from tenant's rota locations)
+  location String?
+  
   // Status
   status String @default("active") // 'active', 'corrected', 'deleted'
   

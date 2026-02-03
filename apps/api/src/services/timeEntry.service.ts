@@ -13,6 +13,7 @@ export interface GeolocationInput {
 export interface ClockInInput {
   shiftId?: string;
   geolocation?: GeolocationInput;
+  location?: string;
   notes?: string;
 }
 
@@ -284,6 +285,7 @@ export class TimeEntryService {
           clockIn: clockInTime,
           shiftId: input.shiftId,
           entryType,
+          location: input.location,
           clockInLat: input.geolocation?.latitude,
           clockInLng: input.geolocation?.longitude,
           notes: input.notes,

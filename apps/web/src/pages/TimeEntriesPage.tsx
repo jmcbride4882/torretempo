@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { startOfWeek, endOfWeek, startOfDay, endOfDay, format } from "date-fns";
 import { timeEntryService } from "../services/timeEntryService";
+import { locationService } from "../services/locationService";
 import { useGeolocation, reverseGeocode } from "../hooks/useGeolocation";
 import { useAuthorization } from "../hooks/useAuthorization";
 import ClockButton from "../components/time-tracking/ClockButton";
@@ -47,6 +48,7 @@ export default function TimeEntriesPage() {
     } | null,
   });
   const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [tenantLocations, setTenantLocations] = useState<string[]>([]);
 
   // Update current time every second
   useEffect(() => {
@@ -76,27 +78,29 @@ export default function TimeEntriesPage() {
       setLoading(true);
       setError(null);
 
-      // Load current entry, history, and stats in parallel
-      const [current, historyResponse, statsResponse] = await Promise.all([
-        timeEntryService.getCurrent(),
-        timeEntryService.getHistory({
-          limit: 10,
-          sortBy: "clockIn",
-          sortOrder: "desc",
-        }),
-        timeEntryService
-          .getStats({
-            startDate: format(
-              startOfWeek(new Date(), { weekStartsOn: 1 }),
-              "yyyy-MM-dd",
-            ),
-            endDate: format(
-              endOfWeek(new Date(), { weekStartsOn: 1 }),
-              "yyyy-MM-dd",
-            ),
-          })
-          .catch(() => null), // Stats might fail if no data
-      ]);
+      // Load current entry, history, stats, and locations in parallel
+      const [current, historyResponse, statsResponse, locations] =
+        await Promise.all([
+          timeEntryService.getCurrent(),
+          timeEntryService.getHistory({
+            limit: 10,
+            sortBy: "clockIn",
+            sortOrder: "desc",
+          }),
+          timeEntryService
+            .getStats({
+              startDate: format(
+                startOfWeek(new Date(), { weekStartsOn: 1 }),
+                "yyyy-MM-dd",
+              ),
+              endDate: format(
+                endOfWeek(new Date(), { weekStartsOn: 1 }),
+                "yyyy-MM-dd",
+              ),
+            })
+            .catch(() => null), // Stats might fail if no data
+          locationService.getLocations().catch(() => []), // Locations might fail
+        ]);
 
       // Geocode current entry location if available
       if (current && current.clockInLat && current.clockInLng) {
@@ -129,6 +133,7 @@ export default function TimeEntriesPage() {
         await new Promise((resolve) => setTimeout(resolve, 1100));
       }
 
+      setTenantLocations(locations);
       setCurrentEntry(current);
       setHistory(historyResponse.entries);
       setStats(statsResponse);
@@ -194,13 +199,16 @@ export default function TimeEntriesPage() {
         timestamp: string;
       } | null,
       forceOverride = false,
+      location = "",
     ) => {
       const entry = await timeEntryService.clockIn({
         geolocation: position || undefined,
         forceOverride,
+        location: location || undefined,
       });
       setCurrentEntry(entry);
       showToast(t("timeTracking.clockedInSuccess"));
+      setSelectedLocation(""); // Clear location after successful clock-in
 
       // Show location if available
       if (position) {
@@ -225,14 +233,14 @@ export default function TimeEntriesPage() {
     setActionLoading(true);
 
     try {
-      await performClockIn(pendingPosition, true);
+      await performClockIn(pendingPosition, true, selectedLocation);
     } catch (err) {
       console.error("Clock in with override failed:", err);
       setError(t("timeTracking.clockInError"));
     } finally {
       setActionLoading(false);
     }
-  }, [earlyClockInDialog, performClockIn, t]);
+  }, [earlyClockInDialog, performClockIn, selectedLocation, t]);
 
   const handleEarlyClockInCancel = useCallback(() => {
     setEarlyClockInDialog({
@@ -295,7 +303,7 @@ export default function TimeEntriesPage() {
         setStats(statsResponse);
       } else {
         // Clock in
-        await performClockIn(position, false);
+        await performClockIn(position, false, selectedLocation);
       }
     } catch (err: unknown) {
       console.error("Clock action failed:", err);
@@ -588,9 +596,11 @@ export default function TimeEntriesPage() {
                 onChange={(e) => setSelectedLocation(e.target.value)}
               >
                 <option value="">{t("timeTracking.chooseLocation")}</option>
-                <option value="main">Main Office</option>
-                <option value="warehouse">Warehouse</option>
-                <option value="retail">Retail Store</option>
+                {tenantLocations.map((location) => (
+                  <option key={location} value={location}>
+                    {location}
+                  </option>
+                ))}
               </select>
             </div>
 

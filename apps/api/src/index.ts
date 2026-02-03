@@ -14,6 +14,7 @@ import tenantRoutes from "./routes/tenant.routes";
 import roleRoutes from "./routes/role.routes";
 import userRoutes from "./routes/user.routes";
 import timeEntryRoutes from "./routes/timeEntry.routes";
+import locationRoutes from "./routes/location.routes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,6 +42,7 @@ app.use("/api/v1/tenant", authenticate, tenantRoutes);
 app.use("/api/v1/tenant/roles", authenticate, roleRoutes);
 app.use("/api/v1/users", authenticate, userRoutes);
 app.use("/api/v1/time-entries", authenticate, timeEntryRoutes);
+app.use("/api/v1/locations", authenticate, locationRoutes);
 
 // Error handling
 app.use(notFoundHandler);

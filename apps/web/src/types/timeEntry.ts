@@ -31,6 +31,7 @@ export interface TimeEntry {
     location: string | null;
   } | null;
   entryType: EntryType;
+  location: string | null;
   clockInLat: number | null;
   clockInLng: number | null;
   clockOutLat: number | null;
@@ -81,6 +82,7 @@ export interface TimeEntryHistoryResponse {
 export interface ClockInInput {
   shiftId?: string;
   geolocation?: Geolocation;
+  location?: string;
   notes?: string;
   forceOverride?: boolean; // Override early clock-in warning
 }
