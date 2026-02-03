@@ -1,0 +1,300 @@
+/* ========================================
+   TORRE TEMPO TENANT MANAGEMENT PAGE
+   Platform Admin - Multi-Tenant Management
+   SECURITY: PLATFORM_ADMIN role only
+   ======================================== */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tenants-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  animation: fade-in-up 0.4s ease-out;
+}
+
+.tenants-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  animation: fade-in-up 0.4s ease-out;
+}
+
+.tenants-header h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.table-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  animation: fade-in-up 0.5s ease-out;
+}
+
+.tenants-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tenants-table thead {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tenants-table th {
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #374151;
+}
+
+.tenants-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 200ms ease-out;
+}
+
+.tenants-table tbody tr:hover {
+  background: linear-gradient(135deg, #fef3f2 0%, #fff5f3 100%);
+  transform: translateX(4px);
+}
+
+.tenants-table td {
+  padding: 1.25rem 1.5rem;
+  color: #4b5563;
+  font-size: 0.9375rem;
+}
+
+/* Tenant Info */
+.tenant-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tenant-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f59e0b 0%, #fb923c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+  flex-shrink: 0;
+}
+
+.tenant-name {
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.tenant-slug {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-family: "Monaco", "Courier New", monospace;
+  background: #f9fafb;
+  padding: 0.125rem 0.5rem;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* Contact Info */
+.contact-info div {
+  line-height: 1.5;
+}
+
+.contact-info .text-muted {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+/* Employee Count */
+.employee-count {
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  transition: all 200ms ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.status-trial {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: white;
+}
+
+.status-active {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  color: white;
+}
+
+.status-suspended {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  color: white;
+}
+
+.status-cancelled {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  color: white;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 200ms ease-out;
+}
+
+.btn-icon:hover {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.btn-icon svg {
+  transition: all 200ms ease-out;
+}
+
+.btn-icon:hover svg {
+  stroke: #f59e0b;
+  transform: scale(1.1);
+}
+
+.btn-icon.btn-danger:hover {
+  border-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.btn-icon.btn-danger:hover svg {
+  stroke: #ef4444;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  animation: fade-in-up 0.6s ease-out;
+}
+
+.empty-state svg {
+  color: #d1d5db;
+  margin-bottom: 1.5rem;
+}
+
+.empty-state h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 0.75rem;
+}
+
+.empty-state p {
+  font-size: 1rem;
+  color: #9ca3af;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Loading/Error States */
+.loading,
+.error-message {
+  padding: 3rem 2rem;
+  text-align: center;
+  font-size: 1.125rem;
+  color: #6b7280;
+  animation: fade-in-up 0.4s ease-out;
+}
+
+.error-message {
+  color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-radius: 12px;
+  border: 2px solid #fecaca;
+  margin-bottom: 1.5rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .tenants-page {
+    padding: 1rem;
+  }
+
+  .tenants-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .tenants-header h1 {
+    font-size: 1.875rem;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .tenants-table {
+    min-width: 800px;
+  }
+
+  .tenants-table th,
+  .tenants-table td {
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .tenant-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+}

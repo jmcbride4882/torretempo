@@ -9,6 +9,7 @@ import TimeEntriesPage from "./pages/TimeEntriesPage";
 import SchedulingPage from "./pages/SchedulingPage";
 import LeaveRequestsPage from "./pages/LeaveRequestsPage";
 import SettingsPage from "./pages/SettingsPage";
+import TenantsPage from "./pages/TenantsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/DashboardLayout";
 import InstallPrompt from "./components/InstallPrompt";
@@ -145,6 +146,17 @@ function App() {
             <ProtectedRoute requiredRoles={["OWNER", "ADMIN", "MANAGER"]}>
               <DashboardLayout>
                 <SettingsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tenants"
+          element={
+            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+              <DashboardLayout>
+                <TenantsPage />
               </DashboardLayout>
             </ProtectedRoute>
           }
