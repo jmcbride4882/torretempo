@@ -23,15 +23,15 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
-// NUCLEAR CACHE CLEARING - Version 5.7.3 (2026-02-03 - INPUT SPACING FIXED)
+// NUCLEAR CACHE CLEARING - Version 5.7.4 (2026-02-03 - FORCE PADDING FIX)
 // ============================================================================
-const APP_VERSION = "5.7.3-20260203-1116-INPUT-FIX";
+const APP_VERSION = "5.7.4-20260203-1116-FORCE-PADDING";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  TORRE TEMPO v${APP_VERSION}  ║
-║  INPUT SPACING FIXED: 20px gap between icon and text          ║
+║  FORCED PADDING: 64px left = 28px gap after icons             ║
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
