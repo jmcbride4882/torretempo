@@ -2,8 +2,10 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { initializeAuth } from "./stores/authStore";
 import "./i18n/config";
+import "./styles/theme.css";
 import "./index.css";
 
 // Initialize auth state from localStorage
@@ -83,7 +85,9 @@ if ("serviceWorker" in navigator && import.meta.env.PROD) {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <ThemeProvider defaultPreference="system">
+        <App />
+      </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 );

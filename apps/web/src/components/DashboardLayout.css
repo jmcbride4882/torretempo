@@ -1,6 +1,6 @@
 .dashboard-layout {
   min-height: 100vh;
-  background: #f8fafc;
+  background: var(--color-bg-app, #f8fafc);
   position: relative;
 }
 
@@ -43,22 +43,22 @@
   transform: translateY(-50%);
   width: 32px;
   height: 64px;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface-default, white);
+  border: 1px solid var(--color-border-subtle, #e2e8f0);
   border-left: none;
-  border-radius: 0 0.5rem 0.5rem 0;
+  border-radius: 0 var(--radius-lg, 0.5rem) var(--radius-lg, 0.5rem) 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 45;
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
 }
 
 .sidebar-toggle:hover {
-  background: #f8fafc;
-  color: #3b82f6;
+  background: var(--color-bg-subtle, #f8fafc);
+  color: var(--color-primary-9, #3b82f6);
   width: 36px;
 }
 

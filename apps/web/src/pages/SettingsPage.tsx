@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { tenantService } from "../services/tenantService";
+import ThemeToggle from "../components/ThemeToggle";
 import type { Tenant, SmtpConfig } from "../types/tenant";
 import "./SettingsPage.css";
 
@@ -186,6 +187,30 @@ export default function SettingsPage() {
         <p className="header-description">
           Configure your tenant settings and email configuration
         </p>
+      </div>
+
+      {/* Appearance Section */}
+      <div className="settings-section">
+        <div className="section-header">
+          <h2>{t("settings.appearance")}</h2>
+          <p className="section-description">
+            {t("settings.appearanceDescription")}
+          </p>
+        </div>
+
+        <div className="appearance-settings">
+          <div className="appearance-option">
+            <div className="appearance-option__info">
+              <span className="appearance-option__label">
+                {t("settings.themeMode")}
+              </span>
+              <span className="appearance-option__description">
+                {t("settings.themeModeDescription")}
+              </span>
+            </div>
+            <ThemeToggle size="md" />
+          </div>
+        </div>
       </div>
 
       {/* Location Management Section */}

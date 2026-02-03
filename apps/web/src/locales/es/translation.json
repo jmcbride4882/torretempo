@@ -96,6 +96,10 @@
   },
   "settings": {
     "settings": "Configuración",
+    "appearance": "Apariencia",
+    "appearanceDescription": "Personaliza la apariencia de Torre Tempo en tu dispositivo",
+    "themeMode": "Modo de Tema",
+    "themeModeDescription": "Cambiar entre modo claro y oscuro",
     "smtpConfiguration": "Configuración SMTP",
     "smtpDescription": "Configura el servidor SMTP para enviar correos electrónicos (bienvenida, notificaciones, etc.)",
     "smtpHost": "Servidor SMTP",

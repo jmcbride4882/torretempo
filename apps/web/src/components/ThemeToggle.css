@@ -1,0 +1,275 @@
+/**
+ * Torre Tempo Theme Toggle Styles
+ * 
+ * Beautiful animated toggle with smooth transitions
+ * and tasteful celestial iconography
+ */
+
+/* ============================================================================
+ * Theme Toggle (Switch-based)
+ * ============================================================================ */
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.theme-toggle__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+/* Switch Root */
+.theme-toggle__switch {
+  position: relative;
+  width: 60px;
+  height: 32px;
+  background: var(--color-neutral-4);
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+  overflow: hidden;
+}
+
+.theme-toggle__switch:hover {
+  background: var(--color-neutral-5);
+}
+
+.theme-toggle__switch:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-bg-default),
+    0 0 0 4px var(--color-primary-7);
+}
+
+.theme-toggle__switch[data-state="checked"] {
+  background: var(--color-primary-9);
+}
+
+.theme-toggle__switch[data-state="checked"]:hover {
+  background: var(--color-primary-10);
+}
+
+/* Switch Thumb */
+.theme-toggle__thumb {
+  display: block;
+  width: 26px;
+  height: 26px;
+  background: var(--color-bg-default);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(3px);
+  transition: transform var(--transition-normal) cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.theme-toggle__switch[data-state="checked"] .theme-toggle__thumb {
+  transform: translateX(31px);
+}
+
+/* Icons */
+.theme-toggle__icon {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  transition:
+    opacity var(--transition-normal),
+    transform var(--transition-normal);
+  pointer-events: none;
+}
+
+.theme-toggle__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Sun icon (left side) */
+.theme-toggle__icon--sun {
+  left: 8px;
+  color: var(--amber-10);
+  opacity: 1;
+  transform: translateY(-50%) scale(1) rotate(0deg);
+}
+
+.theme-toggle__switch[data-state="checked"] .theme-toggle__icon--sun {
+  opacity: 0;
+  transform: translateY(-50%) scale(0.5) rotate(-90deg);
+}
+
+/* Moon icon (right side) */
+.theme-toggle__icon--moon {
+  right: 8px;
+  color: var(--color-text-inverse);
+  opacity: 0;
+  transform: translateY(-50%) scale(0.5) rotate(90deg);
+}
+
+.theme-toggle__switch[data-state="checked"] .theme-toggle__icon--moon {
+  opacity: 1;
+  transform: translateY(-50%) scale(1) rotate(0deg);
+}
+
+/* Size Variants */
+.theme-toggle--sm .theme-toggle__switch {
+  width: 48px;
+  height: 26px;
+}
+
+.theme-toggle--sm .theme-toggle__thumb {
+  width: 20px;
+  height: 20px;
+}
+
+.theme-toggle--sm
+  .theme-toggle__switch[data-state="checked"]
+  .theme-toggle__thumb {
+  transform: translateX(25px);
+}
+
+.theme-toggle--sm .theme-toggle__icon {
+  width: 14px;
+  height: 14px;
+}
+
+.theme-toggle--sm .theme-toggle__icon--sun {
+  left: 6px;
+}
+
+.theme-toggle--sm .theme-toggle__icon--moon {
+  right: 6px;
+}
+
+.theme-toggle--lg .theme-toggle__switch {
+  width: 72px;
+  height: 38px;
+}
+
+.theme-toggle--lg .theme-toggle__thumb {
+  width: 32px;
+  height: 32px;
+}
+
+.theme-toggle--lg
+  .theme-toggle__switch[data-state="checked"]
+  .theme-toggle__thumb {
+  transform: translateX(37px);
+}
+
+.theme-toggle--lg .theme-toggle__icon {
+  width: 22px;
+  height: 22px;
+}
+
+.theme-toggle--lg .theme-toggle__icon--sun {
+  left: 10px;
+}
+
+.theme-toggle--lg .theme-toggle__icon--moon {
+  right: 10px;
+}
+
+/* ============================================================================
+ * Theme Toggle Button (Icon-only)
+ * ============================================================================ */
+
+.theme-toggle-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.theme-toggle-button:hover {
+  background: var(--color-hover-overlay);
+  border-color: var(--color-border-emphasis);
+  color: var(--color-text-default);
+}
+
+.theme-toggle-button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-color: var(--color-primary-7);
+}
+
+.theme-toggle-button:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle-button__icon-wrapper {
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+
+.theme-toggle-button__icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition:
+    opacity var(--transition-normal),
+    transform var(--transition-normal);
+}
+
+/* Light mode: show sun */
+.theme-toggle-button__icon--sun {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.theme-toggle-button__icon--moon {
+  opacity: 0;
+  transform: scale(0.5) rotate(90deg);
+}
+
+/* Dark mode: show moon */
+[data-theme="dark"] .theme-toggle-button__icon--sun {
+  opacity: 0;
+  transform: scale(0.5) rotate(-90deg);
+}
+
+[data-theme="dark"] .theme-toggle-button__icon--moon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+/* Dark mode button styles */
+[data-theme="dark"] .theme-toggle-button {
+  background: var(--color-neutral-3);
+  border-color: var(--color-border-subtle);
+}
+
+[data-theme="dark"] .theme-toggle-button:hover {
+  background: var(--color-neutral-4);
+  border-color: var(--color-border-default);
+}
+
+/* ============================================================================
+ * Accessibility: Respect motion preferences
+ * ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle__thumb,
+  .theme-toggle__icon,
+  .theme-toggle-button__icon {
+    transition: none;
+  }
+}

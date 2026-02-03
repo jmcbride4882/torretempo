@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { startOfWeek, endOfWeek, startOfDay, endOfDay, format } from "date-fns";
+import * as Select from "@radix-ui/react-select";
+import * as Toast from "@radix-ui/react-toast";
 import { timeEntryService } from "../services/timeEntryService";
 import { locationService } from "../services/locationService";
 import { useGeolocation, reverseGeocode } from "../hooks/useGeolocation";
@@ -147,7 +149,7 @@ export default function TimeEntriesPage() {
 
   const showToast = (message: string) => {
     setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 4000);
+    // Radix Toast handles auto-dismiss via duration prop on Provider
   };
 
   // Show location banner for 5 seconds
@@ -405,33 +407,121 @@ export default function TimeEntriesPage() {
     );
   }
 
-  return (
-    <div className="time-entries-page">
-      {/* Toast notification */}
-      {toastMessage && (
-        <div className="toast toast--success">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
-          {toastMessage}
-        </div>
-      )}
+  // Handle toast open state change
+  const handleToastOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setToastMessage(null);
+    }
+  }, []);
 
-      {/* Header */}
-      <div className="time-entries-page__header">
-        <div className="time-entries-page__header-left">
-          <h1 className="time-entries-page__title">{t("nav.timeEntries")}</h1>
+  return (
+    <Toast.Provider swipeDirection="right" duration={4000}>
+      <div className="time-entries-page">
+        {/* Toast notification - Radix UI */}
+        <Toast.Root
+          className="toast toast--success"
+          open={!!toastMessage}
+          onOpenChange={handleToastOpenChange}
+        >
+          <div className="toast__content">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <Toast.Description>{toastMessage}</Toast.Description>
+          </div>
+        </Toast.Root>
+        <Toast.Viewport className="toast-viewport" />
+
+        {/* Header */}
+        <div className="time-entries-page__header">
+          <div className="time-entries-page__header-left">
+            <h1 className="time-entries-page__title">{t("nav.timeEntries")}</h1>
+          </div>
+          {geolocation.permissionStatus === "granted" && (
+            <div className="time-entries-page__geo-status">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span>{t("timeTracking.locationEnabled")}</span>
+            </div>
+          )}
         </div>
-        {geolocation.permissionStatus === "granted" && (
-          <div className="time-entries-page__geo-status">
+
+        {/* Error message */}
+        {error && (
+          <div className="time-entries-page__error">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>{error}</span>
+            <button className="error-dismiss" onClick={() => setError(null)}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Geolocation permission prompt */}
+        {geolocation.permissionStatus === "denied" && (
+          <div className="time-entries-page__geo-warning">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div className="geo-warning-content">
+              <strong>{t("timeTracking.locationBlocked")}</strong>
+              <p>{t("timeTracking.locationBlockedDesc")}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Location display banner */}
+        {(gettingLocation || showLocationBanner) && (
+          <div
+            className={`time-entries-page__location-banner ${showLocationBanner ? "time-entries-page__location-banner--visible" : ""}`}
+          >
             <svg
               width="16"
               height="16"
@@ -443,257 +533,228 @@ export default function TimeEntriesPage() {
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
               <circle cx="12" cy="10" r="3" />
             </svg>
-            <span>{t("timeTracking.locationEnabled")}</span>
+            <span>
+              {gettingLocation
+                ? t("timeTracking.gettingLocation")
+                : locationAddress
+                  ? t("timeTracking.yourLocation", {
+                      address: locationAddress,
+                      defaultValue: `You are at: ${locationAddress}`,
+                    })
+                  : ""}
+            </span>
           </div>
         )}
-      </div>
 
-      {/* Error message */}
-      {error && (
-        <div className="time-entries-page__error">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <span>{error}</span>
-          <button className="error-dismiss" onClick={() => setError(null)}>
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-      )}
+        {/* Main content */}
+        <div className="time-entries-page__content">
+          {/* Left column: Clock button and current timer */}
+          <div className="time-entries-page__main">
+            {/* Current Timer (if clocked in) */}
+            {currentEntry && (
+              <CurrentTimer
+                entry={currentEntry}
+                onStartBreak={handleStartBreak}
+                onEndBreak={handleEndBreak}
+                breakLoading={breakLoading}
+              />
+            )}
 
-      {/* Geolocation permission prompt */}
-      {geolocation.permissionStatus === "denied" && (
-        <div className="time-entries-page__geo-warning">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <div className="geo-warning-content">
-            <strong>{t("timeTracking.locationBlocked")}</strong>
-            <p>{t("timeTracking.locationBlockedDesc")}</p>
+            {/* Clock Button */}
+            <div className="time-entries-page__clock-section">
+              {/* Date/Time Display */}
+              <div className="clock-section__datetime">
+                <div className="clock-section__time">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <span className="time-value">
+                    {format(currentTime, "HH:mm:ss")}
+                  </span>
+                </div>
+                <div className="clock-section__date">
+                  {format(currentTime, "EEEE, d MMMM yyyy")}
+                </div>
+              </div>
+
+              {/* Location Selector */}
+              <div className="clock-section__location-selector">
+                <label className="location-selector__label">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  {t("timeTracking.selectLocation")}
+                </label>
+                <Select.Root
+                  value={selectedLocation}
+                  onValueChange={setSelectedLocation}
+                >
+                  <Select.Trigger className="location-selector__dropdown">
+                    <Select.Value
+                      placeholder={t("timeTracking.chooseLocation")}
+                    />
+                    <Select.Icon className="location-selector__icon">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </Select.Icon>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content
+                      className="location-selector__content"
+                      position="popper"
+                      sideOffset={4}
+                    >
+                      <Select.Viewport className="location-selector__viewport">
+                        <Select.Item
+                          value=""
+                          className="location-selector__item"
+                        >
+                          <Select.ItemText>
+                            {t("timeTracking.chooseLocation")}
+                          </Select.ItemText>
+                        </Select.Item>
+                        {tenantLocations.map((location) => (
+                          <Select.Item
+                            key={location}
+                            value={location}
+                            className="location-selector__item"
+                          >
+                            <Select.ItemText>{location}</Select.ItemText>
+                            <Select.ItemIndicator className="location-selector__item-indicator">
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </Select.ItemIndicator>
+                          </Select.Item>
+                        ))}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
+              </div>
+
+              <ClockButton
+                isClockedIn={!!currentEntry}
+                isLoading={actionLoading}
+                isGettingLocation={gettingLocation}
+                onClick={handleClockAction}
+              />
+
+              {!currentEntry && (
+                <p className="time-entries-page__hint">
+                  {t("timeTracking.tapToClockIn")}
+                </p>
+              )}
+            </div>
+
+            {/* Today's quick stats */}
+            <div className="time-entries-page__today-stats">
+              <h3 className="stats-title">{t("timeTracking.todayStats")}</h3>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <div className="stat-item__value">
+                    {todayStats.hours.toFixed(1)}h
+                  </div>
+                  <div className="stat-item__label">
+                    {t("timeTracking.hoursWorked")}
+                  </div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-item__value">{todayStats.breaks}m</div>
+                  <div className="stat-item__label">
+                    {t("timeTracking.breaks")}
+                  </div>
+                </div>
+                {stats && (
+                  <div className="stat-item">
+                    <div className="stat-item__value">
+                      {stats.totalHours.toFixed(1)}h
+                    </div>
+                    <div className="stat-item__label">
+                      {t("timeTracking.thisWeek")}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Location display banner */}
-      {(gettingLocation || showLocationBanner) && (
-        <div
-          className={`time-entries-page__location-banner ${showLocationBanner ? "time-entries-page__location-banner--visible" : ""}`}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-          <span>
-            {gettingLocation
-              ? t("timeTracking.gettingLocation")
-              : locationAddress
-                ? t("timeTracking.yourLocation", {
-                    address: locationAddress,
-                    defaultValue: `You are at: ${locationAddress}`,
-                  })
-                : ""}
-          </span>
-        </div>
-      )}
+          {/* Right column: History */}
+          <div className="time-entries-page__history">
+            <h2 className="time-entries-page__section-title">
+              {t("timeTracking.recentEntries")}
+            </h2>
 
-      {/* Main content */}
-      <div className="time-entries-page__content">
-        {/* Left column: Clock button and current timer */}
-        <div className="time-entries-page__main">
-          {/* Current Timer (if clocked in) */}
-          {currentEntry && (
-            <CurrentTimer
-              entry={currentEntry}
-              onStartBreak={handleStartBreak}
-              onEndBreak={handleEndBreak}
-              breakLoading={breakLoading}
-            />
-          )}
-
-          {/* Clock Button */}
-          <div className="time-entries-page__clock-section">
-            {/* Date/Time Display */}
-            <div className="clock-section__datetime">
-              <div className="clock-section__time">
+            {history.length === 0 ? (
+              <div className="time-entries-page__empty">
                 <svg
-                  width="20"
-                  height="20"
+                  width="48"
+                  height="48"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="1.5"
                 >
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
-                <span className="time-value">
-                  {format(currentTime, "HH:mm:ss")}
-                </span>
+                <p>{t("timeTracking.noEntries")}</p>
               </div>
-              <div className="clock-section__date">
-                {format(currentTime, "EEEE, d MMMM yyyy")}
-              </div>
-            </div>
-
-            {/* Location Selector */}
-            <div className="clock-section__location-selector">
-              <label
-                htmlFor="location-select"
-                className="location-selector__label"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                {t("timeTracking.selectLocation")}
-              </label>
-              <select
-                id="location-select"
-                className="location-selector__dropdown"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-              >
-                <option value="">{t("timeTracking.chooseLocation")}</option>
-                {tenantLocations.map((location) => (
-                  <option key={location} value={location}>
-                    {location}
-                  </option>
+            ) : (
+              <div className="time-entries-page__history-list">
+                {history.map((entry) => (
+                  <TimeEntryCard
+                    key={entry.id}
+                    entry={entry}
+                    showEmployeeName={showTeamView}
+                  />
                 ))}
-              </select>
-            </div>
-
-            <ClockButton
-              isClockedIn={!!currentEntry}
-              isLoading={actionLoading}
-              isGettingLocation={gettingLocation}
-              onClick={handleClockAction}
-            />
-
-            {!currentEntry && (
-              <p className="time-entries-page__hint">
-                {t("timeTracking.tapToClockIn")}
-              </p>
+              </div>
             )}
           </div>
-
-          {/* Today's quick stats */}
-          <div className="time-entries-page__today-stats">
-            <h3 className="stats-title">{t("timeTracking.todayStats")}</h3>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <div className="stat-item__value">
-                  {todayStats.hours.toFixed(1)}h
-                </div>
-                <div className="stat-item__label">
-                  {t("timeTracking.hoursWorked")}
-                </div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-item__value">{todayStats.breaks}m</div>
-                <div className="stat-item__label">
-                  {t("timeTracking.breaks")}
-                </div>
-              </div>
-              {stats && (
-                <div className="stat-item">
-                  <div className="stat-item__value">
-                    {stats.totalHours.toFixed(1)}h
-                  </div>
-                  <div className="stat-item__label">
-                    {t("timeTracking.thisWeek")}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Right column: History */}
-        <div className="time-entries-page__history">
-          <h2 className="time-entries-page__section-title">
-            {t("timeTracking.recentEntries")}
-          </h2>
-
-          {history.length === 0 ? (
-            <div className="time-entries-page__empty">
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <p>{t("timeTracking.noEntries")}</p>
-            </div>
-          ) : (
-            <div className="time-entries-page__history-list">
-              {history.map((entry) => (
-                <TimeEntryCard
-                  key={entry.id}
-                  entry={entry}
-                  showEmployeeName={showTeamView}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Early Clock-In Warning Dialog */}
+        <EarlyClockInDialog
+          open={earlyClockInDialog.open}
+          minutesEarly={earlyClockInDialog.minutesEarly}
+          shiftStartTime={earlyClockInDialog.shiftStartTime}
+          onConfirm={handleEarlyClockInConfirm}
+          onCancel={handleEarlyClockInCancel}
+          loading={actionLoading}
+        />
       </div>
-
-      {/* Early Clock-In Warning Dialog */}
-      <EarlyClockInDialog
-        open={earlyClockInDialog.open}
-        minutesEarly={earlyClockInDialog.minutesEarly}
-        shiftStartTime={earlyClockInDialog.shiftStartTime}
-        onConfirm={handleEarlyClockInConfirm}
-        onCancel={handleEarlyClockInCancel}
-        loading={actionLoading}
-      />
-    </div>
+    </Toast.Provider>
   );
 }

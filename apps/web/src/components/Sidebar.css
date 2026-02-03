@@ -1,6 +1,6 @@
 .sidebar {
   height: 100vh;
-  background: #1e293b;
+  background: var(--color-sidebar-bg, #1e293b);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -24,7 +24,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.5rem 1.25rem;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-logo-text {
@@ -45,7 +45,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.875rem 1.25rem;
-  color: #cbd5e1;
+  color: var(--color-sidebar-text, #cbd5e1);
   text-decoration: none;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
@@ -53,14 +53,14 @@
 }
 
 .sidebar-link:hover {
-  background: #334155;
-  color: white;
+  background: var(--color-sidebar-item-hover, rgba(255, 255, 255, 0.08));
+  color: var(--color-sidebar-text-active, white);
 }
 
 .sidebar-link-active {
-  background: #1e40af;
-  color: white;
-  border-left-color: #3b82f6;
+  background: var(--color-sidebar-item-active, rgba(99, 102, 241, 0.2));
+  color: var(--color-sidebar-text-active, white);
+  border-left-color: var(--color-primary-9, #3b82f6);
 }
 
 .sidebar-link-icon {
@@ -83,14 +83,14 @@
 }
 
 .sidebar-nav::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: transparent;
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: rgba(255, 255, 255, 0.3);
 }

@@ -1,15 +1,15 @@
-/* Dialog overlay */
+/* Dialog overlay - Radix UI */
 .early-clock-dialog__overlay {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 1000;
-  padding: 1rem;
   animation: overlayFadeIn 0.2s ease;
+}
+
+.early-clock-dialog__overlay[data-state="closed"] {
+  animation: overlayFadeOut 0.2s ease;
 }
 
 @keyframes overlayFadeIn {
@@ -21,28 +21,57 @@
   }
 }
 
-/* Dialog container */
+@keyframes overlayFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Dialog container - Radix UI */
 .early-clock-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: white;
   border-radius: 20px;
   padding: 2rem;
   max-width: 400px;
-  width: 100%;
+  width: calc(100% - 2rem);
   text-align: center;
   box-shadow:
     0 25px 50px -12px rgba(0, 0, 0, 0.25),
     0 10px 20px -10px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
   animation: dialogSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.early-clock-dialog[data-state="closed"] {
+  animation: dialogSlideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes dialogSlideUp {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translate(-50%, -50%) translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate(-50%, -50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes dialogSlideDown {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(20px) scale(0.95);
   }
 }
 

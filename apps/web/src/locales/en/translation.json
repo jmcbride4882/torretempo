@@ -96,6 +96,10 @@
   },
   "settings": {
     "settings": "Settings",
+    "appearance": "Appearance",
+    "appearanceDescription": "Customize how Torre Tempo looks on your device",
+    "themeMode": "Theme Mode",
+    "themeModeDescription": "Switch between light and dark mode",
     "smtpConfiguration": "SMTP Configuration",
     "smtpDescription": "Configure SMTP server to send emails (welcome, notifications, etc.)",
     "smtpHost": "SMTP Server",

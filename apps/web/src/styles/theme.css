@@ -1,0 +1,405 @@
+/**
+ * Torre Tempo Theme System
+ * Built with @radix-ui/colors for consistent light/dark mode
+ * 
+ * Color Scale Reference:
+ * 1-2: App background
+ * 3-4: Subtle background, hover states
+ * 5: Component background
+ * 6: Subtle borders and separators
+ * 7: UI element border and focus rings
+ * 8: Hovered UI element border
+ * 9: Solid backgrounds (brand color)
+ * 10: Hovered solid backgrounds
+ * 11: Low-contrast text
+ * 12: High-contrast text
+ */
+
+/* ============================================================================
+ * Radix Color Scale Imports - Light Mode
+ * ============================================================================ */
+@import "@radix-ui/colors/slate.css";
+@import "@radix-ui/colors/indigo.css";
+@import "@radix-ui/colors/purple.css";
+@import "@radix-ui/colors/green.css";
+@import "@radix-ui/colors/red.css";
+@import "@radix-ui/colors/amber.css";
+@import "@radix-ui/colors/blue.css";
+
+/* ============================================================================
+ * Radix Color Scale Imports - Dark Mode
+ * ============================================================================ */
+@import "@radix-ui/colors/slate-dark.css";
+@import "@radix-ui/colors/indigo-dark.css";
+@import "@radix-ui/colors/purple-dark.css";
+@import "@radix-ui/colors/green-dark.css";
+@import "@radix-ui/colors/red-dark.css";
+@import "@radix-ui/colors/amber-dark.css";
+@import "@radix-ui/colors/blue-dark.css";
+
+/* ============================================================================
+ * Light Theme (Default)
+ * ============================================================================ */
+:root {
+  /* -------------------------------------------------------------------------
+   * Primary Colors (Indigo) - Brand color
+   * ------------------------------------------------------------------------- */
+  --color-primary-1: var(--indigo-1);
+  --color-primary-2: var(--indigo-2);
+  --color-primary-3: var(--indigo-3);
+  --color-primary-4: var(--indigo-4);
+  --color-primary-5: var(--indigo-5);
+  --color-primary-6: var(--indigo-6);
+  --color-primary-7: var(--indigo-7);
+  --color-primary-8: var(--indigo-8);
+  --color-primary-9: var(--indigo-9);
+  --color-primary-10: var(--indigo-10);
+  --color-primary-11: var(--indigo-11);
+  --color-primary-12: var(--indigo-12);
+
+  /* -------------------------------------------------------------------------
+   * Accent Colors (Purple) - Secondary brand color
+   * ------------------------------------------------------------------------- */
+  --color-accent-1: var(--purple-1);
+  --color-accent-2: var(--purple-2);
+  --color-accent-3: var(--purple-3);
+  --color-accent-4: var(--purple-4);
+  --color-accent-5: var(--purple-5);
+  --color-accent-6: var(--purple-6);
+  --color-accent-7: var(--purple-7);
+  --color-accent-8: var(--purple-8);
+  --color-accent-9: var(--purple-9);
+  --color-accent-10: var(--purple-10);
+  --color-accent-11: var(--purple-11);
+  --color-accent-12: var(--purple-12);
+
+  /* -------------------------------------------------------------------------
+   * Neutral Colors (Slate) - UI chrome
+   * ------------------------------------------------------------------------- */
+  --color-neutral-1: var(--slate-1);
+  --color-neutral-2: var(--slate-2);
+  --color-neutral-3: var(--slate-3);
+  --color-neutral-4: var(--slate-4);
+  --color-neutral-5: var(--slate-5);
+  --color-neutral-6: var(--slate-6);
+  --color-neutral-7: var(--slate-7);
+  --color-neutral-8: var(--slate-8);
+  --color-neutral-9: var(--slate-9);
+  --color-neutral-10: var(--slate-10);
+  --color-neutral-11: var(--slate-11);
+  --color-neutral-12: var(--slate-12);
+
+  /* -------------------------------------------------------------------------
+   * Semantic Colors - Success (Green)
+   * ------------------------------------------------------------------------- */
+  --color-success-1: var(--green-1);
+  --color-success-2: var(--green-2);
+  --color-success-3: var(--green-3);
+  --color-success-4: var(--green-4);
+  --color-success-5: var(--green-5);
+  --color-success-6: var(--green-6);
+  --color-success-7: var(--green-7);
+  --color-success-8: var(--green-8);
+  --color-success-9: var(--green-9);
+  --color-success-10: var(--green-10);
+  --color-success-11: var(--green-11);
+  --color-success-12: var(--green-12);
+
+  /* -------------------------------------------------------------------------
+   * Semantic Colors - Error (Red)
+   * ------------------------------------------------------------------------- */
+  --color-error-1: var(--red-1);
+  --color-error-2: var(--red-2);
+  --color-error-3: var(--red-3);
+  --color-error-4: var(--red-4);
+  --color-error-5: var(--red-5);
+  --color-error-6: var(--red-6);
+  --color-error-7: var(--red-7);
+  --color-error-8: var(--red-8);
+  --color-error-9: var(--red-9);
+  --color-error-10: var(--red-10);
+  --color-error-11: var(--red-11);
+  --color-error-12: var(--red-12);
+
+  /* -------------------------------------------------------------------------
+   * Semantic Colors - Warning (Amber)
+   * ------------------------------------------------------------------------- */
+  --color-warning-1: var(--amber-1);
+  --color-warning-2: var(--amber-2);
+  --color-warning-3: var(--amber-3);
+  --color-warning-4: var(--amber-4);
+  --color-warning-5: var(--amber-5);
+  --color-warning-6: var(--amber-6);
+  --color-warning-7: var(--amber-7);
+  --color-warning-8: var(--amber-8);
+  --color-warning-9: var(--amber-9);
+  --color-warning-10: var(--amber-10);
+  --color-warning-11: var(--amber-11);
+  --color-warning-12: var(--amber-12);
+
+  /* -------------------------------------------------------------------------
+   * Semantic Colors - Info (Blue)
+   * ------------------------------------------------------------------------- */
+  --color-info-1: var(--blue-1);
+  --color-info-2: var(--blue-2);
+  --color-info-3: var(--blue-3);
+  --color-info-4: var(--blue-4);
+  --color-info-5: var(--blue-5);
+  --color-info-6: var(--blue-6);
+  --color-info-7: var(--blue-7);
+  --color-info-8: var(--blue-8);
+  --color-info-9: var(--blue-9);
+  --color-info-10: var(--blue-10);
+  --color-info-11: var(--blue-11);
+  --color-info-12: var(--blue-12);
+
+  /* -------------------------------------------------------------------------
+   * Application Background Colors
+   * ------------------------------------------------------------------------- */
+  --color-bg-app: var(--slate-1);
+  --color-bg-default: #ffffff;
+  --color-bg-subtle: var(--slate-2);
+  --color-bg-muted: var(--slate-3);
+  --color-bg-emphasis: var(--slate-4);
+  --color-bg-inverse: var(--slate-12);
+
+  /* -------------------------------------------------------------------------
+   * Surface Colors (Cards, Dialogs, Dropdowns)
+   * ------------------------------------------------------------------------- */
+  --color-surface-default: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-overlay: rgba(255, 255, 255, 0.95);
+
+  /* -------------------------------------------------------------------------
+   * Text Colors
+   * ------------------------------------------------------------------------- */
+  --color-text-default: var(--slate-12);
+  --color-text-muted: var(--slate-11);
+  --color-text-subtle: var(--slate-10);
+  --color-text-placeholder: var(--slate-9);
+  --color-text-inverse: #ffffff;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-accent: #ffffff;
+
+  /* -------------------------------------------------------------------------
+   * Border Colors
+   * ------------------------------------------------------------------------- */
+  --color-border-default: var(--slate-6);
+  --color-border-muted: var(--slate-5);
+  --color-border-subtle: var(--slate-4);
+  --color-border-emphasis: var(--slate-7);
+  --color-border-focus: var(--indigo-8);
+
+  /* -------------------------------------------------------------------------
+   * Interactive States
+   * ------------------------------------------------------------------------- */
+  --color-focus-ring: var(--indigo-7);
+  --color-hover-overlay: rgba(0, 0, 0, 0.04);
+  --color-active-overlay: rgba(0, 0, 0, 0.08);
+
+  /* -------------------------------------------------------------------------
+   * Component-Specific Colors
+   * ------------------------------------------------------------------------- */
+  /* Clock/Timer */
+  --color-clock-in: var(--green-9);
+  --color-clock-in-hover: var(--green-10);
+  --color-clock-out: var(--red-9);
+  --color-clock-out-hover: var(--red-10);
+  --color-break: var(--amber-9);
+  --color-break-hover: var(--amber-10);
+
+  /* Buttons */
+  --color-btn-primary-bg: var(--indigo-9);
+  --color-btn-primary-bg-hover: var(--indigo-10);
+  --color-btn-secondary-bg: #ffffff;
+  --color-btn-secondary-bg-hover: var(--slate-2);
+  --color-btn-danger-bg: var(--red-9);
+  --color-btn-danger-bg-hover: var(--red-10);
+
+  /* Sidebar */
+  --color-sidebar-bg: var(--slate-12);
+  --color-sidebar-text: var(--slate-4);
+  --color-sidebar-text-active: #ffffff;
+  --color-sidebar-item-active: rgba(99, 102, 241, 0.2);
+  --color-sidebar-item-hover: rgba(255, 255, 255, 0.08);
+
+  /* Header */
+  --color-header-bg: #ffffff;
+  --color-header-border: var(--slate-4);
+
+  /* Alerts */
+  --color-alert-success-bg: var(--green-2);
+  --color-alert-success-border: var(--green-6);
+  --color-alert-success-text: var(--green-11);
+  --color-alert-error-bg: var(--red-2);
+  --color-alert-error-border: var(--red-6);
+  --color-alert-error-text: var(--red-11);
+  --color-alert-warning-bg: var(--amber-2);
+  --color-alert-warning-border: var(--amber-6);
+  --color-alert-warning-text: var(--amber-11);
+  --color-alert-info-bg: var(--blue-2);
+  --color-alert-info-border: var(--blue-6);
+  --color-alert-info-text: var(--blue-11);
+
+  /* -------------------------------------------------------------------------
+   * Shadows (Light Mode)
+   * ------------------------------------------------------------------------- */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm:
+    0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  --shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.2);
+
+  /* -------------------------------------------------------------------------
+   * Border Radius
+   * ------------------------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  /* -------------------------------------------------------------------------
+   * Gradients (Brand)
+   * ------------------------------------------------------------------------- */
+  --gradient-primary: linear-gradient(
+    135deg,
+    var(--indigo-9) 0%,
+    var(--purple-9) 100%
+  );
+  --gradient-primary-hover: linear-gradient(
+    135deg,
+    var(--indigo-10) 0%,
+    var(--purple-10) 100%
+  );
+
+  /* -------------------------------------------------------------------------
+   * Transitions
+   * ------------------------------------------------------------------------- */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* ============================================================================
+ * Dark Theme
+ * ============================================================================ */
+[data-theme="dark"] {
+  /* -------------------------------------------------------------------------
+   * Application Background Colors - Dark
+   * ------------------------------------------------------------------------- */
+  --color-bg-app: var(--slate-1);
+  --color-bg-default: var(--slate-2);
+  --color-bg-subtle: var(--slate-3);
+  --color-bg-muted: var(--slate-4);
+  --color-bg-emphasis: var(--slate-5);
+  --color-bg-inverse: var(--slate-12);
+
+  /* -------------------------------------------------------------------------
+   * Surface Colors - Dark
+   * ------------------------------------------------------------------------- */
+  --color-surface-default: var(--slate-2);
+  --color-surface-raised: var(--slate-3);
+  --color-surface-overlay: rgba(30, 32, 38, 0.95);
+
+  /* -------------------------------------------------------------------------
+   * Text Colors - Dark
+   * ------------------------------------------------------------------------- */
+  --color-text-default: var(--slate-12);
+  --color-text-muted: var(--slate-11);
+  --color-text-subtle: var(--slate-10);
+  --color-text-placeholder: var(--slate-8);
+  --color-text-inverse: var(--slate-1);
+
+  /* -------------------------------------------------------------------------
+   * Border Colors - Dark
+   * ------------------------------------------------------------------------- */
+  --color-border-default: var(--slate-6);
+  --color-border-muted: var(--slate-5);
+  --color-border-subtle: var(--slate-4);
+  --color-border-emphasis: var(--slate-7);
+
+  /* -------------------------------------------------------------------------
+   * Interactive States - Dark
+   * ------------------------------------------------------------------------- */
+  --color-hover-overlay: rgba(255, 255, 255, 0.06);
+  --color-active-overlay: rgba(255, 255, 255, 0.1);
+
+  /* -------------------------------------------------------------------------
+   * Component-Specific Colors - Dark
+   * ------------------------------------------------------------------------- */
+  /* Buttons */
+  --color-btn-secondary-bg: var(--slate-3);
+  --color-btn-secondary-bg-hover: var(--slate-4);
+
+  /* Sidebar - stays dark in both modes for contrast */
+  --color-sidebar-bg: var(--slate-1);
+  --color-sidebar-text: var(--slate-11);
+  --color-sidebar-text-active: #ffffff;
+  --color-sidebar-item-active: rgba(99, 102, 241, 0.25);
+  --color-sidebar-item-hover: rgba(255, 255, 255, 0.06);
+
+  /* Header */
+  --color-header-bg: var(--slate-2);
+  --color-header-border: var(--slate-5);
+
+  /* -------------------------------------------------------------------------
+   * Shadows - Dark Mode (lighter shadows with color tint)
+   * ------------------------------------------------------------------------- */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm:
+    0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+ * Theme Transition Animation
+ * Apply smooth transitions when switching themes
+ * ============================================================================ */
+html,
+html *,
+html *::before,
+html *::after {
+  transition:
+    background-color var(--transition-normal),
+    border-color var(--transition-normal),
+    color var(--transition-fast),
+    box-shadow var(--transition-normal),
+    fill var(--transition-fast),
+    stroke var(--transition-fast);
+}
+
+/* Disable transition for specific elements that shouldn't animate */
+.no-theme-transition,
+.no-theme-transition *,
+.no-theme-transition *::before,
+.no-theme-transition *::after {
+  transition: none !important;
+}
+
+/* ============================================================================
+ * Respect user's motion preferences
+ * ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html,
+  html *,
+  html *::before,
+  html *::after {
+    transition: none !important;
+  }
+}
