@@ -78,7 +78,7 @@
 }
 
 .menu-button:focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid #374151;
   outline-offset: 2px;
 }
 
@@ -101,7 +101,7 @@
 .brand-name {
   font-size: 1.125rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -120,7 +120,7 @@
   align-items: center;
   padding: 6px 14px;
   background: #f0f9ff;
-  color: #6366f1;
+  color: #374151;
   font-size: 0.875rem;
   font-weight: 600;
   border-radius: 8px;

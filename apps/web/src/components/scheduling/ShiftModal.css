@@ -96,7 +96,7 @@
 }
 
 .shift-conflicts li.conflict-warning {
-  color: #d97706;
+  color: #ef4444;
 }
 
 .shift-conflicts li.conflict-info {
@@ -147,7 +147,7 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: #374151;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -228,7 +228,7 @@
 
 .btn-save {
   padding: 0.625rem 1.25rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   color: white;
   border: none;
   border-radius: 8px;

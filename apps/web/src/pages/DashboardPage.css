@@ -5,8 +5,8 @@
 
 /* CSS Variables */
 :root {
-  --dashboard-primary: #6366f1;
-  --dashboard-accent: #f59e0b;
+  --dashboard-primary: #374151;
+  --dashboard-accent: #f87171;
   --dashboard-success: #10b981;
   --dashboard-bg: #fafaf9;
   --dashboard-card: #ffffff;
@@ -59,7 +59,7 @@
   background: linear-gradient(
     135deg,
     var(--dashboard-primary) 0%,
-    #8b5cf6 100%
+    #4b5563 100%
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -105,7 +105,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, var(--dashboard-primary) 0%, #8b5cf6 100%);
+  background: linear-gradient(90deg, var(--dashboard-primary) 0%, #4b5563 100%);
   opacity: 0;
   transition: opacity var(--dashboard-transition);
 }
@@ -221,7 +221,7 @@
   background: linear-gradient(
     135deg,
     var(--dashboard-primary) 0%,
-    #8b5cf6 100%
+    #4b5563 100%
   );
   opacity: 0;
   transition: opacity var(--dashboard-transition);
@@ -278,7 +278,7 @@
   background: linear-gradient(
     135deg,
     var(--dashboard-primary) 0%,
-    #8b5cf6 100%
+    #4b5563 100%
   );
   color: white;
   transform: scale(1.05);
@@ -327,7 +327,7 @@
     90deg,
     var(--dashboard-primary) 0%,
     var(--dashboard-accent) 50%,
-    #8b5cf6 100%
+    #4b5563 100%
   );
   background-size: 200% 100%;
   animation: gradient-flow 3s ease infinite;
@@ -360,7 +360,7 @@
   background: linear-gradient(
     135deg,
     var(--dashboard-primary) 0%,
-    #8b5cf6 100%
+    #4b5563 100%
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

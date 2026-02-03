@@ -38,13 +38,13 @@
    ============================================== */
 
 .clock-button--in {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 50%, #9ca3af 100%);
   color: white;
   box-shadow:
     0 12px 32px rgba(99, 102, 241, 0.4),
     0 4px 12px rgba(99, 102, 241, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  animation: pulse-glow-indigo 3s ease-in-out infinite;
+  animation: pulse-glow-charcoal 3s ease-in-out infinite;
 }
 
 .clock-button--in:hover:not(:disabled) {
@@ -65,7 +65,7 @@
 }
 
 /* Pulse glow for clock-in state */
-@keyframes pulse-glow-indigo {
+@keyframes pulse-glow-charcoal {
   0%,
   100% {
     box-shadow:

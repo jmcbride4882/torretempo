@@ -99,13 +99,13 @@
 
 .sidebar-toggle:hover {
   background: #f8fafc;
-  color: #6366f1;
+  color: #374151;
   width: 32px;
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
 }
 
 .sidebar-toggle:focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid #374151;
   outline-offset: 2px;
 }
 
@@ -117,7 +117,7 @@
 
 [data-theme="dark"] .sidebar-toggle:hover {
   background: var(--color-bg-subtle, #2a2a3a);
-  color: #6366f1;
+  color: #374151;
 }
 
 .sidebar-toggle svg {
@@ -180,7 +180,7 @@
 }
 
 .mobile-nav-link:hover {
-  color: #6366f1;
+  color: #374151;
   background: rgba(99, 102, 241, 0.05);
 }
 
@@ -189,7 +189,7 @@
 }
 
 .mobile-nav-link.active {
-  color: #6366f1;
+  color: #374151;
 }
 
 .mobile-nav-link.active .mobile-nav-icon {

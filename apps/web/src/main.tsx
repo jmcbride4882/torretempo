@@ -25,7 +25,7 @@ const queryClient = new QueryClient({
 // ============================================================================
 // NUCLEAR CACHE CLEARING - Version 5.8.0 (2026-02-03 - CHARCOAL & CORAL REDESIGN)
 // ============================================================================
-const APP_VERSION = "5.8.0-20260203-1130-CHARCOAL-CORAL";
+const APP_VERSION = "5.9.0-FULL-CHARCOAL-CORAL";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`

@@ -2,7 +2,7 @@
   background: white;
   border-radius: 6px;
   padding: 0.625rem 0.75rem; /* Increased padding for more breathing room */
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid #374151;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   cursor: grab;
   transition: all 0.15s ease;
@@ -60,7 +60,7 @@
 }
 
 .shift-card.has-warning {
-  border-color: #f59e0b;
+  border-color: #f87171;
   background: #fffbeb;
 }
 
@@ -71,7 +71,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  border: 2px solid #f59e0b;
+  border: 2px solid #f87171;
   border-radius: 6px;
   pointer-events: none;
 }
@@ -100,7 +100,7 @@
 
 .shift-employee-name {
   font-weight: 500;
-  color: #6366f1;
+  color: #374151;
   font-size: 0.75rem;
   margin-bottom: 0.25rem;
   display: none; /* Hidden on desktop - shown only on mobile */
@@ -140,12 +140,12 @@
 }
 
 .shift-card.has-warning .shift-conflict-indicator {
-  color: #f59e0b;
+  color: #f87171;
 }
 
 /* Selected state */
 .shift-card.selected {
-  outline: 2px solid #6366f1;
+  outline: 2px solid #374151;
   outline-offset: 2px;
 }
 
@@ -187,9 +187,9 @@
   opacity: 0.5;
   border-style: dashed;
   border-width: 2px;
-  border-color: #f59e0b;
+  border-color: #f87171;
   background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  box-shadow: 0 0 0 1px #f59e0b;
+  box-shadow: 0 0 0 1px #f87171;
 }
 
 .shift-card.cut::after {
@@ -199,7 +199,7 @@
   right: 4px;
   width: 8px;
   height: 8px;
-  background: #f59e0b;
+  background: #f87171;
   border-radius: 50%;
   animation: cutBlink 0.8s ease-in-out infinite;
 }
@@ -223,7 +223,7 @@
   height: 32px;
   border: none;
   background: rgba(99, 102, 241, 0.1);
-  color: #6366f1;
+  color: #374151;
   border-radius: 6px;
   cursor: pointer;
   display: flex;
@@ -235,7 +235,7 @@
 }
 
 .shift-swap-button:hover {
-  background: #6366f1;
+  background: #374151;
   color: white;
   transform: scale(1.1);
 }
@@ -304,7 +304,7 @@
   }
 
   .shift-swap-button:active {
-    background: #6366f1 !important;
+    background: #374151 !important;
     color: white;
     transform: scale(0.92);
   }

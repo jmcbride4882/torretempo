@@ -1,5 +1,5 @@
 /**
- * Torre Tempo Theme System
+ * Torre Tempo Theme System - CHARCOAL & CORAL v5.9.0
  * Built with @radix-ui/colors for consistent light/dark mode
  * 
  * Color Scale Reference:
@@ -19,8 +19,8 @@
  * Radix Color Scale Imports - Light Mode
  * ============================================================================ */
 @import "@radix-ui/colors/slate.css";
-@import "@radix-ui/colors/indigo.css";
-@import "@radix-ui/colors/purple.css";
+@import "@radix-ui/colors/gray.css";
+@import "@radix-ui/colors/tomato.css";
 @import "@radix-ui/colors/green.css";
 @import "@radix-ui/colors/red.css";
 @import "@radix-ui/colors/amber.css";
@@ -30,8 +30,8 @@
  * Radix Color Scale Imports - Dark Mode
  * ============================================================================ */
 @import "@radix-ui/colors/slate-dark.css";
-@import "@radix-ui/colors/indigo-dark.css";
-@import "@radix-ui/colors/purple-dark.css";
+@import "@radix-ui/colors/gray-dark.css";
+@import "@radix-ui/colors/tomato-dark.css";
 @import "@radix-ui/colors/green-dark.css";
 @import "@radix-ui/colors/red-dark.css";
 @import "@radix-ui/colors/amber-dark.css";
@@ -42,36 +42,36 @@
  * ============================================================================ */
 :root {
   /* -------------------------------------------------------------------------
-   * Primary Colors (Indigo) - Brand color
+   * Primary Colors (Gray/Charcoal) - Brand color
    * ------------------------------------------------------------------------- */
-  --color-primary-1: var(--indigo-1);
-  --color-primary-2: var(--indigo-2);
-  --color-primary-3: var(--indigo-3);
-  --color-primary-4: var(--indigo-4);
-  --color-primary-5: var(--indigo-5);
-  --color-primary-6: var(--indigo-6);
-  --color-primary-7: var(--indigo-7);
-  --color-primary-8: var(--indigo-8);
-  --color-primary-9: var(--indigo-9);
-  --color-primary-10: var(--indigo-10);
-  --color-primary-11: var(--indigo-11);
-  --color-primary-12: var(--indigo-12);
+  --color-primary-1: var(--gray-1);
+  --color-primary-2: var(--gray-2);
+  --color-primary-3: var(--gray-3);
+  --color-primary-4: var(--gray-4);
+  --color-primary-5: var(--gray-5);
+  --color-primary-6: var(--gray-6);
+  --color-primary-7: var(--gray-7);
+  --color-primary-8: var(--gray-8);
+  --color-primary-9: var(--gray-9);
+  --color-primary-10: var(--gray-10);
+  --color-primary-11: var(--gray-11);
+  --color-primary-12: var(--gray-12);
 
   /* -------------------------------------------------------------------------
-   * Accent Colors (Purple) - Secondary brand color
+   * Accent Colors (Tomato/Coral) - Secondary brand color
    * ------------------------------------------------------------------------- */
-  --color-accent-1: var(--purple-1);
-  --color-accent-2: var(--purple-2);
-  --color-accent-3: var(--purple-3);
-  --color-accent-4: var(--purple-4);
-  --color-accent-5: var(--purple-5);
-  --color-accent-6: var(--purple-6);
-  --color-accent-7: var(--purple-7);
-  --color-accent-8: var(--purple-8);
-  --color-accent-9: var(--purple-9);
-  --color-accent-10: var(--purple-10);
-  --color-accent-11: var(--purple-11);
-  --color-accent-12: var(--purple-12);
+  --color-accent-1: var(--tomato-1);
+  --color-accent-2: var(--tomato-2);
+  --color-accent-3: var(--tomato-3);
+  --color-accent-4: var(--tomato-4);
+  --color-accent-5: var(--tomato-5);
+  --color-accent-6: var(--tomato-6);
+  --color-accent-7: var(--tomato-7);
+  --color-accent-8: var(--tomato-8);
+  --color-accent-9: var(--tomato-9);
+  --color-accent-10: var(--tomato-10);
+  --color-accent-11: var(--tomato-11);
+  --color-accent-12: var(--tomato-12);
 
   /* -------------------------------------------------------------------------
    * Neutral Colors (Slate) - UI chrome
@@ -133,7 +133,7 @@
   --color-warning-7: var(--amber-7);
   --color-warning-8: var(--amber-8);
   --color-warning-9: var(--amber-9);
-  --color-warning-10: var(--amber-10);
+  --color-warning-10: var(--tomato-10);
   --color-warning-11: var(--amber-11);
   --color-warning-12: var(--amber-12);
 
@@ -188,12 +188,12 @@
   --color-border-muted: var(--slate-5);
   --color-border-subtle: var(--slate-4);
   --color-border-emphasis: var(--slate-7);
-  --color-border-focus: var(--indigo-8);
+  --color-border-focus: var(--gray-8);
 
   /* -------------------------------------------------------------------------
    * Interactive States
    * ------------------------------------------------------------------------- */
-  --color-focus-ring: var(--indigo-7);
+  --color-focus-ring: var(--gray-7);
   --color-hover-overlay: rgba(0, 0, 0, 0.04);
   --color-active-overlay: rgba(0, 0, 0, 0.08);
 
@@ -206,11 +206,11 @@
   --color-clock-out: var(--red-9);
   --color-clock-out-hover: var(--red-10);
   --color-break: var(--amber-9);
-  --color-break-hover: var(--amber-10);
+  --color-break-hover: var(--tomato-10);
 
   /* Buttons */
-  --color-btn-primary-bg: var(--indigo-9);
-  --color-btn-primary-bg-hover: var(--indigo-10);
+  --color-btn-primary-bg: var(--gray-9);
+  --color-btn-primary-bg-hover: var(--gray-10);
   --color-btn-secondary-bg: #ffffff;
   --color-btn-secondary-bg-hover: var(--slate-2);
   --color-btn-danger-bg: var(--red-9);
@@ -220,7 +220,7 @@
   --color-sidebar-bg: var(--slate-12);
   --color-sidebar-text: var(--slate-4);
   --color-sidebar-text-active: #ffffff;
-  --color-sidebar-item-active: rgba(99, 102, 241, 0.2);
+  --color-sidebar-item-active: rgba(55, 65, 81, 0.3);
   --color-sidebar-item-hover: rgba(255, 255, 255, 0.08);
 
   /* Header */
@@ -255,7 +255,7 @@
     0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  --shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  --shadow-focus: 0 0 0 3px rgba(55, 65, 81, 0.3);
 
   /* -------------------------------------------------------------------------
    * Border Radius
@@ -272,13 +272,13 @@
    * ------------------------------------------------------------------------- */
   --gradient-primary: linear-gradient(
     135deg,
-    var(--indigo-9) 0%,
-    var(--purple-9) 100%
+    var(--gray-9) 0%,
+    var(--tomato-9) 100%
   );
   --gradient-primary-hover: linear-gradient(
     135deg,
-    var(--indigo-10) 0%,
-    var(--purple-10) 100%
+    var(--gray-10) 0%,
+    var(--tomato-10) 100%
   );
 
   /* -------------------------------------------------------------------------
@@ -344,7 +344,7 @@
   --color-sidebar-bg: var(--slate-1);
   --color-sidebar-text: var(--slate-11);
   --color-sidebar-text-active: #ffffff;
-  --color-sidebar-item-active: rgba(99, 102, 241, 0.25);
+  --color-sidebar-item-active: rgba(55, 65, 81, 0.35);
   --color-sidebar-item-hover: rgba(255, 255, 255, 0.06);
 
   /* Header */

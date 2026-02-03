@@ -39,7 +39,7 @@
 }
 
 .my-shifts-title svg {
-  color: #6366f1;
+  color: #374151;
 }
 
 .btn-clock-in {
@@ -77,7 +77,7 @@
   background: #f8fafc;
   border-radius: 10px;
   padding: 1rem;
-  border-left: 4px solid #6366f1;
+  border-left: 4px solid #374151;
   transition: all 0.2s ease;
   position: relative;
 }
@@ -89,11 +89,11 @@
 
 /* Shift status variants */
 .my-shift-upcoming {
-  border-left-color: #6366f1;
+  border-left-color: #374151;
 }
 
 .my-shift-starting-soon {
-  border-left-color: #f59e0b;
+  border-left-color: #f87171;
   background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
   animation: pulse 2s ease-in-out infinite;
 }
@@ -133,7 +133,7 @@
 }
 
 .shift-alert svg {
-  color: #f59e0b;
+  color: #f87171;
   flex-shrink: 0;
 }
 
@@ -251,7 +251,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   color: white;
   border: none;
   border-radius: 8px;

@@ -100,7 +100,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -202,7 +202,7 @@
 }
 
 .day-button.active {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   color: white;
 }
 

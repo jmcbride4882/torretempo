@@ -132,7 +132,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -159,7 +159,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1.25rem;
-  background: #f59e0b;
+  background: #f87171;
   color: white;
   border: none;
   border-radius: 8px;
@@ -170,7 +170,7 @@
 }
 
 .btn-warning:hover:not(:disabled) {
-  background: #d97706;
+  background: #ef4444;
 }
 
 .btn-warning:disabled {
@@ -246,7 +246,7 @@
 }
 
 .legend-color.draft {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
 }
 
 .legend-color.conflict {

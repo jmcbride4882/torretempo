@@ -92,7 +92,7 @@
 /* Sun icon (left side) */
 .theme-toggle__icon--sun {
   left: 8px;
-  color: var(--amber-10);
+  color: var(--tomato-10);
   opacity: 1;
   transform: translateY(-50%) scale(1) rotate(0deg);
 }

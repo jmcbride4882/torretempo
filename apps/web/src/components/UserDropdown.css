@@ -173,13 +173,13 @@
 }
 
 .language-btn-active {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   color: white;
   border-color: transparent;
 }
 
 .language-btn-active:hover {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   opacity: 0.9;
 }
 

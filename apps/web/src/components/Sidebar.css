@@ -83,7 +83,7 @@
 .sidebar-logo-text {
   font-size: 1.25rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -151,8 +151,8 @@
 /* Active State */
 .sidebar-link-active {
   background: #f0f9ff;
-  color: #6366f1;
-  border-left-color: #6366f1;
+  color: #374151;
+  border-left-color: #374151;
   font-weight: 600;
 }
 
@@ -174,13 +174,13 @@
   transform: translateY(-50%);
   width: 3px;
   height: 24px;
-  background: #6366f1;
+  background: #374151;
   border-radius: 0 3px 3px 0;
 }
 
 /* Focus State */
 .sidebar-link:focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid #374151;
   outline-offset: 2px;
 }
 

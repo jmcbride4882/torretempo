@@ -225,7 +225,7 @@
   padding: 1.125rem 1.5rem;
   background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
   border: 1px solid #fcd34d;
-  border-left: 4px solid #f59e0b;
+  border-left: 4px solid #f87171;
   border-radius: 14px;
   margin-bottom: 1.75rem;
   animation: warningSlideIn 0.3s ease;
@@ -244,7 +244,7 @@
 
 .time-entries-page__geo-warning svg {
   flex-shrink: 0;
-  color: #f59e0b;
+  color: #f87171;
   margin-top: 0.125rem;
 }
 
@@ -317,7 +317,7 @@
   width: 48px;
   height: 48px;
   border: 4px solid #e2e8f0;
-  border-top-color: #6366f1;
+  border-top-color: #374151;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 1.25rem;
@@ -396,7 +396,7 @@
 }
 
 .clock-section__time svg {
-  color: #6366f1;
+  color: #374151;
 }
 
 .clock-section__time .time-value {
@@ -435,7 +435,7 @@
 }
 
 .location-selector__label svg {
-  color: #6366f1;
+  color: #374151;
 }
 
 /* Radix Select - Trigger (dropdown button) */
@@ -460,12 +460,12 @@
 
 .location-selector__dropdown:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: #374151;
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
 .location-selector__dropdown[data-state="open"] {
-  border-color: #6366f1;
+  border-color: #374151;
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
@@ -548,7 +548,7 @@
 }
 
 .location-selector__item[data-state="checked"] {
-  color: #6366f1;
+  color: #374151;
   font-weight: 600;
   background: #eef2ff;
 }
@@ -561,7 +561,7 @@
 .location-selector__indicator {
   display: flex;
   align-items: center;
-  color: #6366f1;
+  color: #374151;
 }
 
 /* Hint text */

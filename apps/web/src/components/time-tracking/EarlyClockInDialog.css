@@ -85,11 +85,11 @@
   margin: 0 auto 1.5rem;
   background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
   border-radius: 50%;
-  color: #f59e0b;
+  color: #f87171;
 }
 
 .early-clock-dialog__icon svg {
-  stroke: #d97706;
+  stroke: #ef4444;
 }
 
 /* Title */
@@ -153,7 +153,7 @@
 
 /* Confirm button (warning color) */
 .early-clock-dialog__button--confirm {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
   color: white;
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
 }
