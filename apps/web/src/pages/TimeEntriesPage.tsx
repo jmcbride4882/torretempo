@@ -587,7 +587,10 @@ export default function TimeEntriesPage() {
 
               {/* Location Selector */}
               <div className="clock-section__location-selector">
-                <label className="location-selector__label">
+                <label
+                  htmlFor="location-select"
+                  className="location-selector__label"
+                >
                   <svg
                     width="16"
                     height="16"
@@ -602,7 +605,7 @@ export default function TimeEntriesPage() {
                   {t("timeTracking.selectLocation")}
                 </label>
                 <Select.Root
-                  value={selectedLocation}
+                  value={selectedLocation || undefined}
                   onValueChange={setSelectedLocation}
                 >
                   <Select.Trigger className="location-selector__dropdown">
@@ -611,51 +614,40 @@ export default function TimeEntriesPage() {
                     />
                     <Select.Icon className="location-selector__icon">
                       <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="currentColor"
                       >
-                        <polyline points="6 9 12 15 18 9" />
+                        <path d="M6 9L1.5 4.5L2.55 3.45L6 6.9L9.45 3.45L10.5 4.5L6 9Z" />
                       </svg>
                     </Select.Icon>
                   </Select.Trigger>
                   <Select.Portal>
-                    <Select.Content
-                      className="location-selector__content"
-                      position="popper"
-                      sideOffset={4}
-                    >
-                      <Select.Viewport className="location-selector__viewport">
-                        <Select.Item
-                          value=""
-                          className="location-selector__item"
-                        >
-                          <Select.ItemText>
-                            {t("timeTracking.chooseLocation")}
-                          </Select.ItemText>
-                        </Select.Item>
+                    <Select.Content className="location-selector__content">
+                      <Select.Viewport>
                         {tenantLocations.map((location) => (
                           <Select.Item
                             key={location}
                             value={location}
                             className="location-selector__item"
                           >
-                            <Select.ItemText>{location}</Select.ItemText>
-                            <Select.ItemIndicator className="location-selector__item-indicator">
+                            <Select.ItemIndicator className="location-selector__indicator">
                               <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
+                                width="12"
+                                height="12"
+                                viewBox="0 0 12 12"
+                                fill="currentColor"
                               >
-                                <polyline points="20 6 9 17 4 12" />
+                                <path
+                                  d="M10 3L4.5 8.5L2 6"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  fill="none"
+                                />
                               </svg>
                             </Select.ItemIndicator>
+                            <Select.ItemText>{location}</Select.ItemText>
                           </Select.Item>
                         ))}
                       </Select.Viewport>

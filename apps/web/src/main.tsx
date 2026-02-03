@@ -23,15 +23,15 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
-// NUCLEAR CACHE CLEARING - Version 5.3.1 (2026-02-03 - HOTFIX)
+// NUCLEAR CACHE CLEARING - Version 5.3.2 (2026-02-03 - HOTFIX2)
 // ============================================================================
-const APP_VERSION = "5.3.1-20260203-0854-HOTFIX";
+const APP_VERSION = "5.3.2-20260203-0900-HOTFIX2";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  TORRE TEMPO v${APP_VERSION}  ║
-║  HOTFIX: React Hook Ordering (Time Entries Fixed)             ║
+║  HOTFIX2: Radix Select Empty Value Fixed                      ║
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
