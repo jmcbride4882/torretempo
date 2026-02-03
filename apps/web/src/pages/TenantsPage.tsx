@@ -25,14 +25,13 @@ interface Tenant {
 }
 
 export default function TenantsPage() {
-  
   const { user } = useAuthStore();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // SECURITY: Only PLATFORM_ADMIN can access this page
-  const isPlatformAdmin = user?.role?.toUpperCase() === 'PLATFORM_ADMIN';
+  const isPlatformAdmin = user?.role?.toUpperCase() === "PLATFORM_ADMIN";
 
   useEffect(() => {
     if (isPlatformAdmin) {
@@ -50,7 +49,7 @@ export default function TenantsPage() {
 
       const response = await fetch("/api/v1/platform/tenants", {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
