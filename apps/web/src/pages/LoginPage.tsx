@@ -1,16 +1,16 @@
-import { useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
-import './LoginPage.css';
+import { useState, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore";
+import "./LoginPage.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const [formData, setFormData] = useState({
-    tenantSlug: 'demo',
-    email: 'admin@torretempo.com',
-    password: 'admin123',
+    tenantSlug: "demo",
+    email: "admin@torretempo.com",
+    password: "admin123",
   });
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -19,10 +19,10 @@ export default function LoginPage() {
 
     try {
       await login(formData);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err) {
       // Error is handled by the store
-      console.error('Login failed:', err);
+      console.error("Login failed:", err);
     }
   };
 
@@ -33,114 +33,359 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-container">
-        <div className="login-header">
-          <div className="login-logo">
-            <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="#3B82F6"/>
-              <path d="M16 8V16L21 21" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+      {/* Desktop Branding Section (Left Side) */}
+      <div className="login-branding">
+        <div className="branding-content">
+          <div className="branding-logo">
+            <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
+              <defs>
+                <linearGradient
+                  id="logoGradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="100%" stopColor="#e0e7ff" />
+                </linearGradient>
+              </defs>
+              <rect width="48" height="48" rx="14" fill="url(#logoGradient)" />
+              <path
+                d="M24 12V24L32 32"
+                stroke="#6366f1"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle
+                cx="24"
+                cy="24"
+                r="14"
+                stroke="#6366f1"
+                strokeWidth="3"
+                fill="none"
+                strokeOpacity="0.3"
+              />
             </svg>
           </div>
-          <h1 className="login-title">Torre Tempo</h1>
-          <p className="login-subtitle">Control de Jornada Laboral</p>
+          <h1 className="branding-title">Torre Tempo</h1>
+          <p className="branding-subtitle">Control de Jornada Laboral</p>
+          <div className="branding-badge">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <polyline points="9 12 11 14 15 10" />
+            </svg>
+            Sistema conforme RDL 8/2019
+          </div>
         </div>
-
-        <form className="login-form" onSubmit={handleSubmit}>
-          {error && (
-            <div className="error-banner">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="tenantSlug" className="form-label">
-              Empresa (Tenant)
-            </label>
-            <input
-              type="text"
-              id="tenantSlug"
-              name="tenantSlug"
-              className="form-input"
-              value={formData.tenantSlug}
-              onChange={handleChange}
-              placeholder="demo"
-              required
-              disabled={isLoading}
-            />
-            <span className="form-hint">El identificador único de tu empresa</span>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">
-              Correo Electrónico
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              className="form-input"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="admin@torretempo.com"
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              className="form-input"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn-submit"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <svg className="spinner" width="20" height="20" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="0.25"/>
-                  <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                </svg>
-                Iniciando sesión...
-              </>
-            ) : (
-              'Iniciar Sesión'
-            )}
-          </button>
-        </form>
-
-        <div className="login-footer">
-          <p className="demo-note">
-            <strong>Demo Credentials:</strong> Pre-filled for testing
+        <footer className="branding-footer">
+          <p className="copyright">
+            &copy; 2026 Lakeside La Torre (Murcia) Group SL
           </p>
-          <div className="login-links">
-            <a href="/" className="link-secondary">← Volver al inicio</a>
-            <a href="#" className="link-secondary">¿Olvidaste tu contraseña?</a>
+          <p className="developer">Designed and Developed by John McBride</p>
+        </footer>
+      </div>
+
+      {/* Form Section (Right Side on Desktop, Full on Mobile) */}
+      <div className="login-form-section">
+        <div className="login-container">
+          {/* Mobile Header (Hidden on Desktop) */}
+          <div className="login-header">
+            <div className="login-logo">
+              <svg width="56" height="56" viewBox="0 0 48 48" fill="none">
+                <defs>
+                  <linearGradient
+                    id="logoGradientMobile"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="100%" stopColor="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+                <rect
+                  width="48"
+                  height="48"
+                  rx="14"
+                  fill="url(#logoGradientMobile)"
+                />
+                <path
+                  d="M24 12V24L32 32"
+                  stroke="white"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="14"
+                  stroke="white"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeOpacity="0.3"
+                />
+              </svg>
+            </div>
+            <h1 className="login-title">Torre Tempo</h1>
+            <p className="login-subtitle">Control de Jornada Laboral</p>
+          </div>
+
+          {/* Desktop Form Header */}
+          <h2 className="form-title">Iniciar Sesión</h2>
+          <p className="form-description">
+            Accede a tu cuenta para gestionar el tiempo de tu equipo
+          </p>
+
+          {/* Demo Credentials Card */}
+          <div className="demo-credentials-card">
+            <div className="demo-icon">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </div>
+            <div className="demo-content">
+              <strong>Credenciales de Demo</strong>
+              <p>Los campos están pre-rellenados para pruebas</p>
+            </div>
+          </div>
+
+          <form className="login-form" onSubmit={handleSubmit}>
+            {error && (
+              <div className="error-banner">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <span>{error}</span>
+                <button
+                  type="button"
+                  className="error-close"
+                  onClick={clearError}
+                  aria-label="Cerrar"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="tenantSlug" className="form-label">
+                Empresa (Tenant)
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="text"
+                  id="tenantSlug"
+                  name="tenantSlug"
+                  className="form-input"
+                  value={formData.tenantSlug}
+                  onChange={handleChange}
+                  placeholder="demo"
+                  required
+                  disabled={isLoading}
+                />
+                <svg
+                  className="input-icon"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                  <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                  <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                  <path d="M10 6h4" />
+                  <path d="M10 10h4" />
+                  <path d="M10 14h4" />
+                  <path d="M10 18h4" />
+                </svg>
+              </div>
+              <span className="form-hint">
+                El identificador único de tu empresa
+              </span>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
+                Correo Electrónico
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  className="form-input"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="admin@torretempo.com"
+                  required
+                  disabled={isLoading}
+                />
+                <svg
+                  className="input-icon"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
+                Contraseña
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  className="form-input"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  required
+                  disabled={isLoading}
+                />
+                <svg
+                  className="input-icon"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+            </div>
+
+            <button type="submit" className="btn-submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <svg
+                    className="spinner"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                      opacity="0.25"
+                    />
+                    <path
+                      d="M12 2 A10 10 0 0 1 22 12"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Iniciando sesión...
+                </>
+              ) : (
+                "Iniciar Sesión"
+              )}
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <div className="login-links">
+              <a href="/" className="link-secondary">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+                Volver al inicio
+              </a>
+              <a href="#" className="link-secondary">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Mobile Footer */}
       <footer className="page-footer">
-        <p className="copyright">© 2026 Lakeside La Torre (Murcia) Group SL</p>
+        <p className="copyright">
+          &copy; 2026 Lakeside La Torre (Murcia) Group SL
+        </p>
         <p className="developer">Designed and Developed by John McBride</p>
       </footer>
     </div>
