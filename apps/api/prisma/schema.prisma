@@ -262,6 +262,10 @@ model TimeEntry {
   totalHours    Float?  @map("total_hours")
   overtimeHours Float?  @map("overtime_hours")
   
+  // Shift linkage (for scheduled vs unscheduled)
+  shiftId String? @map("shift_id") @db.Uuid
+  entryType String @default("scheduled") @map("entry_type") // 'scheduled', 'unscheduled'
+  
   // Status
   status String @default("active") // 'active', 'corrected', 'deleted'
   
@@ -276,9 +280,11 @@ model TimeEntry {
   // Relations
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift    Shift?   @relation(fields: [shiftId], references: [id], onDelete: SetNull)
   
   @@index([tenantId])
   @@index([employeeId])
+  @@index([shiftId])
   @@index([clockIn])
   @@map("time_entries")
 }
@@ -411,6 +417,7 @@ model Shift {
   assignments  ShiftAssignment[]
   swapRequests ShiftSwapRequest[] @relation("SwapRequestShift")
   targetSwapRequests ShiftSwapRequest[] @relation("SwapRequestTargetShift")
+  timeEntries  TimeEntry[]
   
   @@index([tenantId])
   @@index([tenantId, scheduleId])

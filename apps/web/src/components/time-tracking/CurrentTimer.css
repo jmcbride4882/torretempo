@@ -1,0 +1,183 @@
+.current-timer {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 2px solid #10b981;
+  border-radius: 16px;
+  padding: 1.5rem;
+  animation: timerFadeIn 0.4s ease;
+}
+
+@keyframes timerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Status indicator */
+.current-timer__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.current-timer__status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+}
+
+.current-timer__status-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Main timer display */
+.current-timer__display {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.current-timer__time {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #065f46;
+  line-height: 1;
+  margin-bottom: 0.375rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.current-timer__decimal {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #047857;
+}
+
+/* Details section */
+.current-timer__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  border-top: 1px solid rgba(16, 185, 129, 0.2);
+  padding-top: 1rem;
+}
+
+.current-timer__detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #047857;
+}
+
+.current-timer__detail svg {
+  flex-shrink: 0;
+  color: #10b981;
+}
+
+.current-timer__detail strong {
+  font-weight: 600;
+}
+
+/* Geolocation indicator */
+.current-timer__geolocation {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8rem;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 0.375rem 0.625rem;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.current-timer__geolocation svg {
+  flex-shrink: 0;
+}
+
+.geolocation-text {
+  font-weight: 500;
+}
+
+/* Entry type badge */
+.current-timer__type {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  width: fit-content;
+}
+
+.current-timer__type--scheduled {
+  background: rgba(99, 102, 241, 0.15);
+  color: #4f46e5;
+}
+
+.current-timer__type--unscheduled {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+/* Accuracy indicators */
+.accuracy-excellent {
+  color: #10b981;
+}
+
+.accuracy-good {
+  color: #3b82f6;
+}
+
+.accuracy-fair {
+  color: #f59e0b;
+}
+
+.accuracy-poor {
+  color: #ef4444;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .current-timer {
+    padding: 1.25rem;
+    border-radius: 12px;
+  }
+
+  .current-timer__time {
+    font-size: 2.5rem;
+  }
+
+  .current-timer__decimal {
+    font-size: 0.9rem;
+  }
+
+  .current-timer__detail {
+    font-size: 0.85rem;
+  }
+}

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   format,
@@ -10,6 +10,8 @@ import {
 } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import type { Shift } from "../../types/schedule";
+import { timeEntryService } from "../../services/timeEntryService";
+import type { TimeEntry } from "../../types/timeEntry";
 import "./MyShiftsToday.css";
 
 interface MyShiftsTodayProps {
@@ -23,6 +25,24 @@ export default function MyShiftsToday({
 }: MyShiftsTodayProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [currentEntry, setCurrentEntry] = useState<TimeEntry | null>(null);
+  const [loadingShiftId, setLoadingShiftId] = useState<string | null>(null);
+
+  // Fetch current time entry on mount
+  useEffect(() => {
+    const fetchCurrentEntry = async () => {
+      try {
+        const entry = await timeEntryService.getCurrent();
+        setCurrentEntry(entry);
+      } catch (error) {
+        console.error("Failed to fetch current entry:", error);
+      }
+    };
+
+    if (currentEmployeeId) {
+      fetchCurrentEntry();
+    }
+  }, [currentEmployeeId]);
 
   // Filter shifts for current employee today
   const myShiftsToday = useMemo(() => {
@@ -67,6 +87,36 @@ export default function MyShiftsToday({
 
   const handleClockIn = () => {
     navigate("/time-entries");
+  };
+
+  const handleClockInShift = async (shiftId: string) => {
+    setLoadingShiftId(shiftId);
+    try {
+      const entry = await timeEntryService.clockIn({ shiftId });
+      setCurrentEntry(entry);
+      // Navigate to time entries page to show timer
+      navigate("/time-entries");
+    } catch (error: any) {
+      alert(error.message || "Failed to clock in");
+    } finally {
+      setLoadingShiftId(null);
+    }
+  };
+
+  const handleClockOut = async () => {
+    if (!currentEntry) return;
+
+    setLoadingShiftId(currentEntry.id);
+    try {
+      await timeEntryService.clockOut();
+      setCurrentEntry(null);
+      // Navigate to time entries page to show completion
+      navigate("/time-entries");
+    } catch (error: any) {
+      alert(error.message || "Failed to clock out");
+    } finally {
+      setLoadingShiftId(null);
+    }
   };
 
   const handleStartUnscheduledShift = () => {
@@ -225,17 +275,29 @@ export default function MyShiftsToday({
               </div>
             )}
 
-            {shift.status === "starting-soon" && (
-              <button className="btn-clock-in-shift" onClick={handleClockIn}>
-                {t("schedule.clockInNow")}
+            {shift.status === "starting-soon" && !currentEntry && (
+              <button
+                className="btn-clock-in-shift"
+                onClick={() => handleClockInShift(shift.id)}
+                disabled={loadingShiftId === shift.id}
+              >
+                {loadingShiftId === shift.id ? "..." : t("schedule.clockInNow")}
               </button>
             )}
 
-            {shift.status === "active" && (
-              <button className="btn-clock-out-shift" onClick={handleClockIn}>
-                {t("schedule.clockOut")}
-              </button>
-            )}
+            {shift.status === "active" &&
+              currentEntry &&
+              currentEntry.shiftId === shift.id && (
+                <button
+                  className="btn-clock-out-shift"
+                  onClick={handleClockOut}
+                  disabled={loadingShiftId === currentEntry.id}
+                >
+                  {loadingShiftId === currentEntry.id
+                    ? "..."
+                    : t("schedule.clockOut")}
+                </button>
+              )}
           </div>
         ))}
       </div>

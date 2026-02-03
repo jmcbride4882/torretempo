@@ -1,0 +1,215 @@
+.time-entry-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #6366f1;
+  transition: all 0.2s ease;
+}
+
+.time-entry-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Active entry styling */
+.time-entry-card--active {
+  border-left-color: #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+}
+
+/* Date header */
+.time-entry-card__date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: capitalize;
+  margin-bottom: 0.75rem;
+}
+
+/* Content */
+.time-entry-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+/* Time row */
+.time-entry-card__time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.time-entry-card__time svg {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.time-entry-card--active .time-entry-card__time svg {
+  color: #10b981;
+}
+
+.time-entry-card__time-range {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.time-entry-card__active-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  background: #10b981;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Employee info (for managers viewing team) */
+.time-entry-card__employee {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.time-entry-card__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* Stats row */
+.time-entry-card__stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.time-entry-card__stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.time-entry-card__stat-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.time-entry-card__stat-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.time-entry-card__stat--overtime .time-entry-card__stat-value {
+  color: #f59e0b;
+}
+
+/* Meta info (location/role) */
+.time-entry-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.time-entry-card__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: #eff6ff;
+  color: #3b82f6;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.time-entry-card__location {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.time-entry-card__location svg {
+  flex-shrink: 0;
+}
+
+/* Geolocation indicator */
+.time-entry-card__geo {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: #059669;
+}
+
+.time-entry-card__geo svg {
+  flex-shrink: 0;
+}
+
+/* Entry type */
+.time-entry-card__type {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  width: fit-content;
+}
+
+.time-entry-card__type--scheduled {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.time-entry-card__type--unscheduled {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .time-entry-card {
+    padding: 0.875rem 1rem;
+    border-radius: 10px;
+  }
+
+  .time-entry-card__time-range {
+    font-size: 1rem;
+  }
+
+  .time-entry-card__stats {
+    gap: 0.75rem;
+  }
+}
