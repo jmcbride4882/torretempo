@@ -224,6 +224,101 @@ router.post("/clock-out", async (req, res) => {
 });
 
 /**
+ * POST /time-entries/start-break
+ */
+router.post("/start-break", async (req, res) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    const userContext = getUserContext(req);
+
+    if (!tenantId || !userContext) {
+      res.status(401).json({ error: "Unauthorized", code: "UNAUTHORIZED" });
+      return;
+    }
+
+    const entry = await timeEntryService.startBreak(
+      tenantId,
+      userContext.userId,
+      {
+        userId: userContext.userId,
+        userEmail: userContext.userEmail,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+    );
+
+    res.json({
+      success: true,
+      data: {
+        id: entry.id,
+        breakStart: entry.breakStart,
+        breakMinutes: entry.breakMinutes,
+      },
+    });
+  } catch (error) {
+    if (error instanceof TimeEntryError) {
+      res.status(error.status).json({
+        error: error.message,
+        code: error.code,
+        ...(error.details || {}),
+      });
+      return;
+    }
+
+    logger.error({ error }, "Failed to start break");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * POST /time-entries/end-break
+ */
+router.post("/end-break", async (req, res) => {
+  try {
+    const tenantId = (req as any).tenantId;
+    const userContext = getUserContext(req);
+
+    if (!tenantId || !userContext) {
+      res.status(401).json({ error: "Unauthorized", code: "UNAUTHORIZED" });
+      return;
+    }
+
+    const entry = await timeEntryService.endBreak(
+      tenantId,
+      userContext.userId,
+      {
+        userId: userContext.userId,
+        userEmail: userContext.userEmail,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+    );
+
+    res.json({
+      success: true,
+      data: {
+        id: entry.id,
+        breakStart: entry.breakStart,
+        breakMinutes: entry.breakMinutes,
+        elapsedMinutes: (entry as any).elapsedMinutes,
+      },
+    });
+  } catch (error) {
+    if (error instanceof TimeEntryError) {
+      res.status(error.status).json({
+        error: error.message,
+        code: error.code,
+        ...(error.details || {}),
+      });
+      return;
+    }
+
+    logger.error({ error }, "Failed to end break");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
  * GET /time-entries/current
  */
 router.get("/current", async (req, res) => {

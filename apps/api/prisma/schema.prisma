@@ -251,6 +251,7 @@ model TimeEntry {
   
   // Break tracking
   breakMinutes Int @default(0) @map("break_minutes")
+  breakStart   DateTime? @map("break_start") // Current break start time (null if not on break)
   
   // Location (event-only geolocation)
   clockInLat  Float?  @map("clock_in_lat")

@@ -302,6 +302,18 @@
     "notClockedIn": "You are not currently clocked in.",
     "clockInError": "Failed to clock in. Please try again.",
     "clockOutError": "Failed to clock out. Please try again.",
-    "loadError": "Failed to load time tracking data."
+    "loadError": "Failed to load time tracking data.",
+    "onBreak": "ON BREAK",
+    "startBreak": "Start Break",
+    "endBreak": "End Break",
+    "breakStarted": "Break started",
+    "breakEnded": "Break ended",
+    "startBreakError": "Failed to start break. Please try again.",
+    "endBreakError": "Failed to end break. Please try again.",
+    "yourLocation": "You are at: {{address}}",
+    "earlyClockInTitle": "You are clocking in {{minutes}} minutes early",
+    "earlyClockInMessage": "Your shift starts at {{time}}. You should not clock in early unless authorized.",
+    "clockInAnyway": "Clock In Anyway",
+    "earlyClockInBlocked": "You cannot clock in this early. Please wait until closer to your shift start time."
   }
 }

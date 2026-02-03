@@ -51,6 +51,11 @@ interface TimeTrackingSettings {
   autoBreakRules: Array<{ minHours: number; breakMinutes: number }>;
   allowManualBreakOverride: boolean;
   standardHours: number;
+  earlyClockInWarning: {
+    enabled: boolean;
+    thresholdMinutes: number; // Minutes before shift start to show warning
+    allowOverride: boolean; // Can employee clock in anyway?
+  };
   geolocation: {
     enabled: boolean;
     required: boolean;
@@ -83,6 +88,18 @@ export class TimeEntryService {
           ? timeTracking.allowManualBreakOverride
           : true,
       standardHours: timeTracking.standardHours || 8,
+      earlyClockInWarning: {
+        enabled:
+          timeTracking.earlyClockInWarning?.enabled !== undefined
+            ? timeTracking.earlyClockInWarning.enabled
+            : true,
+        thresholdMinutes:
+          timeTracking.earlyClockInWarning?.thresholdMinutes || 15,
+        allowOverride:
+          timeTracking.earlyClockInWarning?.allowOverride !== undefined
+            ? timeTracking.earlyClockInWarning.allowOverride
+            : true,
+      },
       geolocation: {
         enabled:
           timeTracking.geolocation?.enabled !== undefined
@@ -199,8 +216,10 @@ export class TimeEntryService {
     }
 
     let entryType: "scheduled" | "unscheduled" = "unscheduled";
+    let shift = null;
+
     if (input.shiftId) {
-      const shift = await prisma.shift.findFirst({
+      shift = await prisma.shift.findFirst({
         where: {
           id: input.shiftId,
           tenantId,
@@ -217,6 +236,42 @@ export class TimeEntryService {
       }
 
       entryType = "scheduled";
+
+      // Check for early clock-in warning
+      if (settings.earlyClockInWarning.enabled) {
+        const shiftStart = new Date(shift.startTime);
+        const now = new Date();
+        const minutesUntilStart =
+          (shiftStart.getTime() - now.getTime()) / 1000 / 60;
+
+        if (minutesUntilStart > settings.earlyClockInWarning.thresholdMinutes) {
+          if (!settings.earlyClockInWarning.allowOverride) {
+            throw new TimeEntryError(
+              "EARLY_CLOCK_IN",
+              `Cannot clock in more than ${settings.earlyClockInWarning.thresholdMinutes} minutes before shift`,
+              403,
+              {
+                minutesUntilStart: Math.round(minutesUntilStart),
+                shiftStart: shift.startTime,
+                thresholdMinutes: settings.earlyClockInWarning.thresholdMinutes,
+              },
+            );
+          } else {
+            // Throw warning but allow override (frontend will show confirmation)
+            throw new TimeEntryError(
+              "EARLY_CLOCK_IN_WARNING",
+              `You are clocking in ${Math.round(minutesUntilStart)} minutes early`,
+              409,
+              {
+                minutesUntilStart: Math.round(minutesUntilStart),
+                shiftStart: shift.startTime,
+                thresholdMinutes: settings.earlyClockInWarning.thresholdMinutes,
+                canOverride: true,
+              },
+            );
+          }
+        }
+      }
     }
 
     const clockInTime = new Date();
@@ -414,6 +469,147 @@ export class TimeEntryService {
 
     return {
       ...entry,
+      elapsedMinutes,
+    };
+  }
+
+  async startBreak(tenantId: string, userId: string, context: RequestContext) {
+    const employee = await this.getEmployeeForUser(tenantId, userId);
+
+    const existingEntry = await prisma.timeEntry.findFirst({
+      where: {
+        tenantId,
+        employeeId: employee.id,
+        clockOut: null,
+        deletedAt: null,
+        status: "active",
+      },
+      orderBy: { clockIn: "desc" },
+    });
+
+    if (!existingEntry) {
+      throw new TimeEntryError("NOT_CLOCKED_IN", "No active time entry found");
+    }
+
+    if (existingEntry.breakStart) {
+      throw new TimeEntryError("ALREADY_ON_BREAK", "Already on break", 400, {
+        breakStart: existingEntry.breakStart,
+      });
+    }
+
+    const breakStart = new Date();
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedEntry = await tx.timeEntry.update({
+        where: { id: existingEntry.id },
+        data: { breakStart },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          userId: context.userId,
+          userEmail: context.userEmail,
+          action: "start_break",
+          resourceType: "time_entry",
+          resourceId: updatedEntry.id,
+          changesBefore: { breakStart: null },
+          changesAfter: { breakStart },
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+        },
+      });
+
+      return updatedEntry;
+    });
+
+    logger.info(
+      { tenantId, employeeId: employee.id, timeEntryId: result.id },
+      "Break started",
+    );
+
+    return result;
+  }
+
+  async endBreak(tenantId: string, userId: string, context: RequestContext) {
+    const employee = await this.getEmployeeForUser(tenantId, userId);
+
+    const existingEntry = await prisma.timeEntry.findFirst({
+      where: {
+        tenantId,
+        employeeId: employee.id,
+        clockOut: null,
+        deletedAt: null,
+        status: "active",
+      },
+      orderBy: { clockIn: "desc" },
+    });
+
+    if (!existingEntry) {
+      throw new TimeEntryError("NOT_CLOCKED_IN", "No active time entry found");
+    }
+
+    if (!existingEntry.breakStart) {
+      throw new TimeEntryError("NOT_ON_BREAK", "Not currently on break");
+    }
+
+    const breakEnd = new Date();
+    const breakDurationMinutes = Math.round(
+      (breakEnd.getTime() - existingEntry.breakStart.getTime()) / 60000,
+    );
+    const newBreakMinutes = existingEntry.breakMinutes + breakDurationMinutes;
+
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedEntry = await tx.timeEntry.update({
+        where: { id: existingEntry.id },
+        data: {
+          breakStart: null,
+          breakMinutes: newBreakMinutes,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          tenantId,
+          userId: context.userId,
+          userEmail: context.userEmail,
+          action: "end_break",
+          resourceType: "time_entry",
+          resourceId: updatedEntry.id,
+          changesBefore: {
+            breakStart: existingEntry.breakStart,
+            breakMinutes: existingEntry.breakMinutes,
+          },
+          changesAfter: {
+            breakStart: null,
+            breakMinutes: newBreakMinutes,
+          },
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          metadata: { breakDurationMinutes },
+        },
+      });
+
+      return updatedEntry;
+    });
+
+    logger.info(
+      {
+        tenantId,
+        employeeId: employee.id,
+        timeEntryId: result.id,
+        breakDurationMinutes,
+      },
+      "Break ended",
+    );
+
+    // Return with elapsed minutes calculated
+    const elapsedMinutes = Math.floor(
+      (Date.now() - result.clockIn.getTime()) / 60000,
+    );
+
+    return {
+      ...result,
       elapsedMinutes,
     };
   }

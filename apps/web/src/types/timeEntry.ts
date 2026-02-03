@@ -36,6 +36,7 @@ export interface TimeEntry {
   clockOutLat: number | null;
   clockOutLng: number | null;
   breakMinutes: number;
+  breakStart: string | null; // Timestamp when employee started current break
   totalHours: number | null;
   overtimeHours: number | null;
   status: TimeEntryStatus;
@@ -78,6 +79,7 @@ export interface ClockInInput {
   shiftId?: string;
   geolocation?: Geolocation;
   notes?: string;
+  forceOverride?: boolean; // Override early clock-in warning
 }
 
 export interface ClockOutInput {
@@ -116,6 +118,15 @@ export interface AlreadyClockedInError {
   };
 }
 
+export interface EarlyClockInWarning {
+  error: string;
+  code: "EARLY_CLOCK_IN_WARNING";
+  minutesUntilStart: number;
+  shiftStart: string;
+  thresholdMinutes: number;
+  canOverride: boolean;
+}
+
 export interface TimeEntryApiError {
   error: string;
   code: string;
@@ -124,4 +135,8 @@ export interface TimeEntryApiError {
     clockIn: string;
     shiftId: string | null;
   };
+  minutesUntilStart?: number;
+  shiftStart?: string;
+  thresholdMinutes?: number;
+  canOverride?: boolean;
 }

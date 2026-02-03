@@ -302,6 +302,18 @@
     "notClockedIn": "No tienes ninguna entrada fichada actualmente.",
     "clockInError": "Error al fichar entrada. Por favor, inténtalo de nuevo.",
     "clockOutError": "Error al fichar salida. Por favor, inténtalo de nuevo.",
-    "loadError": "Error al cargar los datos de control horario."
+    "loadError": "Error al cargar los datos de control horario.",
+    "onBreak": "EN DESCANSO",
+    "startBreak": "Iniciar Descanso",
+    "endBreak": "Finalizar Descanso",
+    "breakStarted": "Descanso iniciado",
+    "breakEnded": "Descanso finalizado",
+    "startBreakError": "Error al iniciar descanso. Por favor, inténtalo de nuevo.",
+    "endBreakError": "Error al finalizar descanso. Por favor, inténtalo de nuevo.",
+    "yourLocation": "Estás en: {{address}}",
+    "earlyClockInTitle": "Estás fichando {{minutes}} minutos antes",
+    "earlyClockInMessage": "Tu turno comienza a las {{time}}. No deberías fichar antes de hora sin autorización.",
+    "clockInAnyway": "Fichar de Todos Modos",
+    "earlyClockInBlocked": "No puedes fichar tan pronto. Por favor, espera hasta que se acerque la hora de inicio de tu turno."
   }
 }

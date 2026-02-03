@@ -8,11 +8,23 @@ import "./CurrentTimer.css";
 
 interface CurrentTimerProps {
   entry: TimeEntry;
+  onStartBreak?: () => Promise<void>;
+  onEndBreak?: () => Promise<void>;
+  breakLoading?: boolean;
 }
 
-export default function CurrentTimer({ entry }: CurrentTimerProps) {
+export default function CurrentTimer({
+  entry,
+  onStartBreak,
+  onEndBreak,
+  breakLoading = false,
+}: CurrentTimerProps) {
   const { t } = useTranslation();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [breakElapsedSeconds, setBreakElapsedSeconds] = useState(0);
+
+  // Check if currently on break
+  const isOnBreak = !!entry.breakStart;
 
   // Calculate initial elapsed time
   useEffect(() => {
@@ -21,14 +33,31 @@ export default function CurrentTimer({ entry }: CurrentTimerProps) {
     setElapsedSeconds(initialElapsed > 0 ? initialElapsed : 0);
   }, [entry.clockIn]);
 
+  // Calculate initial break elapsed time
+  useEffect(() => {
+    if (entry.breakStart) {
+      const breakStartTime = parseISO(entry.breakStart);
+      const initialBreakElapsed = differenceInSeconds(
+        new Date(),
+        breakStartTime,
+      );
+      setBreakElapsedSeconds(initialBreakElapsed > 0 ? initialBreakElapsed : 0);
+    } else {
+      setBreakElapsedSeconds(0);
+    }
+  }, [entry.breakStart]);
+
   // Update timer every second
   useEffect(() => {
     const interval = setInterval(() => {
       setElapsedSeconds((prev) => prev + 1);
+      if (isOnBreak) {
+        setBreakElapsedSeconds((prev) => prev + 1);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isOnBreak]);
 
   // Format elapsed time
   const formattedTime = useMemo(() => {
@@ -47,16 +76,44 @@ export default function CurrentTimer({ entry }: CurrentTimerProps) {
     return (elapsedSeconds / 3600).toFixed(2);
   }, [elapsedSeconds]);
 
+  // Format break elapsed time
+  const formattedBreakTime = useMemo(() => {
+    const minutes = Math.floor(breakElapsedSeconds / 60);
+    const seconds = breakElapsedSeconds % 60;
+    return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+  }, [breakElapsedSeconds]);
+
   const clockInTime = parseISO(entry.clockIn);
 
+  const handleStartBreak = async () => {
+    if (onStartBreak && !breakLoading) {
+      await onStartBreak();
+    }
+  };
+
+  const handleEndBreak = async () => {
+    if (onEndBreak && !breakLoading) {
+      await onEndBreak();
+    }
+  };
+
   return (
-    <div className="current-timer">
+    <div
+      className={`current-timer ${isOnBreak ? "current-timer--on-break" : ""}`}
+    >
       {/* Status indicator */}
       <div className="current-timer__status">
-        <div className="current-timer__status-dot" />
+        <div
+          className={`current-timer__status-dot ${isOnBreak ? "current-timer__status-dot--break" : ""}`}
+        />
         <span className="current-timer__status-text">
           {t("timeTracking.clockedIn")}
         </span>
+        {isOnBreak && (
+          <span className="current-timer__break-badge">
+            {t("timeTracking.onBreak")}
+          </span>
+        )}
       </div>
 
       {/* Main timer display */}
@@ -66,6 +123,85 @@ export default function CurrentTimer({ entry }: CurrentTimerProps) {
           {decimalHours} {t("timeTracking.hours")}
         </div>
       </div>
+
+      {/* Break timer (when on break) */}
+      {isOnBreak && (
+        <div className="current-timer__break-display">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+            <line x1="6" y1="1" x2="6" y2="4" />
+            <line x1="10" y1="1" x2="10" y2="4" />
+            <line x1="14" y1="1" x2="14" y2="4" />
+          </svg>
+          <span className="current-timer__break-time">
+            {formattedBreakTime}
+          </span>
+        </div>
+      )}
+
+      {/* Break action buttons */}
+      {(onStartBreak || onEndBreak) && (
+        <div className="current-timer__break-actions">
+          {!isOnBreak && onStartBreak && (
+            <button
+              className="break-button break-button--start"
+              onClick={handleStartBreak}
+              disabled={breakLoading}
+            >
+              {breakLoading ? (
+                <div className="break-button__spinner" />
+              ) : (
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                  <line x1="6" y1="1" x2="6" y2="4" />
+                  <line x1="10" y1="1" x2="10" y2="4" />
+                  <line x1="14" y1="1" x2="14" y2="4" />
+                </svg>
+              )}
+              <span>{t("timeTracking.startBreak")}</span>
+            </button>
+          )}
+          {isOnBreak && onEndBreak && (
+            <button
+              className="break-button break-button--end"
+              onClick={handleEndBreak}
+              disabled={breakLoading}
+            >
+              {breakLoading ? (
+                <div className="break-button__spinner" />
+              ) : (
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+              )}
+              <span>{t("timeTracking.endBreak")}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Clock in details */}
       <div className="current-timer__details">

@@ -173,3 +173,62 @@ export function getAccuracyClass(meters: number): string {
   if (meters < 100) return "accuracy-fair";
   return "accuracy-poor";
 }
+
+/**
+ * Reverse geocode coordinates to address
+ * Uses OpenStreetMap Nominatim API (free, rate-limited to 1 req/sec)
+ */
+export async function reverseGeocode(
+  latitude: number,
+  longitude: number,
+): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          "User-Agent": "TorreTempo/1.0",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Geocoding failed");
+    }
+
+    const data = await response.json();
+
+    // Build human-readable address
+    const address = data.address;
+    const parts: string[] = [];
+
+    // Add street info
+    if (address.road) {
+      parts.push(address.road);
+      if (address.house_number) {
+        parts[0] = `${address.road} ${address.house_number}`;
+      }
+    }
+
+    // Add locality
+    if (address.neighbourhood) parts.push(address.neighbourhood);
+    else if (address.suburb) parts.push(address.suburb);
+
+    // Add city
+    if (address.city) parts.push(address.city);
+    else if (address.town) parts.push(address.town);
+    else if (address.village) parts.push(address.village);
+
+    // Return formatted address or coordinates as fallback
+    if (parts.length > 0) {
+      return parts.join(", ");
+    }
+
+    // Fallback to coordinates
+    return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  } catch (error) {
+    console.error("Reverse geocoding failed:", error);
+    // Fallback to coordinates
+    return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  }
+}

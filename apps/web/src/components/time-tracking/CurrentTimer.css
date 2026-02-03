@@ -162,6 +162,191 @@
   color: #ef4444;
 }
 
+/* On Break state */
+.current-timer--on-break {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #f59e0b;
+}
+
+.current-timer--on-break .current-timer__time {
+  color: #92400e;
+}
+
+.current-timer--on-break .current-timer__decimal {
+  color: #b45309;
+}
+
+.current-timer--on-break .current-timer__status-text {
+  color: #b45309;
+}
+
+.current-timer--on-break .current-timer__detail {
+  color: #b45309;
+}
+
+.current-timer--on-break .current-timer__detail svg {
+  color: #f59e0b;
+}
+
+.current-timer--on-break .current-timer__details {
+  border-top-color: rgba(245, 158, 11, 0.2);
+}
+
+.current-timer__status-dot--break {
+  background: #f59e0b !important;
+  animation: breakPulse 1s ease-in-out infinite !important;
+}
+
+@keyframes breakPulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+  }
+}
+
+/* Break badge */
+.current-timer__break-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  margin-left: auto;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Break timer display */
+.current-timer__break-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: 10px;
+  color: #b45309;
+}
+
+.current-timer__break-display svg {
+  flex-shrink: 0;
+  color: #f59e0b;
+}
+
+.current-timer__break-time {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #92400e;
+}
+
+/* Break action buttons container */
+.current-timer__break-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* Break button styles */
+.break-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 60%;
+  max-width: 200px;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.break-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Start Break button - Amber gradient */
+.break-button--start {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow:
+    0 3px 10px rgba(245, 158, 11, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.break-button--start:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 18px rgba(245, 158, 11, 0.45),
+    0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.break-button--start:active:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 3px 8px rgba(245, 158, 11, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* End Break button - Green gradient */
+.break-button--end {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow:
+    0 3px 10px rgba(16, 185, 129, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.break-button--end:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 18px rgba(16, 185, 129, 0.45),
+    0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.break-button--end:active:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 3px 8px rgba(16, 185, 129, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Break button spinner */
+.break-button__spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .current-timer {
@@ -179,5 +364,20 @@
 
   .current-timer__detail {
     font-size: 0.85rem;
+  }
+
+  .break-button {
+    width: 70%;
+    height: 44px;
+    font-size: 0.9rem;
+  }
+
+  .current-timer__break-time {
+    font-size: 1.1rem;
+  }
+
+  .current-timer__break-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
   }
 }

@@ -34,6 +34,22 @@ export const timeEntryService = {
   },
 
   /**
+   * Start break - Begin a break period
+   */
+  async startBreak(): Promise<TimeEntry> {
+    const response = await apiClient.post("/time-entries/start-break");
+    return response.data.data;
+  },
+
+  /**
+   * End break - End the current break period
+   */
+  async endBreak(): Promise<TimeEntry> {
+    const response = await apiClient.post("/time-entries/end-break");
+    return response.data.data;
+  },
+
+  /**
    * Get current active time entry (if any)
    */
   async getCurrent(): Promise<TimeEntry | null> {

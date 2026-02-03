@@ -3,12 +3,17 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { startOfWeek, endOfWeek, startOfDay, endOfDay, format } from "date-fns";
 import { timeEntryService } from "../services/timeEntryService";
-import { useGeolocation } from "../hooks/useGeolocation";
+import { useGeolocation, reverseGeocode } from "../hooks/useGeolocation";
 import { useAuthorization } from "../hooks/useAuthorization";
 import ClockButton from "../components/time-tracking/ClockButton";
 import CurrentTimer from "../components/time-tracking/CurrentTimer";
 import TimeEntryCard from "../components/time-tracking/TimeEntryCard";
-import type { TimeEntry, TimeEntryStats } from "../types/timeEntry";
+import EarlyClockInDialog from "../components/time-tracking/EarlyClockInDialog";
+import type {
+  TimeEntry,
+  TimeEntryStats,
+  TimeEntryApiError,
+} from "../types/timeEntry";
 import "./TimeEntriesPage.css";
 
 export default function TimeEntriesPage() {
@@ -26,6 +31,31 @@ export default function TimeEntriesPage() {
   const [gettingLocation, setGettingLocation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Break management state
+  const [breakLoading, setBreakLoading] = useState(false);
+
+  // Location display state
+  const [locationAddress, setLocationAddress] = useState<string | null>(null);
+  const [showLocationBanner, setShowLocationBanner] = useState(false);
+
+  // Early clock-in warning dialog state
+  const [earlyClockInDialog, setEarlyClockInDialog] = useState<{
+    open: boolean;
+    minutesEarly: number;
+    shiftStartTime: string;
+    pendingPosition: {
+      latitude: number;
+      longitude: number;
+      accuracy: number;
+      timestamp: string;
+    } | null;
+  }>({
+    open: false,
+    minutesEarly: 0,
+    shiftStartTime: "",
+    pendingPosition: null,
+  });
 
   // Check if starting unscheduled shift from query param
   const startUnscheduled = searchParams.get("unscheduled") === "true";
@@ -85,6 +115,104 @@ export default function TimeEntriesPage() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
+  // Show location banner for 5 seconds
+  const showLocation = (address: string) => {
+    setLocationAddress(address);
+    setShowLocationBanner(true);
+    setTimeout(() => {
+      setShowLocationBanner(false);
+      setTimeout(() => setLocationAddress(null), 300); // Clear after fade out
+    }, 5000);
+  };
+
+  // Break management handlers
+  const handleStartBreak = useCallback(async () => {
+    try {
+      setBreakLoading(true);
+      const entry = await timeEntryService.startBreak();
+      setCurrentEntry(entry);
+      showToast(t("timeTracking.breakStarted"));
+    } catch (err) {
+      console.error("Start break failed:", err);
+      setError(t("timeTracking.startBreakError"));
+    } finally {
+      setBreakLoading(false);
+    }
+  }, [t]);
+
+  const handleEndBreak = useCallback(async () => {
+    try {
+      setBreakLoading(true);
+      const entry = await timeEntryService.endBreak();
+      setCurrentEntry(entry);
+      showToast(t("timeTracking.breakEnded"));
+    } catch (err) {
+      console.error("End break failed:", err);
+      setError(t("timeTracking.endBreakError"));
+    } finally {
+      setBreakLoading(false);
+    }
+  }, [t]);
+
+  // Handle clock-in with optional force override
+  const performClockIn = useCallback(
+    async (
+      position: {
+        latitude: number;
+        longitude: number;
+        accuracy: number;
+        timestamp: string;
+      } | null,
+      forceOverride = false,
+    ) => {
+      const entry = await timeEntryService.clockIn({
+        geolocation: position || undefined,
+        forceOverride,
+      });
+      setCurrentEntry(entry);
+      showToast(t("timeTracking.clockedInSuccess"));
+
+      // Show location if available
+      if (position) {
+        try {
+          const address = await reverseGeocode(
+            position.latitude,
+            position.longitude,
+          );
+          showLocation(address);
+        } catch {
+          // Ignore geocoding errors
+        }
+      }
+    },
+    [t],
+  );
+
+  // Handle early clock-in confirmation
+  const handleEarlyClockInConfirm = useCallback(async () => {
+    const { pendingPosition } = earlyClockInDialog;
+    setEarlyClockInDialog((prev) => ({ ...prev, open: false }));
+    setActionLoading(true);
+
+    try {
+      await performClockIn(pendingPosition, true);
+    } catch (err) {
+      console.error("Clock in with override failed:", err);
+      setError(t("timeTracking.clockInError"));
+    } finally {
+      setActionLoading(false);
+    }
+  }, [earlyClockInDialog, performClockIn, t]);
+
+  const handleEarlyClockInCancel = useCallback(() => {
+    setEarlyClockInDialog({
+      open: false,
+      minutesEarly: 0,
+      shiftStartTime: "",
+      pendingPosition: null,
+    });
+  }, []);
+
   const handleClockAction = useCallback(async () => {
     const isClockedIn = !!currentEntry;
 
@@ -93,6 +221,19 @@ export default function TimeEntriesPage() {
 
       // Get geolocation
       const position = await geolocation.getPosition();
+
+      // Show location getting feedback
+      if (position) {
+        try {
+          const address = await reverseGeocode(
+            position.latitude,
+            position.longitude,
+          );
+          showLocation(address);
+        } catch {
+          // Ignore geocoding errors silently
+        }
+      }
 
       setGettingLocation(false);
       setActionLoading(true);
@@ -124,22 +265,36 @@ export default function TimeEntriesPage() {
         setStats(statsResponse);
       } else {
         // Clock in
-        const entry = await timeEntryService.clockIn({
-          geolocation: position || undefined,
-        });
-        setCurrentEntry(entry);
-        showToast(t("timeTracking.clockedInSuccess"));
+        await performClockIn(position, false);
       }
     } catch (err: unknown) {
       console.error("Clock action failed:", err);
 
       // Handle specific errors
       const error = err as {
-        response?: { data?: { code?: string; currentEntry?: TimeEntry } };
+        response?: {
+          status?: number;
+          data?: TimeEntryApiError;
+        };
       };
       const code = error?.response?.data?.code;
+      const status = error?.response?.status;
 
-      if (code === "ALREADY_CLOCKED_IN") {
+      if (code === "EARLY_CLOCK_IN_WARNING" && status === 409) {
+        // Show confirmation dialog for early clock-in
+        const position = await geolocation.getPosition();
+        setEarlyClockInDialog({
+          open: true,
+          minutesEarly: error.response?.data?.minutesUntilStart || 0,
+          shiftStartTime: error.response?.data?.shiftStart || "",
+          pendingPosition: position,
+        });
+        setActionLoading(false);
+        return;
+      } else if (code === "EARLY_CLOCK_IN" && status === 403) {
+        // Hard block - too early to clock in
+        setError(t("timeTracking.earlyClockInBlocked"));
+      } else if (code === "ALREADY_CLOCKED_IN") {
         setError(t("timeTracking.alreadyClockedIn"));
         // Refresh to get current entry
         await loadData();
@@ -161,7 +316,7 @@ export default function TimeEntriesPage() {
       setGettingLocation(false);
       setActionLoading(false);
     }
-  }, [currentEntry, geolocation, t]);
+  }, [currentEntry, geolocation, t, performClockIn]);
 
   // Calculate today's stats from current entry and history
   const todayStats = useMemo(() => {
@@ -307,12 +462,48 @@ export default function TimeEntriesPage() {
         </div>
       )}
 
+      {/* Location display banner */}
+      {(gettingLocation || showLocationBanner) && (
+        <div
+          className={`time-entries-page__location-banner ${showLocationBanner ? "time-entries-page__location-banner--visible" : ""}`}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
+          <span>
+            {gettingLocation
+              ? t("timeTracking.gettingLocation")
+              : locationAddress
+                ? t("timeTracking.yourLocation", {
+                    address: locationAddress,
+                    defaultValue: `You are at: ${locationAddress}`,
+                  })
+                : ""}
+          </span>
+        </div>
+      )}
+
       {/* Main content */}
       <div className="time-entries-page__content">
         {/* Left column: Clock button and current timer */}
         <div className="time-entries-page__main">
           {/* Current Timer (if clocked in) */}
-          {currentEntry && <CurrentTimer entry={currentEntry} />}
+          {currentEntry && (
+            <CurrentTimer
+              entry={currentEntry}
+              onStartBreak={handleStartBreak}
+              onEndBreak={handleEndBreak}
+              breakLoading={breakLoading}
+            />
+          )}
 
           {/* Clock Button */}
           <div className="time-entries-page__clock-section">
@@ -396,6 +587,16 @@ export default function TimeEntriesPage() {
           )}
         </div>
       </div>
+
+      {/* Early Clock-In Warning Dialog */}
+      <EarlyClockInDialog
+        open={earlyClockInDialog.open}
+        minutesEarly={earlyClockInDialog.minutesEarly}
+        shiftStartTime={earlyClockInDialog.shiftStartTime}
+        onConfirm={handleEarlyClockInConfirm}
+        onCancel={handleEarlyClockInCancel}
+        loading={actionLoading}
+      />
     </div>
   );
 }
