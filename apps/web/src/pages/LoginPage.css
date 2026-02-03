@@ -243,18 +243,26 @@
   text-align: center;
   color: rgba(255, 255, 255, 0.8);
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .branding-footer .copyright {
   font-size: 0.8125rem;
   font-weight: 500;
-  margin: 0 0 0.25rem 0;
+  margin: 0;
+  display: block;
+  width: 100%;
 }
 
 .branding-footer .developer {
   font-size: 0.75rem;
   margin: 0;
   opacity: 0.9;
+  display: block;
+  width: 100%;
 }
 
 /* ========================================

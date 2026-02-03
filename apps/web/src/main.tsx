@@ -23,15 +23,15 @@ const queryClient = new QueryClient({
 });
 
 // ============================================================================
-// NUCLEAR CACHE CLEARING - Version 5.3.2 (2026-02-03 - HOTFIX2)
+// NUCLEAR CACHE CLEARING - Version 5.7.0 (2026-02-03 - UI REDESIGN)
 // ============================================================================
-const APP_VERSION = "5.3.2-20260203-0900-HOTFIX2";
+const APP_VERSION = "5.7.0-20260203-1000-REDESIGN";
 const STORED_VERSION = localStorage.getItem("app_version");
 
 console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║  TORRE TEMPO v${APP_VERSION}  ║
-║  HOTFIX2: Radix Select Empty Value Fixed                      ║
+║  UI REDESIGN: Warm Modern Hospitality Design System Complete  ║
 ╚════════════════════════════════════════════════════════════════╝
 `);
 
