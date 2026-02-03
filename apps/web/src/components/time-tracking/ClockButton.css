@@ -1,96 +1,189 @@
+/* ==============================================
+   CLOCK BUTTON - HERO ELEMENT
+   The most important button in the app.
+   HUGE, unmissable, beautiful.
+   ============================================== */
+
 .clock-button {
   position: relative;
-  width: 100%;
-  max-width: 320px;
-  padding: 1.5rem 2rem;
+
+  /* HUGE circular button - the hero element */
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+
+  /* Remove default styles */
   border: none;
-  border-radius: 16px;
-  font-size: 1.25rem;
+  padding: 0;
+
+  /* Typography */
+  font-size: 1.1rem;
   font-weight: 700;
+  letter-spacing: 0.02em;
+
+  /* Interaction */
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  min-height: 80px;
+
+  /* Smooth transitions */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Ensure content is above effects */
+  isolation: isolate;
 }
 
-/* Clock In state (green) */
+/* ==============================================
+   CLOCK IN STATE - Indigo/Purple gradient
+   ============================================== */
+
 .clock-button--in {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
   color: white;
   box-shadow:
-    0 4px 14px rgba(16, 185, 129, 0.4),
-    0 1px 3px rgba(0, 0, 0, 0.1);
+    0 12px 32px rgba(99, 102, 241, 0.4),
+    0 4px 12px rgba(99, 102, 241, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: pulse-glow-indigo 3s ease-in-out infinite;
 }
 
 .clock-button--in:hover:not(:disabled) {
-  transform: translateY(-3px);
+  transform: translateY(-4px) scale(1.02);
   box-shadow:
-    0 8px 25px rgba(16, 185, 129, 0.5),
-    0 2px 5px rgba(0, 0, 0, 0.15);
+    0 20px 48px rgba(99, 102, 241, 0.5),
+    0 8px 24px rgba(99, 102, 241, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: none;
 }
 
 .clock-button--in:active:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(0.98);
   box-shadow:
-    0 4px 10px rgba(16, 185, 129, 0.35),
-    0 1px 2px rgba(0, 0, 0, 0.1);
+    0 8px 24px rgba(99, 102, 241, 0.35),
+    0 2px 8px rgba(99, 102, 241, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Clock Out state (red) */
+/* Pulse glow for clock-in state */
+@keyframes pulse-glow-indigo {
+  0%,
+  100% {
+    box-shadow:
+      0 12px 32px rgba(99, 102, 241, 0.35),
+      0 4px 12px rgba(99, 102, 241, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 0 0 0 rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 12px 48px rgba(99, 102, 241, 0.5),
+      0 4px 16px rgba(99, 102, 241, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 0 0 16px rgba(99, 102, 241, 0);
+  }
+}
+
+/* ==============================================
+   CLOCK OUT STATE - Red/Orange gradient
+   ============================================== */
+
 .clock-button--out {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #ef4444 0%, #f97316 50%, #fb923c 100%);
   color: white;
   box-shadow:
-    0 4px 14px rgba(239, 68, 68, 0.4),
-    0 1px 3px rgba(0, 0, 0, 0.1);
+    0 12px 32px rgba(239, 68, 68, 0.4),
+    0 4px 12px rgba(239, 68, 68, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: pulse-glow-red 2s ease-in-out infinite;
 }
 
 .clock-button--out:hover:not(:disabled) {
-  transform: translateY(-3px);
+  transform: translateY(-4px) scale(1.02);
   box-shadow:
-    0 8px 25px rgba(239, 68, 68, 0.5),
-    0 2px 5px rgba(0, 0, 0, 0.15);
+    0 20px 48px rgba(239, 68, 68, 0.5),
+    0 8px 24px rgba(239, 68, 68, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: none;
 }
 
 .clock-button--out:active:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(0.98);
   box-shadow:
-    0 4px 10px rgba(239, 68, 68, 0.35),
-    0 1px 2px rgba(0, 0, 0, 0.1);
+    0 8px 24px rgba(239, 68, 68, 0.35),
+    0 2px 8px rgba(239, 68, 68, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Disabled state */
+/* Pulse glow for clock-out state - faster urgency */
+@keyframes pulse-glow-red {
+  0%,
+  100% {
+    box-shadow:
+      0 12px 32px rgba(239, 68, 68, 0.35),
+      0 4px 12px rgba(239, 68, 68, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 0 0 0 rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 12px 48px rgba(239, 68, 68, 0.5),
+      0 4px 16px rgba(239, 68, 68, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15),
+      0 0 0 16px rgba(239, 68, 68, 0);
+  }
+}
+
+/* ==============================================
+   DISABLED STATE
+   ============================================== */
+
 .clock-button--disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
+  animation: none !important;
+  filter: grayscale(20%);
 }
 
-/* Content */
+/* ==============================================
+   CONTENT LAYOUT
+   ============================================== */
+
 .clock-button__content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.875rem;
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  height: 100%;
 }
 
+/* Large icon - 64px */
 .clock-button__icon {
+  width: 56px;
+  height: 56px;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }
 
 .clock-button__text {
   white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
 }
 
-/* Spinner */
+/* ==============================================
+   LOADING SPINNER
+   ============================================== */
+
 .clock-button__spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.25);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -102,65 +195,101 @@
   }
 }
 
-/* Animated ring on hover/active */
+/* ==============================================
+   ANIMATED RING EFFECT
+   ============================================== */
+
 .clock-button__ring {
   position: absolute;
   top: 50%;
   left: 50%;
   width: 100%;
   height: 100%;
-  border-radius: 16px;
-  transform: translate(-50%, -50%) scale(0.95);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(1);
   opacity: 0;
   pointer-events: none;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .clock-button--in .clock-button__ring {
-  border: 2px solid rgba(16, 185, 129, 0.5);
+  border: 3px solid rgba(99, 102, 241, 0.4);
 }
 
 .clock-button--out .clock-button__ring {
-  border: 2px solid rgba(239, 68, 68, 0.5);
+  border: 3px solid rgba(239, 68, 68, 0.4);
 }
 
 .clock-button:hover:not(:disabled) .clock-button__ring {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1.05);
+  transform: translate(-50%, -50%) scale(1.15);
 }
 
-/* Mobile responsive */
+/* ==============================================
+   MOBILE - EVEN BIGGER ON SMALL SCREENS
+   ============================================== */
+
 @media (max-width: 768px) {
   .clock-button {
-    max-width: 100%;
-    padding: 1.25rem 1.5rem;
-    font-size: 1.1rem;
-    min-height: 70px;
+    /* 200px on mobile - easier to tap */
+    width: 200px;
+    height: 200px;
+    font-size: 1rem;
   }
 
   .clock-button__icon {
-    width: 26px;
-    height: 26px;
+    width: 64px;
+    height: 64px;
+  }
+
+  .clock-button__text {
+    font-size: 0.95rem;
+  }
+
+  .clock-button__spinner {
+    width: 52px;
+    height: 52px;
   }
 }
 
-/* Animation for pulse effect when clocked in */
-@keyframes clock-pulse {
-  0%,
-  100% {
-    box-shadow:
-      0 4px 14px rgba(239, 68, 68, 0.4),
-      0 1px 3px rgba(0, 0, 0, 0.1),
-      0 0 0 0 rgba(239, 68, 68, 0.4);
+@media (max-width: 480px) {
+  .clock-button {
+    /* Still large on very small screens */
+    width: 180px;
+    height: 180px;
   }
-  50% {
-    box-shadow:
-      0 4px 14px rgba(239, 68, 68, 0.4),
-      0 1px 3px rgba(0, 0, 0, 0.1),
-      0 0 0 8px rgba(239, 68, 68, 0);
+
+  .clock-button__icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .clock-button__text {
+    font-size: 0.85rem;
   }
 }
 
-.clock-button--out:not(.clock-button--disabled) {
-  animation: clock-pulse 2s ease-in-out infinite;
+/* ==============================================
+   HAPTIC FEEDBACK SIMULATION (visual)
+   ============================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  .clock-button:active:not(:disabled) {
+    transition: transform 0.1s ease-out;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .clock-button {
+    animation: none !important;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .clock-button--in,
+  .clock-button--out {
+    animation: none !important;
+  }
 }

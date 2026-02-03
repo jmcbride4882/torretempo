@@ -45,22 +45,38 @@ export default function ClockButton({
         ) : (
           <svg
             className="clock-button__icon"
-            width="32"
-            height="32"
+            width="56"
+            height="56"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
             {isClockedIn ? (
-              // Stop/Clock Out icon
+              // Stop/Clock Out icon - Square with rounded corners
               <>
-                <rect x="4" y="4" width="16" height="16" rx="2" />
+                <rect
+                  x="6"
+                  y="6"
+                  width="12"
+                  height="12"
+                  rx="2"
+                  fill="currentColor"
+                  fillOpacity="0.2"
+                />
+                <rect x="6" y="6" width="12" height="12" rx="2" />
               </>
             ) : (
-              // Play/Clock In icon
+              // Play/Clock In icon - Filled play triangle
               <>
-                <polygon points="5 3 19 12 5 21 5 3" />
+                <polygon
+                  points="6 4 20 12 6 20 6 4"
+                  fill="currentColor"
+                  fillOpacity="0.2"
+                />
+                <polygon points="6 4 20 12 6 20 6 4" />
               </>
             )}
           </svg>
