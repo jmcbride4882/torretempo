@@ -98,8 +98,20 @@ export default function LandingPage() {
         <nav className="nav">
           <div className="nav-container">
             <div className="nav-logo">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <rect width="32" height="32" rx="8" fill="#3B82F6" />
+              <svg width="36" height="36" viewBox="0 0 32 32" fill="none">
+                <defs>
+                  <linearGradient
+                    id="logoGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="100%" stopColor="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+                <rect width="32" height="32" rx="8" fill="url(#logoGradient)" />
                 <path
                   d="M16 8V16L21 21"
                   stroke="white"
@@ -181,7 +193,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
                   }}
                 >
                   <svg
@@ -190,7 +202,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                   >
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
@@ -208,7 +220,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                      "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
                   }}
                 >
                   <svg
@@ -217,7 +229,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                   >
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
@@ -238,7 +250,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+                      "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                   }}
                 >
                   <svg
@@ -247,7 +259,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                   >
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
@@ -268,7 +280,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+                      "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
                   }}
                 >
                   <svg
@@ -277,7 +289,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                   >
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
@@ -306,7 +318,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #30cfd0 0%, #330867 100%)",
+                      "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
                   }}
                 >
                   <svg
@@ -315,7 +327,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                   >
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
@@ -339,7 +351,7 @@ export default function LandingPage() {
                   className="feature-icon"
                   style={{
                     background:
-                      "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
+                      "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
                   }}
                 >
                   <svg
@@ -348,7 +360,7 @@ export default function LandingPage() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
+                    strokeWidth="2.5"
                   >
                     <line x1="12" y1="1" x2="12" y2="23" />
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -430,8 +442,25 @@ export default function LandingPage() {
             <div className="footer-content">
               <div className="footer-brand">
                 <div className="footer-logo">
-                  <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-                    <rect width="32" height="32" rx="8" fill="#3B82F6" />
+                  <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                    <defs>
+                      <linearGradient
+                        id="footerLogoGradient"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                      >
+                        <stop offset="0%" stopColor="#6366f1" />
+                        <stop offset="100%" stopColor="#8b5cf6" />
+                      </linearGradient>
+                    </defs>
+                    <rect
+                      width="32"
+                      height="32"
+                      rx="8"
+                      fill="url(#footerLogoGradient)"
+                    />
                     <path
                       d="M16 8V16L21 21"
                       stroke="white"
