@@ -197,6 +197,23 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     </svg>
   );
 
+  // Billing icon (credit card)
+  const billingIcon = (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+  );
+
   // Different menu structure based on role
   let menuItems: {
     path: string;
@@ -206,34 +223,19 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   }[] = [];
 
   if (isPlatformAdmin()) {
-    // PLATFORM ADMIN VIEW: God mode - full system access
+    // PLATFORM ADMIN VIEW: Platform management (NOT tenant operations)
     menuItems = [
       {
         path: getPath("/dashboard"),
         icon: dashboardIcon,
         label: "Platform Dashboard",
       },
-      { path: getPath("/tenants"), icon: tenantsIcon, label: "All Tenants" },
+      { path: getPath("/tenants"), icon: tenantsIcon, label: "Tenants" },
       { path: getPath("/employees"), icon: peopleIcon, label: "All Employees" },
       {
-        path: getPath("/time-entries"),
-        icon: clockIcon,
-        label: "All Time Entries",
-      },
-      {
-        path: getPath("/scheduling"),
-        icon: calendarIcon,
-        label: "All Schedules",
-      },
-      {
-        path: getPath("/leave-requests"),
-        icon: leaveIcon,
-        label: "All Leave Requests",
-      },
-      {
-        path: getPath("/reports"),
-        icon: reportsIcon,
-        label: "Platform Reports",
+        path: getPath("/billing"),
+        icon: billingIcon,
+        label: "Billing & Revenue",
       },
       {
         path: getPath("/settings"),
