@@ -2,7 +2,8 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../stores/authStore";
 
 // Base API URL - use relative path for same-origin requests
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+// NOTE: Nginx proxy adds /v1 when routing to backend, so we use /api here
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 // Create axios instance
 export const apiClient = axios.create({
@@ -47,15 +48,15 @@ apiClient.interceptors.request.use(
 
     // Update baseURL based on user role and tenant context
     // Priority:
-    // 1. Platform admins without tenant slug → /api/v1/platform (god mode)
-    // 2. Users with tenant slug → /api/v1/t/:tenantSlug (tenant-scoped)
-    // 3. Auth endpoints → /api/v1 (public)
+    // 1. Platform admins without tenant slug → /api/platform (god mode)
+    // 2. Users with tenant slug → /api/t/:tenantSlug (tenant-scoped)
+    // 3. Auth endpoints → /api (public)
     //
     // CRITICAL: Axios ignores baseURL if url starts with '/'
     // Solution: Remove leading slash from url when setting custom baseURL
     if (isPlatformAdmin && !tenantSlug && !config.url?.startsWith("/auth")) {
       config.url = config.url?.replace(/^\//, ""); // Remove leading slash
-      config.baseURL = "/api/v1/platform";
+      config.baseURL = "/api/platform";
       console.log(
         "[API Client] Using platform admin baseURL:",
         config.baseURL,
@@ -64,7 +65,7 @@ apiClient.interceptors.request.use(
       );
     } else if (tenantSlug && !config.url?.startsWith("/auth")) {
       config.url = config.url?.replace(/^\//, ""); // Remove leading slash
-      config.baseURL = `/api/v1/t/${tenantSlug}`;
+      config.baseURL = `/api/t/${tenantSlug}`;
       console.log(
         "[API Client] Using tenant-scoped baseURL:",
         config.baseURL,
@@ -72,7 +73,7 @@ apiClient.interceptors.request.use(
         config.url,
       );
     } else {
-      config.baseURL = "/api/v1";
+      config.baseURL = "/api";
       console.log("[API Client] Using public baseURL:", config.baseURL);
     }
 
@@ -108,7 +109,7 @@ apiClient.interceptors.response.use(
         }
 
         // Attempt to refresh token
-        const response = await axios.post("/api/v1/auth/refresh", {
+        const response = await axios.post("/api/auth/refresh", {
           refreshToken,
         });
 
