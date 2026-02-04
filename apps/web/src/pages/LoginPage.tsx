@@ -27,7 +27,10 @@ export default function LoginPage() {
 
     try {
       await login({ ...formData, tenantSlug });
-      tenantNavigate(`/t/${tenantSlug}/dashboard`);
+      const { user } = useAuthStore.getState();
+      if (user) {
+        tenantNavigate(`/t/${user.tenantSlug}/dashboard`);
+      }
     } catch (err) {
       // Error is handled by the store
       console.error("Login failed:", err);

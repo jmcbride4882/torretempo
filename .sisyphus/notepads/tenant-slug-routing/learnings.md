@@ -82,6 +82,7 @@
 ### Best Practices Confirmed
 
 ✅ **DO:**
+
 - Use slug in URL, not ID (`/t/lakeside` not `/t/123`)
 - Validate tenant access on every route
 - Use interceptors for automatic tenant headers
@@ -89,6 +90,7 @@
 - Clear cache on tenant switch
 
 ❌ **DON'T:**
+
 - Skip tenant validation (security risk)
 - Hardcode tenant in API calls
 - Mix tenant/non-tenant routes
@@ -97,6 +99,7 @@
 ### Implementation Plan for Torre Tempo
 
 **Phase 1: Core Infrastructure**
+
 1. Create `TenantContext.tsx` with provider and `useTenant()` hook
 2. Create `TenantLayout.tsx` wrapper component
 3. Update `App.tsx` routes to use `/t/:tenantSlug` pattern
@@ -104,17 +107,20 @@
 5. Implement `TenantAccess.tsx` for tenant validation layer
 
 **Phase 2: API Integration**
+
 1. Update `api.ts` to add tenant interceptor
 2. Create `useApi()` hook for tenant-aware requests
 3. Add backend endpoint: `GET /api/tenants/by-slug/:slug`
 4. Test tenant validation with valid/invalid slugs
 
 **Phase 3: Navigation Helpers**
+
 1. Create `useTenantNavigate()` hook
 2. Create `TenantLink` component wrapper
 3. Update existing navigation to use tenant-aware helpers
 
 **Phase 4: Error Handling**
+
 1. Add 403/404 error pages for tenant access issues
 2. Implement redirect to tenant selection on invalid tenant
 3. Add loading states for tenant validation
@@ -131,7 +137,6 @@
 - `react-router-research.md` - Comprehensive research summary
 - `code-examples.md` - Ready-to-use code examples for implementation
 
-
 ## 2026-02-04 - Tenant Context Middleware Mounted
 
 ### Implementation Complete
@@ -139,18 +144,21 @@
 ✅ **Task:** Mount tenant-context middleware in Express app for path-based multi-tenancy
 
 **Changes Made:**
+
 1. Added import: `import { tenantContext } from "./middleware/tenant-context";` (line 9)
 2. Updated all 9 protected routes to include `/t/:tenantSlug` path prefix
 3. Middleware chain: `authenticate` → `tenantContext` → route handler
 4. Auth routes remain public (no tenant context required)
 
 **Route Pattern:**
+
 ```
 OLD: /api/v1/employees
 NEW: /api/v1/t/:tenantSlug/employees
 ```
 
 **Middleware Execution Order:**
+
 1. Body parsers (express.json, urlencoded)
 2. Logging (pinoHttp)
 3. Auth routes (public, no middleware)
@@ -160,6 +168,7 @@ NEW: /api/v1/t/:tenantSlug/employees
    - Route handler - processes request with `req.tenant` and `req.tenantId` injected
 
 **Verification:**
+
 - ✅ TypeScript compilation: No errors (`npx tsc --noEmit`)
 - ✅ Import statement correct
 - ✅ Middleware mounted in correct order
@@ -176,7 +185,6 @@ NEW: /api/v1/t/:tenantSlug/employees
 ### Key Insight
 
 The backend is now **100% ready for path-based multi-tenancy**. The middleware validates tenant existence and status at the HTTP layer, before any route handler executes. This provides defense-in-depth security alongside JWT-based tenant isolation.
-
 
 ## 2026-02-04 - TenantContext & TenantLayout Components Created
 
@@ -236,6 +244,7 @@ The backend is now **100% ready for path-based multi-tenancy**. The middleware v
    - Prevents flash of error content
 
 **Verification:**
+
 - ✅ TypeScript compilation: No errors (`npx tsc --noEmit`)
 - ✅ All imports resolved correctly
 - ✅ No unused variables
@@ -257,19 +266,18 @@ The backend is now **100% ready for path-based multi-tenancy**. The middleware v
     <Route index element={<Dashboard />} />
     <Route path="employees" element={<Employees />} />
   </Route>
-</Route>
+</Route>;
 
 // In any child component
 function Dashboard() {
   const { tenant, isLoading, error } = useTenant();
-  
+
   if (isLoading) return <Spinner />;
   if (error) return <ErrorPage error={error} />;
-  
+
   return <div>Welcome to {tenant?.legalName}!</div>;
 }
 ```
-
 
 ## 2026-02-04 - App.tsx Route Structure Updated
 
@@ -288,6 +296,7 @@ function Dashboard() {
    - All child routes use relative paths (no leading `/`)
 
 **New Route Hierarchy:**
+
 ```
 /                           → LandingPage (public)
 /t/:tenantSlug              → TenantLayout (provides tenant context)
@@ -304,16 +313,20 @@ function Dashboard() {
 ```
 
 **React Router v6 Nested Routes Pattern Applied:**
+
 ```tsx
 <Route path="/t/:tenantSlug" element={<TenantLayout />}>
   <Route path="login" element={<LoginPage />} />
-  <Route path="dashboard" element={
-    <ProtectedRoute>
-      <DashboardLayout>
-        <DashboardPage />
-      </DashboardLayout>
-    </ProtectedRoute>
-  } />
+  <Route
+    path="dashboard"
+    element={
+      <ProtectedRoute>
+        <DashboardLayout>
+          <DashboardPage />
+        </DashboardLayout>
+      </ProtectedRoute>
+    }
+  />
   {/* ... more nested routes */}
 </Route>
 ```
@@ -326,6 +339,7 @@ function Dashboard() {
 4. **Role-Based Protection:** Settings and Tenants routes maintain their `requiredRoles` props
 
 **Verification:**
+
 - ✅ TypeScript compilation: No errors (`npx tsc --noEmit`)
 - ✅ TenantLayout import used correctly
 - ✅ All routes properly nested
@@ -343,7 +357,6 @@ function Dashboard() {
 
 The `/tenants` page (PLATFORM_ADMIN only) is now under tenant context. This means Platform Admins will need to select a tenant to access tenant management. Consider future enhancement to have a platform-level route (`/admin/tenants`) outside tenant context for Platform Admin functions.
 
-
 ## 2026-02-04 - LoginPage Updated to Extract tenantSlug from URL
 
 ### Implementation Complete
@@ -353,11 +366,13 @@ The `/tenants` page (PLATFORM_ADMIN only) is now under tenant context. This mean
 **Changes Made:**
 
 1. **Import Updated:** Added `useParams` to React Router imports (line 2)
+
    ```typescript
    import { useNavigate, useParams } from "react-router-dom";
    ```
 
 2. **Extract tenantSlug from URL:** (line 8)
+
    ```typescript
    const { tenantSlug } = useParams<{ tenantSlug: string }>();
    ```
@@ -391,6 +406,7 @@ The `/tenants` page (PLATFORM_ADMIN only) is now under tenant context. This mean
    - Maintains tenant context throughout app
 
 **Verification:**
+
 - ✅ TypeScript compilation: No errors (`npx tsc --noEmit`)
 - ✅ useParams hook properly typed
 - ✅ tenantSlug passed to login function
@@ -400,6 +416,7 @@ The `/tenants` page (PLATFORM_ADMIN only) is now under tenant context. This mean
 ### Pattern Established
 
 This follows the established pattern from previous tasks:
+
 - URL is source of truth for tenant context
 - Components extract tenant from URL using `useParams()`
 - No tenant data stored in form state
@@ -412,34 +429,37 @@ This follows the established pattern from previous tasks:
 3. **Update DashboardLayout:** Update sidebar links to use tenant-aware navigation
 4. **Test Multi-Tenant Flow:** Verify login and redirect work correctly
 
-
 ## Axios Request Interceptor Implementation (2026-02-04)
 
 ### What Was Done
+
 - Added request interceptor to `apps/web/src/services/api.ts` that dynamically updates `baseURL` based on tenant slug from URL path
 - Interceptor extracts tenant slug using regex: `/\/t\/([^\/]+)/`
 - Routes auth requests to `/api/v1/auth` (no tenant prefix)
 - Routes protected requests to `/api/v1/t/{tenantSlug}` (with tenant prefix)
 
 ### Key Implementation Details
+
 1. **Regex Pattern:** `/\/t\/([^\/]+)/` captures tenant slug from paths like `/t/demo/employees`
 2. **Auth Endpoint Detection:** Uses `!config.url?.startsWith('/auth')` to exclude auth routes
 3. **Fallback:** If no tenant slug found, defaults to `/api/v1` (for non-tenant routes)
 4. **Placement:** Added to existing request interceptor alongside token injection
 
 ### Code Pattern
+
 ```typescript
 const pathMatch = window.location.pathname.match(/\/t\/([^\/]+)/);
 const tenantSlug = pathMatch ? pathMatch[1] : null;
 
-if (tenantSlug && !config.url?.startsWith('/auth')) {
+if (tenantSlug && !config.url?.startsWith("/auth")) {
   config.baseURL = `/api/v1/t/${tenantSlug}`;
 } else {
-  config.baseURL = '/api/v1';
+  config.baseURL = "/api/v1";
 }
 ```
 
 ### Benefits
+
 - ✅ No circular dependencies (extracts from URL, not Context)
 - ✅ Single point of change (interceptor handles all requests)
 - ✅ No modification needed to individual service files
@@ -447,11 +467,13 @@ if (tenantSlug && !config.url?.startsWith('/auth')) {
 - ✅ TypeScript strict mode compliant
 
 ### Verification
+
 - TypeScript compilation: ✅ No errors
 - Interceptor logic: ✅ Correct tenant slug extraction
 - Auth route handling: ✅ Properly excluded from tenant prefix
 
 ### Next Steps
+
 - Test with actual API calls to verify baseURL is correctly set
 - Verify auth endpoints work without tenant prefix
 - Verify protected endpoints receive correct tenant-scoped URLs
@@ -459,12 +481,14 @@ if (tenantSlug && !config.url?.startsWith('/auth')) {
 ## useTenantNavigate Hook Implementation (2026-02-04)
 
 ### Pattern Used
+
 - **Location:** `apps/web/src/hooks/useTenantNavigate.ts`
 - **Approach:** Wraps `useNavigate` from react-router-dom
 - **Tenant extraction:** Uses `useParams<{ tenantSlug: string }>()` directly
 - **Fallback:** Uses `useTenant()` context pattern from code-examples.md
 
 ### Implementation Details
+
 1. Extracts `tenantSlug` from URL params via `useParams()`
 2. Returns wrapped navigate function that:
    - Handles numeric navigation (back/forward) without modification
@@ -474,25 +498,29 @@ if (tenantSlug && !config.url?.startsWith('/auth')) {
    - Falls back to regular navigate if tenantSlug is undefined or path already prefixed
 
 ### Type Safety
+
 - Imported `NavigateOptions` from react-router-dom for proper typing
 - Function signature: `(to: string | number, options?: NavigateOptions) => void`
 - Matches react-router-dom's useNavigate return type
 
 ### Key Design Decisions
+
 1. **Direct useParams over useTenant():** Avoids dependency on TenantContext, more flexible
 2. **Numeric navigation passthrough:** Allows back/forward without tenant prefix
 3. **Path already prefixed check:** Prevents double-prefixing edge case
 4. **Default export:** Matches existing hook pattern (useAuthorization, useGeolocation)
 
 ### Usage Pattern
+
 ```typescript
 const tenantNavigate = useTenantNavigate();
-tenantNavigate('/dashboard');  // → /t/demo/dashboard
-tenantNavigate('/employees', { state: { from: 'dashboard' } });
-tenantNavigate(-1);  // Go back
+tenantNavigate("/dashboard"); // → /t/demo/dashboard
+tenantNavigate("/employees", { state: { from: "dashboard" } });
+tenantNavigate(-1); // Go back
 ```
 
 ### Verification
+
 - ✅ File created: `apps/web/src/hooks/useTenantNavigate.ts`
 - ✅ TypeScript compilation: No errors
 - ✅ Follows project conventions (kebab-case filename, PascalCase function)
@@ -502,37 +530,159 @@ tenantNavigate(-1);  // Go back
 ## useNavigate → useTenantNavigate Migration (2026-02-04)
 
 ### Summary
+
 Successfully migrated all 4 components using `useNavigate()` to use `useTenantNavigate()` hook instead. This ensures all navigation automatically preserves tenant context by prefixing paths with tenant slug.
 
 ### Files Updated
+
 1. **MyShiftsToday.tsx** - 4 navigate calls updated (clock in/out, unscheduled shift)
 2. **UserDropdown.tsx** - 2 navigate calls updated (logout, settings)
 3. **LandingPage.tsx** - 1 navigate call updated (login)
 4. **LoginPage.tsx** - 2 navigate calls updated (redirect, dashboard)
 
 ### Pattern Applied
+
 ```typescript
 // Before
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 const navigate = useNavigate();
-navigate('/dashboard');
+navigate("/dashboard");
 
 // After
-import useTenantNavigate from '../hooks/useTenantNavigate';
+import useTenantNavigate from "../hooks/useTenantNavigate";
 const tenantNavigate = useTenantNavigate();
-tenantNavigate('/dashboard');  // Automatically becomes /t/{tenantSlug}/dashboard
+tenantNavigate("/dashboard"); // Automatically becomes /t/{tenantSlug}/dashboard
 ```
 
 ### Verification
+
 - ✅ TypeScript compilation: PASSED (no errors)
 - ✅ Build successful: 11.27s
 - ✅ No remaining useNavigate imports in web/src
 - ✅ All navigation flows preserved
 
 ### Key Insight
+
 The `useTenantNavigate()` hook internally uses `useNavigate()` and `useParams()` to extract tenant slug from URL, then automatically prefixes all paths. This eliminates manual tenant slug handling in components and ensures consistency across the app.
 
 ### Notes
+
 - LoginPage.tsx was already partially updated in previous task
 - No breaking changes to navigation logic
 - All paths are relative (e.g., '/dashboard', '/settings') - hook handles tenant prefix
+
+## Error Pages Implementation (2026-02-04)
+
+### Task Completed
+
+Created two standalone error pages for tenant validation failures:
+
+1. **TenantNotFoundPage.tsx** - 404 error (tenant doesn't exist)
+2. **TenantSuspendedPage.tsx** - 403 error (account suspended)
+
+### Pattern: Standalone Error Pages with Inline Styles
+
+- Used inline `<style>` tags similar to TenantLayout's TenantErrorDisplay pattern
+- This keeps styling self-contained without needing separate CSS files
+- Both pages are full-page components (not embedded in TenantLayout)
+
+### Design Consistency with LoginPage
+
+Both pages follow the "warm modern hospitality" design established in LoginPage:
+
+- Animated gradient background (charcoal tones: #374151 → #6b7280)
+- White card with rounded corners (border-radius: 20px)
+- Float animation on logo (6s ease-in-out infinite)
+- slide-up animation on card load
+- Torre Tempo branding with custom gradient logo
+- Footer with copyright and developer credit
+
+### Color Differentiation
+
+- **404 Not Found**: Red accent (#ef4444) for error severity
+- **403 Suspended**: Amber accent (#f59e0b) for warning tone
+- Both use charcoal primary (#374151) for CTA buttons with respective accent gradients
+
+### i18n Keys Used
+
+- `tenant.error.notFound.title`, `tenant.error.notFound.pageDescription`, `tenant.error.notFound.hint`
+- `tenant.error.suspended.title`, `tenant.error.suspended.pageDescription`, `tenant.error.suspended.badge`, `tenant.error.suspended.supportInfo`
+- `common.returnHome` for action buttons
+- **Note:** These keys need to be added to translation files (`apps/web/src/locales/en/*.json`, `apps/web/src/locales/es/*.json`)
+
+### Mobile Responsiveness
+
+- Padding adjustments at 480px breakpoint
+- Full-width buttons on mobile (height: 56px for touch targets)
+- Reduced border-radius on small screens (16px vs 20px)
+- Card padding reduced on mobile (2rem 1.5rem vs 3rem 2.5rem)
+
+### Accessibility Features
+
+- `prefers-reduced-motion` media query disables animations
+- `focus-visible` styles for keyboard navigation
+- Semantic HTML structure with clear heading hierarchy
+- Dynamic year in copyright using `new Date().getFullYear()`
+
+### Integration Notes
+
+- These pages are designed for direct routing scenarios (e.g., `/t/invalid-tenant/login`)
+- TenantLayout's TenantErrorDisplay handles inline error states when tenant context is required
+- Both pages link to home page (`/`) for returning to landing page
+
+### Verification
+
+- ✅ TypeScript compilation: No errors (`npx tsc --noEmit`)
+- ✅ Files created:
+  - `apps/web/src/pages/TenantNotFoundPage.tsx`
+  - `apps/web/src/pages/TenantSuspendedPage.tsx`
+
+## 2026-02-04 - LandingPage Auto-Redirect to Demo Tenant
+
+### Implementation Complete
+
+✅ **Task:** Update LandingPage to automatically redirect to `/t/demo/login`
+
+**Changes Made:**
+
+1. **Import Added:** `import { useEffect } from "react";` (line 1)
+
+2. **Auto-Redirect Logic:** Added useEffect hook in LandingPage component
+   ```typescript
+   // Auto-redirect to demo tenant login (single tenant for now)
+   // Future: Show tenant selection UI when multiple tenants exist
+   useEffect(() => {
+     tenantNavigate("/login");
+   }, [tenantNavigate]);
+   ```
+
+**Key Design Decisions:**
+
+1. **Uses useTenantNavigate Hook:**
+   - LandingPage already had `useTenantNavigate` imported and used
+   - `tenantNavigate('/login')` resolves to `/t/demo/login` via DEFAULT_TENANT_SLUG
+   - Keeps implementation consistent with other navigation in the app
+
+2. **Kept Existing Page Content:**
+   - Landing page content remains as fallback
+   - If redirect is slow or JS disabled, users still see a functional landing page
+   - "Iniciar Sesión" buttons still work as manual fallback
+
+3. **Dependency Array:**
+   - `[tenantNavigate]` included per React best practices
+   - tenantNavigate is stable from useTenantNavigate hook
+
+**Future Enhancement:**
+
+When multiple tenants exist, this auto-redirect should be replaced with:
+
+- Tenant selection dropdown/search UI
+- Recent tenants list from localStorage
+- Organization-specific subdomain routing
+
+**Verification:**
+
+- ✅ TypeScript compilation: No errors (`npx tsc --noEmit`)
+- ✅ useEffect properly imported from React
+- ✅ Redirect uses tenant-aware navigation
+- ✅ Existing page content preserved as fallback

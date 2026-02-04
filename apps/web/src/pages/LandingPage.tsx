@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import useTenantNavigate from "../hooks/useTenantNavigate";
 import * as Accordion from "@radix-ui/react-accordion";
 import * as Tooltip from "@radix-ui/react-tooltip";
@@ -86,6 +87,12 @@ function ChevronIcon() {
 
 export default function LandingPage() {
   const tenantNavigate = useTenantNavigate();
+
+  // Auto-redirect to demo tenant login (single tenant for now)
+  // Future: Show tenant selection UI when multiple tenants exist
+  useEffect(() => {
+    tenantNavigate("/login");
+  }, [tenantNavigate]);
 
   const handleLoginClick = () => {
     tenantNavigate("/login");
