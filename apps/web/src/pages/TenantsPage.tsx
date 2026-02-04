@@ -59,7 +59,7 @@ export default function TenantsPage() {
       setLoading(true);
       setError(null);
 
-      const response = await apiClient.get("/platform/tenants");
+      const response = await apiClient.get("/tenants");
       setTenants(response.data.data || []);
     } catch (err: any) {
       console.error("Failed to load tenants:", err);
@@ -119,7 +119,7 @@ export default function TenantsPage() {
     if (!tenantToDelete) return;
 
     try {
-      await apiClient.delete(`/platform/tenants/${tenantToDelete.id}`);
+      await apiClient.delete(`/tenants/${tenantToDelete.id}`);
 
       // Reload tenant list after successful delete
       loadTenants();

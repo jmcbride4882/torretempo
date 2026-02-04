@@ -71,7 +71,7 @@ export default function BillingPage() {
     try {
       setMetricsLoading(true);
 
-      const response = await apiClient.get("/platform/billing/revenue");
+      const response = await apiClient.get("/billing/revenue");
       setMetrics({
         mrr: response.data.data.mrr,
         arr: response.data.data.arr,
@@ -108,7 +108,7 @@ export default function BillingPage() {
       }
 
       const response = await apiClient.get(
-        `/platform/billing/subscriptions?${params.toString()}`,
+        `/billing/subscriptions?${params.toString()}`,
       );
 
       // Map API response to Subscription interface
