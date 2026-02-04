@@ -24,18 +24,16 @@ export async function tenantContext(
   next: NextFunction,
 ): Promise<void> {
   try {
-    // Extract tenant slug from path: /t/:tenantSlug/...
-    const slugMatch = req.path.match(/^\/t\/([^\/]+)/);
+    // Extract tenant slug from URL params (set by Express route: /t/:tenantSlug/...)
+    const tenantSlug = req.params.tenantSlug;
 
-    if (!slugMatch) {
+    if (!tenantSlug) {
       res.status(400).json({
         error: "Tenant slug required in path",
         message: "URL must be in format: /t/{tenantSlug}/...",
       });
       return;
     }
-
-    const tenantSlug = slugMatch[1];
 
     // Fetch tenant from database
     const tenant = await prisma.tenant.findUnique({
