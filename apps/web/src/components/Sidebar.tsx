@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthorization } from "../hooks/useAuthorization";
+import { useTenant } from "../contexts/TenantContext";
 import "./Sidebar.css";
 
 interface SidebarProps {
@@ -9,6 +10,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen }: SidebarProps) {
   const { t } = useTranslation();
+  const { tenantSlug } = useTenant();
   const {
     isPlatformAdmin,
     isEmployee,
@@ -17,6 +19,16 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     canViewSettings,
     canGenerateAttendanceReports,
   } = useAuthorization();
+
+  // Helper function to prefix paths with tenant slug
+  const getPath = (path: string) => {
+    // Platform admins don't use tenant slug
+    if (isPlatformAdmin()) {
+      return path;
+    }
+    // Regular users get tenant-prefixed paths
+    return tenantSlug ? `/t/${tenantSlug}${path}` : path;
+  };
 
   // Dashboard icon
   const dashboardIcon = (
@@ -196,52 +208,116 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   if (isPlatformAdmin()) {
     // PLATFORM ADMIN VIEW: God mode - full system access
     menuItems = [
-      { path: "/dashboard", icon: dashboardIcon, label: "Platform Dashboard" },
-      { path: "/tenants", icon: tenantsIcon, label: "All Tenants" },
-      { path: "/employees", icon: peopleIcon, label: "All Employees" },
-      { path: "/time-entries", icon: clockIcon, label: "All Time Entries" },
-      { path: "/scheduling", icon: calendarIcon, label: "All Schedules" },
-      { path: "/leave-requests", icon: leaveIcon, label: "All Leave Requests" },
-      { path: "/reports", icon: reportsIcon, label: "Platform Reports" },
-      { path: "/settings", icon: settingsIcon, label: "Platform Settings" },
+      {
+        path: getPath("/dashboard"),
+        icon: dashboardIcon,
+        label: "Platform Dashboard",
+      },
+      { path: getPath("/tenants"), icon: tenantsIcon, label: "All Tenants" },
+      { path: getPath("/employees"), icon: peopleIcon, label: "All Employees" },
+      {
+        path: getPath("/time-entries"),
+        icon: clockIcon,
+        label: "All Time Entries",
+      },
+      {
+        path: getPath("/scheduling"),
+        icon: calendarIcon,
+        label: "All Schedules",
+      },
+      {
+        path: getPath("/leave-requests"),
+        icon: leaveIcon,
+        label: "All Leave Requests",
+      },
+      {
+        path: getPath("/reports"),
+        icon: reportsIcon,
+        label: "Platform Reports",
+      },
+      {
+        path: getPath("/settings"),
+        icon: settingsIcon,
+        label: "Platform Settings",
+      },
     ];
   } else if (isEmployee()) {
     // EMPLOYEE VIEW: Personal, self-service focused
     menuItems = [
-      { path: "/dashboard", icon: dashboardIcon, label: t("nav.dashboard") },
-      { path: "/time-entries", icon: clockIcon, label: "My Time" },
-      { path: "/scheduling", icon: calendarIcon, label: "My Schedule" },
-      { path: "/leave-requests", icon: leaveIcon, label: "My Leave" },
-      { path: "/profile", icon: profileIcon, label: t("user.profile") },
+      {
+        path: getPath("/dashboard"),
+        icon: dashboardIcon,
+        label: t("nav.dashboard"),
+      },
+      { path: getPath("/time-entries"), icon: clockIcon, label: "My Time" },
+      {
+        path: getPath("/scheduling"),
+        icon: calendarIcon,
+        label: "My Schedule",
+      },
+      { path: getPath("/leave-requests"), icon: leaveIcon, label: "My Leave" },
+      {
+        path: getPath("/profile"),
+        icon: profileIcon,
+        label: t("user.profile"),
+      },
     ];
   } else if (isManager()) {
     // MANAGER VIEW: Team management focused
     menuItems = [
-      { path: "/dashboard", icon: dashboardIcon, label: t("nav.dashboard") },
-      { path: "/employees", icon: peopleIcon, label: "My Team" },
-      { path: "/time-entries", icon: clockIcon, label: "Team Time" },
-      { path: "/scheduling", icon: calendarIcon, label: "Team Schedule" },
-      { path: "/leave-requests", icon: leaveIcon, label: "Team Leave" },
+      {
+        path: getPath("/dashboard"),
+        icon: dashboardIcon,
+        label: t("nav.dashboard"),
+      },
+      { path: getPath("/employees"), icon: peopleIcon, label: "My Team" },
+      { path: getPath("/time-entries"), icon: clockIcon, label: "Team Time" },
+      {
+        path: getPath("/scheduling"),
+        icon: calendarIcon,
+        label: "Team Schedule",
+      },
+      {
+        path: getPath("/leave-requests"),
+        icon: leaveIcon,
+        label: "Team Leave",
+      },
     ];
 
     // Add Reports if manager can generate them
     if (canGenerateAttendanceReports()) {
-      menuItems.push({ path: "/reports", icon: reportsIcon, label: "Reports" });
+      menuItems.push({
+        path: getPath("/reports"),
+        icon: reportsIcon,
+        label: "Reports",
+      });
     }
   } else {
     // OWNER/ADMIN VIEW: Full administrative access
     menuItems = [
-      { path: "/dashboard", icon: dashboardIcon, label: t("nav.dashboard") },
-      { path: "/employees", icon: peopleIcon, label: t("nav.employees") },
-      { path: "/time-entries", icon: clockIcon, label: t("nav.timeEntries") },
       {
-        path: "/scheduling",
+        path: getPath("/dashboard"),
+        icon: dashboardIcon,
+        label: t("nav.dashboard"),
+      },
+      {
+        path: getPath("/employees"),
+        icon: peopleIcon,
+        label: t("nav.employees"),
+      },
+      {
+        path: getPath("/time-entries"),
+        icon: clockIcon,
+        label: t("nav.timeEntries"),
+      },
+      {
+        path: getPath("/scheduling"),
         icon: calendarIcon,
         label: t("nav.scheduling"),
         visible: canManageScheduling(),
       },
       {
-        path: "/leave-requests",
+        path: getPath("/leave-requests"),
         icon: leaveIcon,
         label: t("nav.leaveRequests"),
       },
@@ -249,13 +325,17 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
     // Add Reports if owner/admin can generate them
     if (canGenerateAttendanceReports()) {
-      menuItems.push({ path: "/reports", icon: reportsIcon, label: "Reports" });
+      menuItems.push({
+        path: getPath("/reports"),
+        icon: reportsIcon,
+        label: "Reports",
+      });
     }
 
     // Add Settings if user has access
     if (canViewSettings()) {
       menuItems.push({
-        path: "/settings",
+        path: getPath("/settings"),
         icon: settingsIcon,
         label: t("nav.settings"),
       });

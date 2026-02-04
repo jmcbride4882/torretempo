@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../stores/authStore";
 import { useAuthorization } from "../hooks/useAuthorization";
+import { useTenant } from "../contexts/TenantContext";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -17,7 +18,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user } = useAuthStore();
   const { t } = useTranslation();
-  const { isEmployee } = useAuthorization();
+  const { tenantSlug } = useTenant();
+  const { isEmployee, isPlatformAdmin } = useAuthorization();
+
+  // Helper function to prefix paths with tenant slug
+  const getPath = (path: string) => {
+    // Platform admins don't use tenant slug
+    if (isPlatformAdmin()) {
+      return path;
+    }
+    // Regular users get tenant-prefixed paths
+    return tenantSlug ? `/t/${tenantSlug}${path}` : path;
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -124,44 +136,44 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const mobileNavItems = isEmployee()
     ? [
         {
-          path: "/dashboard",
+          path: getPath("/dashboard"),
           icon: DashboardIcon,
           label: t("nav.dashboard", "Home"),
         },
         {
-          path: "/time-entries",
+          path: getPath("/time-entries"),
           icon: ClockIcon,
           label: t("nav.timeEntries", "Time"),
         },
         {
-          path: "/scheduling",
+          path: getPath("/scheduling"),
           icon: CalendarIcon,
           label: t("nav.scheduling", "Schedule"),
         },
         {
-          path: "/profile",
+          path: getPath("/profile"),
           icon: ProfileIcon,
           label: t("user.profile", "Profile"),
         },
       ]
     : [
         {
-          path: "/dashboard",
+          path: getPath("/dashboard"),
           icon: DashboardIcon,
           label: t("nav.dashboard", "Home"),
         },
         {
-          path: "/time-entries",
+          path: getPath("/time-entries"),
           icon: ClockIcon,
           label: t("nav.timeEntries", "Time"),
         },
         {
-          path: "/scheduling",
+          path: getPath("/scheduling"),
           icon: CalendarIcon,
           label: t("nav.scheduling", "Schedule"),
         },
         {
-          path: "/profile",
+          path: getPath("/profile"),
           icon: ProfileIcon,
           label: t("user.profile", "Profile"),
         },
