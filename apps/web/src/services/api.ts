@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { useAuthStore } from "../stores/authStore";
 
 // Base API URL - defaults to localhost for development
 const API_BASE_URL =
@@ -22,9 +23,9 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    // Extract tenant slug from URL path for tenant-scoped requests
-    const pathMatch = window.location.pathname.match(/\/t\/([^\/]+)/);
-    const tenantSlug = pathMatch ? pathMatch[1] : null;
+    // Get tenant slug from auth store (more reliable than URL parsing)
+    const user = useAuthStore.getState().user;
+    const tenantSlug = user?.tenantSlug;
 
     // Update baseURL for tenant-scoped requests (not auth endpoints)
     if (tenantSlug && !config.url?.startsWith("/auth")) {
