@@ -18,7 +18,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user } = useAuthStore();
   const { t } = useTranslation();
-  const { tenantSlug } = useTenant();
+  const { tenantSlug, tenant } = useTenant();
   const { isEmployee, isPlatformAdmin } = useAuthorization();
 
   // Helper function to prefix paths with tenant slug
@@ -44,7 +44,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   // Get tenant name from user data or default
-  const tenantName = user ? "Demo Restaurant SL" : "Torre Tempo";
+  const tenantName =
+    user?.role?.toLowerCase() === "platform_admin"
+      ? "Torre Tempo Platform"
+      : tenant?.legalName || "Torre Tempo";
 
   // Mobile bottom nav icons
   const DashboardIcon = () => (
