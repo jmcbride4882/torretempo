@@ -22,7 +22,13 @@ export default function LoginPage() {
       await login(formData);
       const { user } = useAuthStore.getState();
       if (user) {
-        navigate(`/t/${user.tenantSlug}/dashboard`);
+        // Platform admins have no tenant - redirect to root dashboard
+        if (!user.tenantSlug || user.role === "PLATFORM_ADMIN") {
+          navigate("/dashboard");
+        } else {
+          // Regular users - redirect to tenant dashboard
+          navigate(`/t/${user.tenantSlug}/dashboard`);
+        }
       }
     } catch (err) {
       // Error is handled by the store
