@@ -23,6 +23,12 @@ const bulkRolesSchema = z.object({
 router.get("/", authenticate, async (req, res) => {
   try {
     const tenantId = req.user!.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Platform admins cannot access tenant-specific endpoints",
+      });
+    }
     const roles = await roleService.getRoles(tenantId);
     res.json(roles);
   } catch (error: any) {
@@ -46,6 +52,12 @@ router.post("/", authenticate, isOwnerOrAdmin, async (req, res) => {
     }
 
     const tenantId = req.user!.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Platform admins cannot access tenant-specific endpoints",
+      });
+    }
     const { name, color } = validation.data;
 
     // Check for duplicate role name
@@ -83,6 +95,12 @@ router.put("/", authenticate, isOwnerOrAdmin, async (req, res) => {
     }
 
     const tenantId = req.user!.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Platform admins cannot access tenant-specific endpoints",
+      });
+    }
     const { roles } = validation.data;
 
     // Check for duplicate role names
@@ -119,6 +137,12 @@ router.put("/:name", authenticate, isOwnerOrAdmin, async (req, res) => {
     }
 
     const tenantId = req.user!.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Platform admins cannot access tenant-specific endpoints",
+      });
+    }
     const { name: newName, color } = validation.data;
 
     // Check if renaming to a different name that already exists
@@ -161,6 +185,12 @@ router.delete("/:name", authenticate, isOwnerOrAdmin, async (req, res) => {
     const roleName = decodeURIComponent(req.params.name);
     const reassignTo = req.query.reassignTo as string | undefined;
     const tenantId = req.user!.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Platform admins cannot access tenant-specific endpoints",
+      });
+    }
 
     // Check if role exists
     const existingRoles = await roleService.getRoles(tenantId);
@@ -224,6 +254,12 @@ router.get("/:name/usage", authenticate, async (req, res) => {
   try {
     const roleName = decodeURIComponent(req.params.name);
     const tenantId = req.user!.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Platform admins cannot access tenant-specific endpoints",
+      });
+    }
 
     const usage = await roleService.getRoleUsage(tenantId, roleName);
     res.json(usage);
@@ -241,6 +277,12 @@ router.get("/:name/usage", authenticate, async (req, res) => {
 router.post("/reset", authenticate, isOwnerOrAdmin, async (req, res) => {
   try {
     const tenantId = req.user!.tenantId;
+    if (!tenantId) {
+      return res.status(403).json({
+        error: "Forbidden",
+        message: "Platform admins cannot access tenant-specific endpoints",
+      });
+    }
 
     // Get current shift count to inform user
     const totalShifts = await roleService.getTotalShiftCount(tenantId);

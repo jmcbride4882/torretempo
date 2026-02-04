@@ -20,14 +20,14 @@ interface AuthResult {
     firstName: string;
     lastName: string;
     role: string;
-    tenantSlug: string;
-    tenantId: string;
+    tenantSlug: string | null;
+    tenantId: string | null;
   };
   tenant: {
     id: string;
     slug: string;
     legalName: string;
-  };
+  } | null;
 }
 
 export class AuthService {
@@ -53,7 +53,48 @@ export class AuthService {
       throw new Error("User account is not active");
     }
 
-    // Find tenant - if tenantSlug provided, use it; otherwise get user's first tenant
+    // Check if user is a platform admin (no tenant assignment)
+    const tenantUsers = await prisma.tenantUser.findMany({
+      where: { userId: user.id },
+    });
+
+    // Platform admin has no tenant assignments
+    const isPlatformAdmin = tenantUsers.length === 0;
+
+    if (isPlatformAdmin) {
+      // Platform admin - no tenant assignment
+      const accessToken = this.generateAccessToken({
+        userId: user.id,
+        email: user.email,
+        tenantId: null,
+        role: "PLATFORM_ADMIN",
+      });
+
+      const refreshToken = this.generateRefreshToken({
+        userId: user.id,
+        email: user.email,
+        tenantId: null,
+      });
+
+      logger.info({ userId: user.id }, "Platform admin logged in");
+
+      return {
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: "PLATFORM_ADMIN",
+          tenantSlug: null,
+          tenantId: null,
+        },
+        tenant: null,
+      };
+    }
+
+    // Regular user - find tenant
     let tenant;
 
     if (input.tenantSlug) {
@@ -129,7 +170,7 @@ export class AuthService {
   private generateAccessToken(payload: {
     userId: string;
     email: string;
-    tenantId: string;
+    tenantId: string | null;
     role: string;
   }): string {
     return jwt.sign(payload, process.env.JWT_SECRET!, {
@@ -140,7 +181,7 @@ export class AuthService {
   private generateRefreshToken(payload: {
     userId: string;
     email: string;
-    tenantId: string;
+    tenantId: string | null;
   }): string {
     return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET!, {
       expiresIn: "7d",

@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { logger } from '../utils/logger';
+import { Request, Response, NextFunction } from "express";
+import { PrismaClient } from "@prisma/client";
+import { logger } from "../utils/logger";
 
 const prisma = new PrismaClient();
 
@@ -13,7 +13,7 @@ declare global {
         legalName: string;
         settings: any;
       };
-      tenantId?: string;
+      tenantId?: string | null;
     }
   }
 }
@@ -21,16 +21,16 @@ declare global {
 export async function tenantContext(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     // Extract tenant slug from path: /t/:tenantSlug/...
     const slugMatch = req.path.match(/^\/t\/([^\/]+)/);
-    
+
     if (!slugMatch) {
       res.status(400).json({
-        error: 'Tenant slug required in path',
-        message: 'URL must be in format: /t/{tenantSlug}/...',
+        error: "Tenant slug required in path",
+        message: "URL must be in format: /t/{tenantSlug}/...",
       });
       return;
     }
@@ -51,17 +51,20 @@ export async function tenantContext(
 
     if (!tenant) {
       res.status(404).json({
-        error: 'Tenant not found',
+        error: "Tenant not found",
         message: `Tenant '${tenantSlug}' does not exist`,
       });
       return;
     }
 
     // Check if tenant is active
-    if (tenant.subscriptionStatus !== 'active' && tenant.subscriptionStatus !== 'trial') {
+    if (
+      tenant.subscriptionStatus !== "active" &&
+      tenant.subscriptionStatus !== "trial"
+    ) {
       res.status(403).json({
-        error: 'Tenant suspended',
-        message: 'This tenant account is not active',
+        error: "Tenant suspended",
+        message: "This tenant account is not active",
       });
       return;
     }
@@ -70,11 +73,14 @@ export async function tenantContext(
     req.tenant = tenant;
     req.tenantId = tenant.id;
 
-    logger.debug({ tenantId: tenant.id, slug: tenant.slug }, 'Tenant context resolved');
+    logger.debug(
+      { tenantId: tenant.id, slug: tenant.slug },
+      "Tenant context resolved",
+    );
 
     next();
   } catch (error) {
-    logger.error({ error }, 'Failed to resolve tenant context');
-    res.status(500).json({ error: 'Internal server error' });
+    logger.error({ error }, "Failed to resolve tenant context");
+    res.status(500).json({ error: "Internal server error" });
   }
 }
