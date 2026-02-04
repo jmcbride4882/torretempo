@@ -84,6 +84,8 @@ model Tenant {
     // Stripe Integration
   stripeCustomerId      String?  @map("stripe_customer_id")
   stripeSubscriptionId  String?  @map("stripe_subscription_id")
+  gocardlessCustomerId  String?  @map("gocardless_customer_id")
+  gocardlessMandateId   String?  @map("gocardless_mandate_id")
   
   // Audit
   createdAt DateTime  @default(now()) @map("created_at")
@@ -104,6 +106,8 @@ model Tenant {
   employeeAvailabilities EmployeeAvailability[]
   shiftSwapRequests     ShiftSwapRequest[]
   auditLogs             AuditLog[]
+  payments              Payment[]
+  invoices              Invoice[]
   
   @@index([slug])
   @@index([subscriptionStatus], map: "idx_tenants_status")
@@ -636,4 +640,81 @@ model AuditLog {
   @@index([resourceType, resourceId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================================================
+// PAYMENT & BILLING
+// ============================================================================
+
+model Payment {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  
+  // Payment details
+  amount         Int      // Amount in cents
+  currency       String   @default("EUR")
+  status         String   // 'pending', 'succeeded', 'failed', 'refunded'
+  paymentMethod  String   @map("payment_method") // 'stripe', 'gocardless', 'manual'
+  
+  // External IDs
+  stripePaymentIntentId String? @unique @map("stripe_payment_intent_id")
+  stripeInvoiceId       String? @map("stripe_invoice_id")
+  gocardlessPaymentId   String? @unique @map("gocardless_payment_id")
+  
+  // Metadata
+  description String?
+  metadata    Json?
+  
+  // Timestamps
+  paidAt    DateTime? @map("paid_at")
+  failedAt  DateTime? @map("failed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([status])
+  @@index([paymentMethod])
+  @@map("payments")
+}
+
+model Invoice {
+  id       String @id @default(uuid()) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  
+  // Invoice details
+  invoiceNumber  String   @unique @map("invoice_number")
+  amount         Int      // Amount in cents
+  currency       String   @default("EUR")
+  status         String   // 'draft', 'open', 'paid', 'void', 'uncollectible'
+  
+  // Billing period
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+  
+  // External IDs
+  stripeInvoiceId     String? @unique @map("stripe_invoice_id")
+  gocardlessMandateId String? @map("gocardless_mandate_id")
+  
+  // Payment info
+  dueDate DateTime  @map("due_date")
+  paidAt  DateTime? @map("paid_at")
+  
+  // Metadata
+  description String?
+  metadata    Json?
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@index([status])
+  @@index([periodStart, periodEnd])
+  @@map("invoices")
 }
