@@ -25,7 +25,7 @@ apiClient.interceptors.request.use(
     // Get tenant slug from auth store (more reliable than URL parsing)
     const user = useAuthStore.getState().user;
     const tenantSlug = user?.tenantSlug;
-    const isPlatformAdmin = user?.role === "PLATFORM_ADMIN";
+    const isPlatformAdmin = user?.role?.toLowerCase() === "platform_admin";
 
     // DEBUG LOGGING
     console.log("[API Client] Request Interceptor:", {
