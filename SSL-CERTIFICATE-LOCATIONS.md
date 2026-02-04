@@ -31,6 +31,39 @@
 └── chain1.pem
 ```
 
+**Secondary Domain (Symlink to Primary):**
+
+```
+/opt/torre-tempo/certbot/conf/live/time.lsltapps.com/ → time.lsltgroup.es/
+```
+
+**Current Certificate Coverage:**
+
+- ✅ `time.lsltgroup.es` - Fully covered in SAN
+- ⚠️ `time.lsltapps.com` - Uses symlink (browser warning shown, but functional)
+  /opt/torre-tempo/certbot/conf/live/time.lsltgroup.es/
+
+```
+
+**Certificate Files (Symlinks):**
+
+- `fullchain.pem` → `../../archive/time.lsltgroup.es/fullchain1.pem`
+- `privkey.pem` → `../../archive/time.lsltgroup.es/privkey1.pem`
+- `cert.pem` → `../../archive/time.lsltgroup.es/cert1.pem`
+- `chain.pem` → `../../archive/time.lsltgroup.es/chain1.pem`
+
+**Actual Certificate Files (Archive):**
+
+```
+
+/opt/torre-tempo/certbot/conf/archive/time.lsltgroup.es/
+├── fullchain1.pem
+├── privkey1.pem
+├── cert1.pem
+└── chain1.pem
+
+```
+
 ---
 
 ## 💾 BACKUP LOCATIONS
@@ -38,8 +71,10 @@
 **Most Recent Backup (Verified Working):**
 
 ```
+
 /opt/torre-tempo-backup-20260202-171214/certbot/conf/
-```
+
+````
 
 **All Available Backups (10+ locations):**
 
@@ -54,7 +89,7 @@
 /opt/torre-tempo-backup-20260202-120300/
 /opt/torre-tempo-backup-20260202-115944/
 /opt/torre-tempo-backup-20260202-115648/
-```
+````
 
 **Backup Structure:**
 
@@ -261,6 +296,44 @@ docker exec torre-tempo-nginx-prod nginx -t
 cp -r /opt/torre-tempo-backup-20260202-171214/certbot/conf/* /opt/torre-tempo/certbot/conf/
 docker-compose -f docker-compose.prod.yml down nginx
 docker-compose -f docker-compose.prod.yml up -d nginx
+```
+
+**Verified Working:**
+
+```bash
+curl -I https://time.lsltgroup.es/health
+# HTTP/2 200 ✅
+```
+
+### 2026-02-04: Added time.lsltapps.com Domain
+
+**Task:** Serve Torre Tempo on both time.lsltgroup.es and time.lsltapps.com  
+**Solution:**
+
+1. Created symlink: `/opt/torre-tempo/certbot/conf/live/time.lsltapps.com` → `time.lsltgroup.es`
+2. Updated nginx server_name to include both domains
+3. Both domains now serve the same application
+
+**Current Status:**
+
+- ✅ `time.lsltgroup.es` - Valid SSL certificate
+- ⚠️ `time.lsltapps.com` - Functional but shows certificate warning (SAN mismatch)
+
+**Certificate Location:**
+
+```
+/opt/torre-tempo/certbot/conf/live/time.lsltgroup.es/ (primary)
+/opt/torre-tempo/certbot/conf/live/time.lsltapps.com/ → time.lsltgroup.es/ (symlink)
+```
+
+**Future Enhancement:**
+Generate multi-domain certificate covering both domains:
+
+```bash
+certbot certonly --standalone --expand \
+  -d time.lsltgroup.es \
+  -d time.lsltapps.com \
+  --email admin@lsltapps.com
 ```
 
 **Verified Working:**
