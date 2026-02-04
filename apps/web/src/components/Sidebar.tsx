@@ -334,6 +334,13 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       });
     }
 
+    // Add Billing (OWNER/ADMIN only)
+    menuItems.push({
+      path: getPath("/billing"),
+      icon: billingIcon,
+      label: t("nav.billing", "Billing & Subscription"),
+    });
+
     // Add Settings if user has access
     if (canViewSettings()) {
       menuItems.push({
