@@ -50,12 +50,27 @@ apiClient.interceptors.request.use(
     // 1. Platform admins without tenant slug → /api/v1/platform (god mode)
     // 2. Users with tenant slug → /api/v1/t/:tenantSlug (tenant-scoped)
     // 3. Auth endpoints → /api/v1 (public)
+    //
+    // CRITICAL: Axios ignores baseURL if url starts with '/'
+    // Solution: Remove leading slash from url when setting custom baseURL
     if (isPlatformAdmin && !tenantSlug && !config.url?.startsWith("/auth")) {
+      config.url = config.url?.replace(/^\//, ""); // Remove leading slash
       config.baseURL = "/api/v1/platform";
-      console.log("[API Client] Using platform admin baseURL:", config.baseURL);
+      console.log(
+        "[API Client] Using platform admin baseURL:",
+        config.baseURL,
+        "url:",
+        config.url,
+      );
     } else if (tenantSlug && !config.url?.startsWith("/auth")) {
+      config.url = config.url?.replace(/^\//, ""); // Remove leading slash
       config.baseURL = `/api/v1/t/${tenantSlug}`;
-      console.log("[API Client] Using tenant-scoped baseURL:", config.baseURL);
+      console.log(
+        "[API Client] Using tenant-scoped baseURL:",
+        config.baseURL,
+        "url:",
+        config.url,
+      );
     } else {
       config.baseURL = "/api/v1";
       console.log("[API Client] Using public baseURL:", config.baseURL);
