@@ -18,6 +18,7 @@ import {
 } from "react";
 import { useParams } from "react-router-dom";
 import { apiClient } from "../services/api";
+import { useAuthStore } from "../stores/authStore";
 import type { Tenant, TenantContextType, TenantError } from "../types/tenant";
 
 // ============================================================================
@@ -105,7 +106,7 @@ export function TenantProvider({ children }: TenantProviderProps) {
   const [error, setError] = useState<TenantError | null>(null);
 
   /**
-   * Fetch tenant data from API
+   * Fetch tenant data from API or auth store
    */
   const fetchTenant = useCallback(async () => {
     // No slug = nothing to fetch
@@ -123,6 +124,16 @@ export function TenantProvider({ children }: TenantProviderProps) {
     setError(null);
 
     try {
+      // Check if tenant is already in auth store
+      const authTenant = useAuthStore.getState().tenant;
+      if (authTenant && authTenant.slug === tenantSlug) {
+        // Use tenant from auth store (already loaded from login response)
+        setTenant(authTenant);
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
+
       // Fetch tenant by slug from API
       const response = await apiClient.get<Tenant>(
         `/tenants/by-slug/${tenantSlug}`,

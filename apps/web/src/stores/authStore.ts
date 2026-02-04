@@ -1,9 +1,13 @@
-import { create } from 'zustand';
-import { AuthState, User, LoginRequest } from '../types/auth';
-import { login as loginService, logout as logoutService } from '../services/authService';
+import { create } from "zustand";
+import { AuthState, User, LoginRequest, Tenant } from "../types/auth";
+import {
+  login as loginService,
+  logout as logoutService,
+} from "../services/authService";
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  tenant: null,
   accessToken: null,
   refreshToken: null,
   isAuthenticated: false,
@@ -12,18 +16,20 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (credentials: LoginRequest) => {
     set({ isLoading: true, error: null });
-    
+
     try {
       const response = await loginService(credentials);
-      const { accessToken, refreshToken, user } = response;
+      const { accessToken, refreshToken, user, tenant } = response;
 
-      // Store tokens in localStorage for persistence
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Store tokens and tenant in localStorage for persistence
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("tenant", JSON.stringify(tenant));
 
       set({
         user,
+        tenant,
         accessToken,
         refreshToken,
         isAuthenticated: true,
@@ -31,9 +37,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         error: null,
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      const errorMessage =
+        error instanceof Error ? error.message : "Login failed";
       set({
         user: null,
+        tenant: null,
         accessToken: null,
         refreshToken: null,
         isAuthenticated: false,
@@ -46,9 +54,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     // Clear tokens from localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    localStorage.removeItem("tenant");
 
     // Call logout service (optional - for token blacklisting)
     logoutService().catch(() => {
@@ -57,6 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     set({
       user: null,
+      tenant: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
@@ -66,9 +76,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   setTokens: (accessToken: string, refreshToken: string) => {
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+
     set({
       accessToken,
       refreshToken,
@@ -82,24 +92,30 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 // Initialize auth state from localStorage on app load
 export const initializeAuth = () => {
-  const accessToken = localStorage.getItem('accessToken');
-  const refreshToken = localStorage.getItem('refreshToken');
-  const userString = localStorage.getItem('user');
+  const accessToken = localStorage.getItem("accessToken");
+  const refreshToken = localStorage.getItem("refreshToken");
+  const userString = localStorage.getItem("user");
+  const tenantString = localStorage.getItem("tenant");
 
   if (accessToken && refreshToken && userString) {
     try {
       const user: User = JSON.parse(userString);
+      const tenant: Tenant | null = tenantString
+        ? JSON.parse(tenantString)
+        : null;
       useAuthStore.setState({
         user,
+        tenant,
         accessToken,
         refreshToken,
         isAuthenticated: true,
       });
     } catch (error) {
       // Invalid stored data, clear everything
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("user");
+      localStorage.removeItem("tenant");
     }
   }
 };

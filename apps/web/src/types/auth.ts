@@ -34,6 +34,7 @@ export interface TokenRefreshResponse {
 
 export interface AuthState {
   user: User | null;
+  tenant: Tenant | null;
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
