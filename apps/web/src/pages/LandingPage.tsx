@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import useTenantNavigate from "../hooks/useTenantNavigate";
 import * as Accordion from "@radix-ui/react-accordion";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import "./LandingPage.css";
@@ -85,10 +85,10 @@ function ChevronIcon() {
 }
 
 export default function LandingPage() {
-  const navigate = useNavigate();
+  const tenantNavigate = useTenantNavigate();
 
   const handleLoginClick = () => {
-    navigate("/login");
+    tenantNavigate("/login");
   };
 
   return (

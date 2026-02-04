@@ -6,6 +6,7 @@ import { logger } from "./utils/logger";
 import { errorHandler } from "./middleware/error-handler";
 import { notFoundHandler } from "./middleware/not-found";
 import { authenticate } from "./middleware/auth";
+import { tenantContext } from "./middleware/tenant-context";
 import authRoutes from "./routes/auth.routes";
 import employeeRoutes from "./routes/employee.routes";
 import scheduleRoutes from "./routes/schedule.routes";
@@ -35,16 +36,56 @@ app.get("/health", (req, res) => {
 // Auth routes (public - no authentication required for login)
 app.use("/api/v1/auth", authRoutes);
 
-// Protected routes (require authentication)
-app.use("/api/v1/employees", authenticate, employeeRoutes);
-app.use("/api/v1/schedule", authenticate, scheduleRoutes);
-app.use("/api/v1/schedule", authenticate, shiftSwapRoutes);
-app.use("/api/v1/tenant", authenticate, tenantRoutes);
-app.use("/api/v1/platform/tenants", authenticate, platformTenantRoutes);
-app.use("/api/v1/tenant/roles", authenticate, roleRoutes);
-app.use("/api/v1/users", authenticate, userRoutes);
-app.use("/api/v1/time-entries", authenticate, timeEntryRoutes);
-app.use("/api/v1/locations", authenticate, locationRoutes);
+// Protected routes (require authentication + tenant context)
+app.use(
+  "/api/v1/t/:tenantSlug/employees",
+  authenticate,
+  tenantContext,
+  employeeRoutes,
+);
+app.use(
+  "/api/v1/t/:tenantSlug/schedule",
+  authenticate,
+  tenantContext,
+  scheduleRoutes,
+);
+app.use(
+  "/api/v1/t/:tenantSlug/schedule",
+  authenticate,
+  tenantContext,
+  shiftSwapRoutes,
+);
+app.use(
+  "/api/v1/t/:tenantSlug/tenant",
+  authenticate,
+  tenantContext,
+  tenantRoutes,
+);
+app.use(
+  "/api/v1/t/:tenantSlug/platform/tenants",
+  authenticate,
+  tenantContext,
+  platformTenantRoutes,
+);
+app.use(
+  "/api/v1/t/:tenantSlug/tenant/roles",
+  authenticate,
+  tenantContext,
+  roleRoutes,
+);
+app.use("/api/v1/t/:tenantSlug/users", authenticate, tenantContext, userRoutes);
+app.use(
+  "/api/v1/t/:tenantSlug/time-entries",
+  authenticate,
+  tenantContext,
+  timeEntryRoutes,
+);
+app.use(
+  "/api/v1/t/:tenantSlug/locations",
+  authenticate,
+  tenantContext,
+  locationRoutes,
+);
 
 // Error handling
 app.use(notFoundHandler);

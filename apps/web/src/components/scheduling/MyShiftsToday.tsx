@@ -8,7 +8,7 @@ import {
   isAfter,
   addMinutes,
 } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import useTenantNavigate from "../../hooks/useTenantNavigate";
 import type { Shift } from "../../types/schedule";
 import { timeEntryService } from "../../services/timeEntryService";
 import type { TimeEntry } from "../../types/timeEntry";
@@ -24,7 +24,7 @@ export default function MyShiftsToday({
   currentEmployeeId,
 }: MyShiftsTodayProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const tenantNavigate = useTenantNavigate();
   const [currentEntry, setCurrentEntry] = useState<TimeEntry | null>(null);
   const [loadingShiftId, setLoadingShiftId] = useState<string | null>(null);
 
@@ -86,7 +86,7 @@ export default function MyShiftsToday({
   }
 
   const handleClockIn = () => {
-    navigate("/time-entries");
+    tenantNavigate("/time-entries");
   };
 
   const handleClockInShift = async (shiftId: string) => {
@@ -95,7 +95,7 @@ export default function MyShiftsToday({
       const entry = await timeEntryService.clockIn({ shiftId });
       setCurrentEntry(entry);
       // Navigate to time entries page to show timer
-      navigate("/time-entries");
+      tenantNavigate("/time-entries");
     } catch (error: any) {
       alert(error.message || "Failed to clock in");
     } finally {
@@ -111,7 +111,7 @@ export default function MyShiftsToday({
       await timeEntryService.clockOut();
       setCurrentEntry(null);
       // Navigate to time entries page to show completion
-      navigate("/time-entries");
+      tenantNavigate("/time-entries");
     } catch (error: any) {
       alert(error.message || "Failed to clock out");
     } finally {
@@ -120,7 +120,7 @@ export default function MyShiftsToday({
   };
 
   const handleStartUnscheduledShift = () => {
-    navigate("/time-entries?unscheduled=true");
+    tenantNavigate("/time-entries?unscheduled=true");
   };
 
   // Show "Start Unscheduled Shift" if no shifts today

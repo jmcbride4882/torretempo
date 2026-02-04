@@ -12,6 +12,7 @@ import SettingsPage from "./pages/SettingsPage";
 import TenantsPage from "./pages/TenantsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/DashboardLayout";
+import TenantLayout from "./components/TenantLayout";
 import InstallPrompt from "./components/InstallPrompt";
 import { useAuthStore } from "./stores/authStore";
 import {
@@ -69,98 +70,103 @@ function App() {
     <BrowserRouter>
       <InstallPrompt />
       <Routes>
-        {/* Public Routes */}
+        {/* Public Routes (outside tenant context) */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected Routes with Dashboard Layout */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <DashboardPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+        {/* Tenant-scoped Routes (/t/:tenantSlug/*) */}
+        <Route path="/t/:tenantSlug" element={<TenantLayout />}>
+          {/* Login (public within tenant context) */}
+          <Route path="login" element={<LoginPage />} />
 
-        <Route
-          path="/employees"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <EmployeesPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected Routes with Dashboard Layout */}
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <DashboardPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <ProfilePage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="employees"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <EmployeesPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/time-entries"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <TimeEntriesPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="profile"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <ProfilePage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/scheduling"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <SchedulingPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="time-entries"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <TimeEntriesPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/leave-requests"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <LeaveRequestsPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="scheduling"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <SchedulingPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute requiredRoles={["OWNER", "ADMIN", "MANAGER"]}>
-              <DashboardLayout>
-                <SettingsPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="leave-requests"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <LeaveRequestsPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/tenants"
-          element={
-            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
-              <DashboardLayout>
-                <TenantsPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute requiredRoles={["OWNER", "ADMIN", "MANAGER"]}>
+                <DashboardLayout>
+                  <SettingsPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="tenants"
+            element={
+              <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                <DashboardLayout>
+                  <TenantsPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+        </Route>
 
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />

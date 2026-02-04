@@ -1,14 +1,15 @@
 import { useState, FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import useTenantNavigate from "../hooks/useTenantNavigate";
 import { useAuthStore } from "../stores/authStore";
 import "./LoginPage.css";
 
 export default function LoginPage() {
-  const navigate = useNavigate();
+  const tenantNavigate = useTenantNavigate();
+  const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const [formData, setFormData] = useState({
-    tenantSlug: "demo",
     email: "admin@torretempo.com",
     password: "admin123",
   });
@@ -19,9 +20,14 @@ export default function LoginPage() {
     e.preventDefault();
     clearError();
 
+    if (!tenantSlug) {
+      tenantNavigate("/");
+      return;
+    }
+
     try {
-      await login(formData);
-      navigate("/dashboard");
+      await login({ ...formData, tenantSlug });
+      tenantNavigate(`/t/${tenantSlug}/dashboard`);
     } catch (err) {
       // Error is handled by the store
       console.error("Login failed:", err);
@@ -215,47 +221,6 @@ export default function LoginPage() {
                 </button>
               </div>
             )}
-
-            <div className="form-group">
-              <label htmlFor="tenantSlug" className="form-label">
-                Empresa (Tenant)
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  id="tenantSlug"
-                  name="tenantSlug"
-                  className="form-input"
-                  value={formData.tenantSlug}
-                  onChange={handleChange}
-                  placeholder="demo"
-                  required
-                  disabled={isLoading}
-                />
-                <svg
-                  className="input-icon"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
-                  <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
-                  <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
-                  <path d="M10 6h4" />
-                  <path d="M10 10h4" />
-                  <path d="M10 14h4" />
-                  <path d="M10 18h4" />
-                </svg>
-              </div>
-              <span className="form-hint">
-                El identificador único de tu empresa
-              </span>
-            </div>
 
             <div className="form-group">
               <label htmlFor="email" className="form-label">
