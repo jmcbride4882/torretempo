@@ -1,9 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../stores/authStore";
 
-// Base API URL - defaults to localhost for development
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
+// Base API URL - use relative path for same-origin requests
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 // Create axios instance
 export const apiClient = axios.create({
@@ -83,7 +82,7 @@ apiClient.interceptors.response.use(
         }
 
         // Attempt to refresh token
-        const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+        const response = await axios.post("/api/v1/auth/refresh", {
           refreshToken,
         });
 
