@@ -17,6 +17,7 @@ import platformTenantRoutes from "./routes/platform-tenant.routes";
 import platformEmployeeRoutes from "./routes/platform-employee.routes";
 import platformUserRoutes from "./routes/platform-user.routes";
 import platformBillingRoutes from "./routes/platform-billing.routes";
+import stripePaymentRoutes from "./routes/stripe-payment.routes";
 import roleRoutes from "./routes/role.routes";
 import userRoutes from "./routes/user.routes";
 import timeEntryRoutes from "./routes/timeEntry.routes";
@@ -65,6 +66,12 @@ app.use(
   authenticate,
   platformAdmin,
   platformBillingRoutes,
+);
+app.use(
+  "/api/v1/platform/stripe",
+  authenticate,
+  platformAdmin,
+  stripePaymentRoutes,
 );
 
 // Protected routes (require authentication + tenant context)

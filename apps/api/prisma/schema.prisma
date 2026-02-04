@@ -81,6 +81,9 @@ model Tenant {
   subscriptionStatus String @default("active") @map("subscription_status") // 'trial', 'active', 'suspended', 'cancelled'
   subscriptionPlan   String? @map("subscription_plan")
   maxEmployees       Int?    @map("max_employees")
+    // Stripe Integration
+  stripeCustomerId      String?  @map("stripe_customer_id")
+  stripeSubscriptionId  String?  @map("stripe_subscription_id")
   
   // Audit
   createdAt DateTime  @default(now()) @map("created_at")
