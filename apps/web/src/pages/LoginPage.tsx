@@ -1,12 +1,10 @@
 import { useState, FormEvent } from "react";
-import { useParams } from "react-router-dom";
-import useTenantNavigate from "../hooks/useTenantNavigate";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import "./LoginPage.css";
 
 export default function LoginPage() {
-  const tenantNavigate = useTenantNavigate();
-  const { tenantSlug } = useParams<{ tenantSlug: string }>();
+  const navigate = useNavigate();
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const [formData, setFormData] = useState({
@@ -20,16 +18,11 @@ export default function LoginPage() {
     e.preventDefault();
     clearError();
 
-    if (!tenantSlug) {
-      tenantNavigate("/");
-      return;
-    }
-
     try {
-      await login({ ...formData, tenantSlug });
+      await login(formData);
       const { user } = useAuthStore.getState();
       if (user) {
-        tenantNavigate(`/t/${user.tenantSlug}/dashboard`);
+        navigate(`/t/${user.tenantSlug}/dashboard`);
       }
     } catch (err) {
       // Error is handled by the store

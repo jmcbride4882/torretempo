@@ -1,14 +1,14 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
-import jwt, { SignOptions } from 'jsonwebtoken';
-import { logger } from '../utils/logger';
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+import jwt, { SignOptions } from "jsonwebtoken";
+import { logger } from "../utils/logger";
 
 const prisma = new PrismaClient();
 
 interface LoginInput {
   email: string;
   password: string;
-  tenantSlug: string;
+  tenantSlug?: string;
 }
 
 interface AuthResult {
@@ -20,6 +20,8 @@ interface AuthResult {
     firstName: string;
     lastName: string;
     role: string;
+    tenantSlug: string;
+    tenantId: string;
   };
   tenant: {
     id: string;
@@ -36,28 +38,42 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     // Verify password
     const passwordValid = await bcrypt.compare(input.password, user.password);
 
     if (!passwordValid) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     // Check user status
-    if (user.status !== 'active') {
-      throw new Error('User account is not active');
+    if (user.status !== "active") {
+      throw new Error("User account is not active");
     }
 
-    // Find tenant
-    const tenant = await prisma.tenant.findUnique({
-      where: { slug: input.tenantSlug },
-    });
+    // Find tenant - if tenantSlug provided, use it; otherwise get user's first tenant
+    let tenant;
+
+    if (input.tenantSlug) {
+      tenant = await prisma.tenant.findUnique({
+        where: { slug: input.tenantSlug },
+      });
+    } else {
+      // Get user's first tenant from tenantUser relationship
+      const tenantUser = await prisma.tenantUser.findFirst({
+        where: { userId: user.id },
+        include: { tenant: true },
+      });
+
+      if (tenantUser) {
+        tenant = tenantUser.tenant;
+      }
+    }
 
     if (!tenant) {
-      throw new Error('Tenant not found');
+      throw new Error("Tenant not found");
     }
 
     // Check tenant access
@@ -71,7 +87,7 @@ export class AuthService {
     });
 
     if (!tenantUser) {
-      throw new Error('User does not have access to this tenant');
+      throw new Error("User does not have access to this tenant");
     }
 
     // Generate tokens
@@ -88,10 +104,7 @@ export class AuthService {
       tenantId: tenant.id,
     });
 
-    logger.info(
-      { userId: user.id, tenantId: tenant.id },
-      'User logged in'
-    );
+    logger.info({ userId: user.id, tenantId: tenant.id }, "User logged in");
 
     return {
       accessToken,
@@ -102,6 +115,8 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: tenantUser.role,
+        tenantSlug: tenant.slug,
+        tenantId: tenant.id,
       },
       tenant: {
         id: tenant.id,
@@ -117,8 +132,8 @@ export class AuthService {
     tenantId: string;
     role: string;
   }): string {
-    return jwt.sign(payload, process.env.JWT_SECRET!, { 
-      expiresIn: '15m'
+    return jwt.sign(payload, process.env.JWT_SECRET!, {
+      expiresIn: "15m",
     });
   }
 
@@ -127,17 +142,19 @@ export class AuthService {
     email: string;
     tenantId: string;
   }): string {
-    return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET!, { 
-      expiresIn: '7d'
+    return jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET!, {
+      expiresIn: "7d",
     });
   }
 
-  async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string }> {
+  async refreshAccessToken(
+    refreshToken: string,
+  ): Promise<{ accessToken: string }> {
     try {
       // Verify refresh token
       const decoded = jwt.verify(
         refreshToken,
-        process.env.REFRESH_TOKEN_SECRET!
+        process.env.REFRESH_TOKEN_SECRET!,
       ) as {
         userId: string;
         email: string;
@@ -149,8 +166,8 @@ export class AuthService {
         where: { id: decoded.userId },
       });
 
-      if (!user || user.status !== 'active') {
-        throw new Error('User not found or inactive');
+      if (!user || user.status !== "active") {
+        throw new Error("User not found or inactive");
       }
 
       const tenant = await prisma.tenant.findUnique({
@@ -158,7 +175,7 @@ export class AuthService {
       });
 
       if (!tenant) {
-        throw new Error('Tenant not found');
+        throw new Error("Tenant not found");
       }
 
       // Get tenant user role
@@ -172,7 +189,7 @@ export class AuthService {
       });
 
       if (!tenantUser) {
-        throw new Error('User access revoked');
+        throw new Error("User access revoked");
       }
 
       // Generate new access token
@@ -185,13 +202,13 @@ export class AuthService {
 
       logger.info(
         { userId: user.id, tenantId: tenant.id },
-        'Access token refreshed'
+        "Access token refreshed",
       );
 
       return { accessToken };
     } catch (error) {
       if (error instanceof jwt.JsonWebTokenError) {
-        throw new Error('Invalid refresh token');
+        throw new Error("Invalid refresh token");
       }
       throw error;
     }

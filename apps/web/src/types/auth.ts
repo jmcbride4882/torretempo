@@ -3,7 +3,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'PLATFORM_ADMIN' | 'OWNER' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
+  role: "PLATFORM_ADMIN" | "OWNER" | "ADMIN" | "MANAGER" | "EMPLOYEE";
   tenantId: string;
   tenantSlug: string;
   isPlatformAdmin?: boolean; // Convenience flag
@@ -12,7 +12,7 @@ export interface User {
 export interface LoginRequest {
   email: string;
   password: string;
-  tenantSlug: string;
+  tenantSlug?: string;
 }
 
 export interface Tenant {

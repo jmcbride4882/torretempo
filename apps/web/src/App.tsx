@@ -72,12 +72,10 @@ function App() {
       <Routes>
         {/* Public Routes (outside tenant context) */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
 
         {/* Tenant-scoped Routes (/t/:tenantSlug/*) */}
         <Route path="/t/:tenantSlug" element={<TenantLayout />}>
-          {/* Login (public within tenant context) */}
-          <Route path="login" element={<LoginPage />} />
-
           {/* Protected Routes with Dashboard Layout */}
           <Route
             path="dashboard"
