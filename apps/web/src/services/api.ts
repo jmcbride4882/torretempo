@@ -25,6 +25,7 @@ apiClient.interceptors.request.use(
     // Get tenant slug from auth store (more reliable than URL parsing)
     const user = useAuthStore.getState().user;
     const tenantSlug = user?.tenantSlug;
+    const isPlatformAdmin = user?.role === "PLATFORM_ADMIN";
 
     // DEBUG LOGGING
     console.log("[API Client] Request Interceptor:", {
@@ -35,14 +36,24 @@ apiClient.interceptors.request.use(
             email: user.email,
             role: user.role,
             tenantSlug: user.tenantSlug,
+            isPlatformAdmin,
           }
         : null,
       tenantSlug,
       willUseTenantPrefix: tenantSlug && !config.url?.startsWith("/auth"),
+      willUsePlatformPrefix:
+        isPlatformAdmin && !tenantSlug && !config.url?.startsWith("/auth"),
     });
 
-    // Update baseURL for tenant-scoped requests (not auth endpoints)
-    if (tenantSlug && !config.url?.startsWith("/auth")) {
+    // Update baseURL based on user role and tenant context
+    // Priority:
+    // 1. Platform admins without tenant slug → /api/v1/platform (god mode)
+    // 2. Users with tenant slug → /api/v1/t/:tenantSlug (tenant-scoped)
+    // 3. Auth endpoints → /api/v1 (public)
+    if (isPlatformAdmin && !tenantSlug && !config.url?.startsWith("/auth")) {
+      config.baseURL = "/api/v1/platform";
+      console.log("[API Client] Using platform admin baseURL:", config.baseURL);
+    } else if (tenantSlug && !config.url?.startsWith("/auth")) {
       config.baseURL = `/api/v1/t/${tenantSlug}`;
       console.log("[API Client] Using tenant-scoped baseURL:", config.baseURL);
     } else {

@@ -7,12 +7,15 @@ import { errorHandler } from "./middleware/error-handler";
 import { notFoundHandler } from "./middleware/not-found";
 import { authenticate } from "./middleware/auth";
 import { tenantContext } from "./middleware/tenant-context";
+import { platformAdmin } from "./middleware/platform-admin";
 import authRoutes from "./routes/auth.routes";
 import employeeRoutes from "./routes/employee.routes";
 import scheduleRoutes from "./routes/schedule.routes";
 import shiftSwapRoutes from "./routes/shift-swap.routes";
 import tenantRoutes from "./routes/tenant.routes";
 import platformTenantRoutes from "./routes/platform-tenant.routes";
+import platformEmployeeRoutes from "./routes/platform-employee.routes";
+import platformUserRoutes from "./routes/platform-user.routes";
 import roleRoutes from "./routes/role.routes";
 import userRoutes from "./routes/user.routes";
 import timeEntryRoutes from "./routes/timeEntry.routes";
@@ -35,6 +38,27 @@ app.get("/health", (req, res) => {
 
 // Auth routes (public - no authentication required for login)
 app.use("/api/v1/auth", authRoutes);
+
+// Platform admin routes (god-mode, no tenant context required)
+// SECURITY: platformAdmin middleware enforces PLATFORM_ADMIN role
+app.use(
+  "/api/v1/platform/tenants",
+  authenticate,
+  platformAdmin,
+  platformTenantRoutes,
+);
+app.use(
+  "/api/v1/platform/employees",
+  authenticate,
+  platformAdmin,
+  platformEmployeeRoutes,
+);
+app.use(
+  "/api/v1/platform/users",
+  authenticate,
+  platformAdmin,
+  platformUserRoutes,
+);
 
 // Protected routes (require authentication + tenant context)
 app.use(
@@ -60,12 +84,6 @@ app.use(
   authenticate,
   tenantContext,
   tenantRoutes,
-);
-app.use(
-  "/api/v1/t/:tenantSlug/platform/tenants",
-  authenticate,
-  tenantContext,
-  platformTenantRoutes,
 );
 app.use(
   "/api/v1/t/:tenantSlug/tenant/roles",
