@@ -16,6 +16,7 @@ import tenantRoutes from "./routes/tenant.routes";
 import platformTenantRoutes from "./routes/platform-tenant.routes";
 import platformEmployeeRoutes from "./routes/platform-employee.routes";
 import platformUserRoutes from "./routes/platform-user.routes";
+import platformBillingRoutes from "./routes/platform-billing.routes";
 import roleRoutes from "./routes/role.routes";
 import userRoutes from "./routes/user.routes";
 import timeEntryRoutes from "./routes/timeEntry.routes";
@@ -58,6 +59,12 @@ app.use(
   authenticate,
   platformAdmin,
   platformUserRoutes,
+);
+app.use(
+  "/api/v1/platform/billing",
+  authenticate,
+  platformAdmin,
+  platformBillingRoutes,
 );
 
 // Protected routes (require authentication + tenant context)
