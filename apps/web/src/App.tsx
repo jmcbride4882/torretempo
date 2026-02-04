@@ -1,5 +1,11 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -14,6 +20,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/DashboardLayout";
 import TenantLayout from "./components/TenantLayout";
 import InstallPrompt from "./components/InstallPrompt";
+import { TenantProvider } from "./contexts/TenantContext";
 import { useAuthStore } from "./stores/authStore";
 import {
   initOneSignal,
@@ -74,83 +81,91 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Platform Admin Routes (god-mode, no tenant context) */}
+        {/* Platform Admin Routes (god-mode, wrapped in TenantProvider) */}
         <Route
-          path="/dashboard"
           element={
-            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
-              <DashboardLayout>
-                <DashboardPage />
-              </DashboardLayout>
-            </ProtectedRoute>
+            <TenantProvider>
+              <Outlet />
+            </TenantProvider>
           }
-        />
+        >
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                <DashboardLayout>
+                  <DashboardPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/tenants"
-          element={
-            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
-              <DashboardLayout>
-                <TenantsPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/tenants"
+            element={
+              <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                <DashboardLayout>
+                  <TenantsPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/employees"
-          element={
-            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
-              <DashboardLayout>
-                <EmployeesPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/employees"
+            element={
+              <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                <DashboardLayout>
+                  <EmployeesPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/time-entries"
-          element={
-            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
-              <DashboardLayout>
-                <TimeEntriesPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/time-entries"
+            element={
+              <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                <DashboardLayout>
+                  <TimeEntriesPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/scheduling"
-          element={
-            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
-              <DashboardLayout>
-                <SchedulingPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/scheduling"
+            element={
+              <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                <DashboardLayout>
+                  <SchedulingPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/leave-requests"
-          element={
-            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
-              <DashboardLayout>
-                <LeaveRequestsPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/leave-requests"
+            element={
+              <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                <DashboardLayout>
+                  <LeaveRequestsPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
-              <DashboardLayout>
-                <SettingsPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                <DashboardLayout>
+                  <SettingsPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+        </Route>
 
         {/* Tenant-scoped Routes (/t/:tenantSlug/*) */}
         <Route path="/t/:tenantSlug" element={<TenantLayout />}>
