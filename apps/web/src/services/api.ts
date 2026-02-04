@@ -27,11 +27,28 @@ apiClient.interceptors.request.use(
     const user = useAuthStore.getState().user;
     const tenantSlug = user?.tenantSlug;
 
+    // DEBUG LOGGING
+    console.log("[API Client] Request Interceptor:", {
+      url: config.url,
+      method: config.method,
+      user: user
+        ? {
+            email: user.email,
+            role: user.role,
+            tenantSlug: user.tenantSlug,
+          }
+        : null,
+      tenantSlug,
+      willUseTenantPrefix: tenantSlug && !config.url?.startsWith("/auth"),
+    });
+
     // Update baseURL for tenant-scoped requests (not auth endpoints)
     if (tenantSlug && !config.url?.startsWith("/auth")) {
       config.baseURL = `/api/v1/t/${tenantSlug}`;
+      console.log("[API Client] Using tenant-scoped baseURL:", config.baseURL);
     } else {
       config.baseURL = "/api/v1";
+      console.log("[API Client] Using public baseURL:", config.baseURL);
     }
 
     return config;
