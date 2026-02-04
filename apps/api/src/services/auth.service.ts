@@ -53,21 +53,20 @@ export class AuthService {
       throw new Error("User account is not active");
     }
 
-    // Check if user is a platform admin (no tenant assignment)
-    const tenantUsers = await prisma.tenantUser.findMany({
+    // Check if user is a platform admin (role === 'platform_admin')
+    const tenantUser = await prisma.tenantUser.findFirst({
       where: { userId: user.id },
+      include: { tenant: true },
     });
 
-    // Platform admin has no tenant assignments
-    const isPlatformAdmin = tenantUsers.length === 0;
-
-    if (isPlatformAdmin) {
+    // Platform admin has role 'platform_admin' (god mode - no tenant assignment)
+    if (tenantUser && tenantUser.role === "platform_admin") {
       // Platform admin - no tenant assignment
       const accessToken = this.generateAccessToken({
         userId: user.id,
         email: user.email,
         tenantId: null,
-        role: "PLATFORM_ADMIN",
+        role: "platform_admin",
       });
 
       const refreshToken = this.generateRefreshToken({
@@ -86,7 +85,7 @@ export class AuthService {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          role: "PLATFORM_ADMIN",
+          role: "platform_admin",
           tenantSlug: null,
           tenantId: null,
         },
@@ -103,11 +102,6 @@ export class AuthService {
       });
     } else {
       // Get user's first tenant from tenantUser relationship
-      const tenantUser = await prisma.tenantUser.findFirst({
-        where: { userId: user.id },
-        include: { tenant: true },
-      });
-
       if (tenantUser) {
         tenant = tenantUser.tenant;
       }
@@ -118,7 +112,7 @@ export class AuthService {
     }
 
     // Check tenant access
-    const tenantUser = await prisma.tenantUser.findUnique({
+    const tenantUserAccess = await prisma.tenantUser.findUnique({
       where: {
         tenantId_userId: {
           tenantId: tenant.id,
@@ -127,7 +121,7 @@ export class AuthService {
       },
     });
 
-    if (!tenantUser) {
+    if (!tenantUserAccess) {
       throw new Error("User does not have access to this tenant");
     }
 
@@ -136,7 +130,7 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       tenantId: tenant.id,
-      role: tenantUser.role,
+      role: tenantUserAccess.role,
     });
 
     const refreshToken = this.generateRefreshToken({
@@ -155,7 +149,7 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        role: tenantUser.role,
+        role: tenantUserAccess.role,
         tenantSlug: tenant.slug,
         tenantId: tenant.id,
       },
