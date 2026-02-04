@@ -20,6 +20,7 @@
     "import": "Import",
     "optional": "optional",
     "submitting": "Submitting...",
+    "retry": "Retry",
     "platformAdmin": "Platform Admin - Tenant Selection Required",
     "tenantSelectionRequired": "As a platform administrator, you need to select a specific tenant to view their data.",
     "tenantSelectorComingSoon": "Tenant selector coming soon..."
@@ -95,7 +96,142 @@
     "empty": {
       "title": "No employees",
       "description": "Add your first employee to get started."
-    }
+    },
+    "profile": {
+      "title": "Employee Profile",
+      "tabs": {
+        "overview": "Overview",
+        "timeEntries": "Time Entries",
+        "schedule": "Schedule",
+        "compliance": "Compliance",
+        "audit": "Audit Log"
+      },
+      "terminationDate": "Termination Date",
+      "metadata": "Metadata",
+      "createdAt": "Created",
+      "updatedAt": "Last Updated",
+      "noTimeEntries": "No time entries found",
+      "noTimeEntriesDesc": "This employee has no recorded time entries yet.",
+      "tomorrow": "Tomorrow",
+      "upcomingShifts": "Upcoming Shifts",
+      "noUpcomingShifts": "No upcoming shifts",
+      "noShiftsDesc": "This employee has no scheduled shifts.",
+      "listView": "List View",
+      "calendarView": "Calendar View",
+      "rdlCompliance": "RDL 8/2019 Compliance",
+      "rdlDescription": "Spanish labor law compliance metrics for this employee.",
+      "weeklyHours": "Weekly Hours",
+      "maxWeeklyHours": "Max 40h/week",
+      "annualLeave": "Annual Leave",
+      "entitled": "Entitled",
+      "used": "Used",
+      "remaining": "Remaining",
+      "restPeriods": "Rest Periods",
+      "minRestHours": "Min 11h between shifts",
+      "compliant": "Compliant",
+      "nonCompliant": "Non-Compliant",
+      "breakCompliance": "Break Compliance",
+      "required": "Required",
+      "actual": "Actual",
+      "auditLog": "Audit Log",
+      "auditNotice": "All changes to this employee record are logged for compliance.",
+      "noAuditEntries": "No audit entries found",
+      "page": "Page",
+      "audit": {
+        "allActions": "All Actions",
+        "created": "Created",
+        "updated": "Updated",
+        "statusChanged": "Status Changed",
+        "roleChanged": "Role Changed",
+        "deleted": "Deleted",
+        "record": "record"
+      }
+    },
+    "import": {
+      "title": "Import Employees",
+      "step1": "Upload CSV",
+      "step2": "Preview & Validate",
+      "step3": "Results",
+      "dragDrop": "Drag and drop your CSV file here",
+      "orClickToSelect": "or click to select a file",
+      "downloadTemplate": "Download Template",
+      "csvFormat": "CSV format: firstName, lastName, email, nationalId, socialSecurity, phone, position, contractType, hireDate",
+      "selectFile": "Select File",
+      "preview": "Preview",
+      "validRows": "Valid Rows",
+      "invalidRows": "Invalid Rows",
+      "row": "Row",
+      "errors": "Errors",
+      "importing": "Importing...",
+      "importComplete": "Import Complete",
+      "imported": "Imported",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "close": "Close",
+      "startImport": "Start Import"
+    },
+    "export": {
+      "title": "Export Employees",
+      "selectColumns": "Select Columns",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "scope": "Export Scope",
+      "allEmployees": "All Employees",
+      "selectedOnly": "Selected Only",
+      "selectedCount": "{{count}} employees selected",
+      "customFieldsNotice": "Custom fields are available with the White Label module.",
+      "includeCustomFields": "Include Custom Fields",
+      "exporting": "Exporting...",
+      "exportCSV": "Export CSV"
+    },
+    "customFields": {
+      "title": "Custom Fields Studio",
+      "description": "Create custom fields to capture additional employee information specific to your business.",
+      "addField": "Add Field",
+      "fieldName": "Field Name",
+      "fieldType": "Field Type",
+      "required": "Required",
+      "options": "Options",
+      "optionsHelp": "Enter options separated by commas",
+      "types": {
+        "text": "Text",
+        "number": "Number",
+        "date": "Date",
+        "dropdown": "Dropdown"
+      },
+      "noFields": "No custom fields defined",
+      "noFieldsDesc": "Add custom fields to capture additional employee data.",
+      "saving": "Saving...",
+      "saveFields": "Save Fields",
+      "whiteLabelRequired": "Custom Fields Studio requires the White Label module.",
+      "learnMore": "Learn More"
+    },
+    "emailPreview": {
+      "title": "Welcome Email Preview",
+      "description": "Preview the welcome email that will be sent to new employees.",
+      "language": "Language",
+      "spanish": "Spanish",
+      "english": "English",
+      "subject": "Subject",
+      "body": "Email Body",
+      "variables": "Template Variables",
+      "variablesDesc": "These placeholders will be replaced with actual values when the email is sent."
+    },
+    "filter": {
+      "allStatus": "All Status",
+      "allContracts": "All Contracts"
+    },
+    "selected": "{{count}} selected",
+    "clearSelection": "Clear Selection",
+    "exportSelected": "Export Selected",
+    "deleteSelected": "Delete Selected",
+    "showing": "Showing {{count}} of {{total}} employees",
+    "noResults": "No employees match your filters",
+    "tryDifferentFilters": "Try adjusting your search or filters.",
+    "clearFilters": "Clear Filters",
+    "viewProfile": "View Profile",
+    "tools": "Tools",
+    "bulkActions": "Bulk Actions"
   },
   "settings": {
     "settings": "Settings",
@@ -353,6 +489,43 @@
       "learnMore": "Learn More"
     }
   },
+  "advancedScheduling": {
+    "title": "Advanced Scheduling",
+    "grid": {
+      "employee": "Employee",
+      "dragShift": "Drag a template to create shift",
+      "dropHere": "Drop shift on grid cell",
+      "noEmployees": "No employees found"
+    },
+    "templates": {
+      "title": "Shift Templates",
+      "morning": "Morning (9-5)",
+      "evening": "Evening (5-1)",
+      "night": "Night (1-9)",
+      "split": "Split Shift",
+      "short": "Short Shift"
+    },
+    "conflicts": {
+      "overlap": "Overlapping shifts",
+      "restPeriod": "Insufficient rest period (< 11h)",
+      "maxHours": "Exceeds 40 hours/week"
+    },
+    "actions": {
+      "copyWeek": "Copy Week",
+      "clearWeek": "Clear Week",
+      "autoFill": "Auto-Fill",
+      "export": "Export"
+    },
+    "scheduleCreated": "Schedule created successfully",
+    "shiftCreated": "Shift created successfully",
+    "shiftMoved": "Shift moved successfully",
+    "shiftCreateError": "Failed to create shift",
+    "shiftMoveError": "Failed to move shift",
+    "weekCopied": "Week copied to next week",
+    "weekCleared": "Week cleared successfully",
+    "clearError": "Failed to clear week",
+    "confirmClearWeek": "Are you sure you want to clear all shifts for this week?"
+  },
   "timeTracking": {
     "clockIn": "Clock In",
     "clockOut": "Clock Out",
@@ -407,6 +580,48 @@
     "clockInAnyway": "Clock In Anyway",
     "earlyClockInBlocked": "You cannot clock in this early. Please wait until closer to your shift start time.",
     "selectLocation": "Location",
-    "chooseLocation": "Choose your location..."
+    "chooseLocation": "Choose your location...",
+    "myTime": "My Time",
+    "teamView": "Team View",
+    "manager": {
+      "title": "Who's Working Now",
+      "employee": "employee",
+      "employees": "employees",
+      "clockedIn": "Clocked in",
+      "ago": "ago",
+      "noOneWorking": "No employees currently clocked in",
+      "lastUpdated": "Last updated:",
+      "live": "LIVE",
+      "loadError": "Failed to load active employees"
+    },
+    "correction": {
+      "title": "Request Time Correction",
+      "description": "Submit a correction request for manager approval",
+      "currentTimes": "Current Times",
+      "correctedTimes": "Corrected Times",
+      "reason": "Reason for Correction",
+      "reasonPlaceholder": "Please explain why this correction is needed. Be specific about what happened (minimum 250 characters)...",
+      "submit": "Submit Request",
+      "submitError": "Failed to submit correction request. Please try again.",
+      "minChars": "{{count}} more characters required",
+      "characters": "characters",
+      "notice": "Your correction request will be sent to your manager for approval. You will be notified once it has been reviewed."
+    },
+    "geolocation": {
+      "title": "Location Data",
+      "clockInLocation": "Clock In Location",
+      "clockOutLocation": "Clock Out Location",
+      "address": "Address",
+      "addressUnavailable": "Address not available",
+      "coordinates": "Coordinates",
+      "accuracy": "Accuracy",
+      "timestamp": "Timestamp",
+      "auditTrail": "Audit Trail",
+      "viewedBy": "Viewed by",
+      "firstView": "You are the first to view this location data",
+      "gdprNotice": "Viewing location data is logged for GDPR compliance",
+      "openInMaps": "Open in Maps",
+      "viewLocation": "View Location"
+    }
   }
 }

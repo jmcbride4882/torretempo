@@ -1,0 +1,532 @@
+/* ==============================================
+   MANAGER DASHBOARD - Who's Working Now
+   Real-time employee status with live updates.
+   ============================================== */
+
+.manager-dashboard {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  animation: dashboardFadeIn 0.4s ease;
+}
+
+@keyframes dashboardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==============================================
+   LOADING STATE
+   ============================================== */
+
+.manager-dashboard--loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 1rem;
+  color: #64748b;
+}
+
+.manager-dashboard__spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #374151;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==============================================
+   ERROR STATE
+   ============================================== */
+
+.manager-dashboard--error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 1rem;
+  color: #dc2626;
+  text-align: center;
+}
+
+.manager-dashboard--error svg {
+  color: #f87171;
+}
+
+.manager-dashboard__retry-btn {
+  padding: 0.625rem 1.25rem;
+  background: #374151;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.manager-dashboard__retry-btn:hover {
+  background: #1f2937;
+  transform: translateY(-1px);
+}
+
+/* ==============================================
+   HEADER
+   ============================================== */
+
+.manager-dashboard__header {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.manager-dashboard__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.manager-dashboard__title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.manager-dashboard__title svg {
+  color: #374151;
+}
+
+.manager-dashboard__count {
+  padding: 0.375rem 0.875rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.manager-dashboard__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.manager-dashboard__last-updated {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.manager-dashboard__live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.manager-dashboard__live-dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+}
+
+/* ==============================================
+   EMPTY STATE
+   ============================================== */
+
+.manager-dashboard__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.manager-dashboard__empty svg {
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+}
+
+.manager-dashboard__empty p {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ==============================================
+   EMPLOYEE LIST
+   ============================================== */
+
+.manager-dashboard__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ==============================================
+   EMPLOYEE CARD
+   ============================================== */
+
+.manager-dashboard__employee {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #fafaf9 0%, #f5f5f4 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+  animation: employeeSlideIn 0.35s ease backwards;
+}
+
+@keyframes employeeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.manager-dashboard__employee:hover {
+  background: linear-gradient(135deg, #f5f5f4 0%, #f0f0ef 100%);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* ==============================================
+   STATUS INDICATOR
+   ============================================== */
+
+.manager-dashboard__status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+.manager-dashboard__status--active {
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.manager-dashboard__status--break {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.1);
+  }
+}
+
+/* ==============================================
+   AVATAR
+   ============================================== */
+
+.manager-dashboard__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(55, 65, 81, 0.2);
+}
+
+/* ==============================================
+   EMPLOYEE INFO
+   ============================================== */
+
+.manager-dashboard__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.manager-dashboard__name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.375rem;
+}
+
+.manager-dashboard__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.manager-dashboard__position {
+  padding: 0.2rem 0.5rem;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  color: #1f2937;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+/* ==============================================
+   DETAILS ROW
+   ============================================== */
+
+.manager-dashboard__details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.375rem;
+}
+
+.manager-dashboard__clock-time {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.manager-dashboard__clock-time svg {
+  color: #94a3b8;
+}
+
+.manager-dashboard__elapsed {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.manager-dashboard__elapsed-value {
+  font-family: "SF Mono", "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.manager-dashboard__elapsed-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+/* ==============================================
+   LOCATION
+   ============================================== */
+
+.manager-dashboard__location {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.manager-dashboard__location svg {
+  color: #0ea5e9;
+  flex-shrink: 0;
+}
+
+/* ==============================================
+   BREAK BADGE
+   ============================================== */
+
+.manager-dashboard__break-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-radius: 8px;
+}
+
+.manager-dashboard__break-badge svg {
+  color: #f59e0b;
+}
+
+/* ==============================================
+   DARK MODE
+   ============================================== */
+
+[data-theme="dark"] .manager-dashboard {
+  background: var(--color-surface-default);
+  border-color: var(--color-border-subtle);
+}
+
+[data-theme="dark"] .manager-dashboard__header {
+  border-bottom-color: var(--color-border-subtle);
+}
+
+[data-theme="dark"] .manager-dashboard__title {
+  color: var(--color-text-default);
+}
+
+[data-theme="dark"] .manager-dashboard__title svg {
+  color: var(--color-accent-9);
+}
+
+[data-theme="dark"] .manager-dashboard__employee {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-border-subtle);
+}
+
+[data-theme="dark"] .manager-dashboard__employee:hover {
+  background: var(--color-bg-muted);
+}
+
+[data-theme="dark"] .manager-dashboard__name {
+  color: var(--color-text-default);
+}
+
+[data-theme="dark"] .manager-dashboard__avatar {
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-9) 0%,
+    var(--color-accent-10) 100%
+  );
+}
+
+[data-theme="dark"] .manager-dashboard__position {
+  background: var(--color-bg-muted);
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .manager-dashboard__clock-time,
+[data-theme="dark"] .manager-dashboard__location {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .manager-dashboard__break-badge {
+  background: var(--color-warning-4);
+  color: var(--color-warning-11);
+}
+
+/* ==============================================
+   MOBILE RESPONSIVE
+   ============================================== */
+
+@media (max-width: 768px) {
+  .manager-dashboard {
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
+
+  .manager-dashboard__title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .manager-dashboard__employee {
+    padding: 0.875rem;
+  }
+
+  .manager-dashboard__avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.75rem;
+  }
+
+  .manager-dashboard__details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .manager-dashboard {
+    padding: 1rem;
+  }
+
+  .manager-dashboard__meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* ==============================================
+   REDUCED MOTION
+   ============================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .manager-dashboard,
+  .manager-dashboard__employee {
+    animation: none;
+  }
+
+  .manager-dashboard__live-dot,
+  .manager-dashboard__status--active {
+    animation: none;
+  }
+
+  .manager-dashboard__employee:hover {
+    transform: none;
+  }
+}

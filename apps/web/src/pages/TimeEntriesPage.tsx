@@ -12,6 +12,7 @@ import ClockButton from "../components/time-tracking/ClockButton";
 import CurrentTimer from "../components/time-tracking/CurrentTimer";
 import TimeEntryCard from "../components/time-tracking/TimeEntryCard";
 import EarlyClockInDialog from "../components/time-tracking/EarlyClockInDialog";
+import ManagerDashboard from "../components/time-tracking/ManagerDashboard";
 import type {
   TimeEntry,
   TimeEntryStats,
@@ -38,6 +39,10 @@ export default function TimeEntriesPage() {
       </div>
     );
   }
+
+  // View toggle state (personal vs team)
+  type ViewMode = "personal" | "team";
+  const [viewMode, setViewMode] = useState<ViewMode>("personal");
 
   // State
   const [currentEntry, setCurrentEntry] = useState<TimeEntry | null>(null);
@@ -459,22 +464,65 @@ export default function TimeEntriesPage() {
           <div className="time-entries-page__header-left">
             <h1 className="time-entries-page__title">{t("nav.timeEntries")}</h1>
           </div>
-          {geolocation.permissionStatus === "granted" && (
-            <div className="time-entries-page__geo-status">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <span>{t("timeTracking.locationEnabled")}</span>
-            </div>
-          )}
+          <div className="time-entries-page__header-right">
+            {/* View Toggle (only for managers/admins) */}
+            {showTeamView && (
+              <div className="time-entries-page__view-toggle">
+                <button
+                  className={`view-toggle__btn ${viewMode === "personal" ? "view-toggle__btn--active" : ""}`}
+                  onClick={() => setViewMode("personal")}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  {t("timeTracking.myTime")}
+                </button>
+                <button
+                  className={`view-toggle__btn ${viewMode === "team" ? "view-toggle__btn--active" : ""}`}
+                  onClick={() => setViewMode("team")}
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  {t("timeTracking.teamView")}
+                </button>
+              </div>
+            )}
+            {geolocation.permissionStatus === "granted" && (
+              <div className="time-entries-page__geo-status">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span>{t("timeTracking.locationEnabled")}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Error message */}
@@ -561,179 +609,136 @@ export default function TimeEntriesPage() {
         )}
 
         {/* Main content */}
-        <div className="time-entries-page__content">
-          {/* Left column: Clock button and current timer */}
-          <div className="time-entries-page__main">
-            {/* Current Timer (if clocked in) */}
-            {currentEntry && (
-              <CurrentTimer
-                entry={currentEntry}
-                onStartBreak={handleStartBreak}
-                onEndBreak={handleEndBreak}
-                breakLoading={breakLoading}
-              />
-            )}
-
-            {/* Clock Button */}
-            <div className="time-entries-page__clock-section">
-              {/* Date/Time Display */}
-              <div className="clock-section__datetime">
-                <div className="clock-section__time">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  <span className="time-value">
-                    {format(currentTime, "HH:mm:ss")}
-                  </span>
-                </div>
-                <div className="clock-section__date">
-                  {format(currentTime, "EEEE, d MMMM yyyy")}
-                </div>
-              </div>
-
-              {/* Location Selector */}
-              <div className="clock-section__location-selector">
-                <label
-                  htmlFor="location-select"
-                  className="location-selector__label"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
-                  {t("timeTracking.selectLocation")}
-                </label>
-                <Select.Root
-                  value={selectedLocation || undefined}
-                  onValueChange={setSelectedLocation}
-                >
-                  <Select.Trigger className="location-selector__dropdown">
-                    <Select.Value
-                      placeholder={t("timeTracking.chooseLocation")}
-                    />
-                    <Select.Icon className="location-selector__icon">
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 12 12"
-                        fill="currentColor"
-                      >
-                        <path d="M6 9L1.5 4.5L2.55 3.45L6 6.9L9.45 3.45L10.5 4.5L6 9Z" />
-                      </svg>
-                    </Select.Icon>
-                  </Select.Trigger>
-                  <Select.Portal>
-                    <Select.Content className="location-selector__content">
-                      <Select.Viewport>
-                        {tenantLocations.map((location) => (
-                          <Select.Item
-                            key={location}
-                            value={location}
-                            className="location-selector__item"
-                          >
-                            <Select.ItemIndicator className="location-selector__indicator">
-                              <svg
-                                width="12"
-                                height="12"
-                                viewBox="0 0 12 12"
-                                fill="currentColor"
-                              >
-                                <path
-                                  d="M10 3L4.5 8.5L2 6"
-                                  stroke="currentColor"
-                                  strokeWidth="1.5"
-                                  fill="none"
-                                />
-                              </svg>
-                            </Select.ItemIndicator>
-                            <Select.ItemText>{location}</Select.ItemText>
-                          </Select.Item>
-                        ))}
-                      </Select.Viewport>
-                    </Select.Content>
-                  </Select.Portal>
-                </Select.Root>
-              </div>
-
-              <ClockButton
-                isClockedIn={!!currentEntry}
-                isLoading={actionLoading}
-                isGettingLocation={gettingLocation}
-                onClick={handleClockAction}
-              />
-
-              {!currentEntry && (
-                <p className="time-entries-page__hint">
-                  {t("timeTracking.tapToClockIn")}
-                </p>
+        {viewMode === "team" && showTeamView ? (
+          <ManagerDashboard refreshInterval={30000} />
+        ) : (
+          <div className="time-entries-page__content">
+            {/* Left column: Clock button and current timer */}
+            <div className="time-entries-page__main">
+              {/* Current Timer (if clocked in) */}
+              {currentEntry && (
+                <CurrentTimer
+                  entry={currentEntry}
+                  onStartBreak={handleStartBreak}
+                  onEndBreak={handleEndBreak}
+                  breakLoading={breakLoading}
+                />
               )}
-            </div>
 
-            {/* Today's quick stats */}
-            <div className="time-entries-page__today-stats">
-              <h3 className="stats-title">{t("timeTracking.todayStats")}</h3>
-              <div className="stats-grid">
-                <div className="stat-item">
-                  <svg
-                    className="stat-item__icon"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#6366f1"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                  <div className="stat-item__value">
-                    {todayStats.hours.toFixed(1)}h
+              {/* Clock Button */}
+              <div className="time-entries-page__clock-section">
+                {/* Date/Time Display */}
+                <div className="clock-section__datetime">
+                  <div className="clock-section__time">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span className="time-value">
+                      {format(currentTime, "HH:mm:ss")}
+                    </span>
                   </div>
-                  <div className="stat-item__label">
-                    {t("timeTracking.hoursWorked")}
+                  <div className="clock-section__date">
+                    {format(currentTime, "EEEE, d MMMM yyyy")}
                   </div>
                 </div>
-                <div className="stat-item">
-                  <svg
-                    className="stat-item__icon"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#f59e0b"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+
+                {/* Location Selector */}
+                <div className="clock-section__location-selector">
+                  <label
+                    htmlFor="location-select"
+                    className="location-selector__label"
                   >
-                    <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                    <line x1="6" y1="1" x2="6" y2="4" />
-                    <line x1="10" y1="1" x2="10" y2="4" />
-                    <line x1="14" y1="1" x2="14" y2="4" />
-                  </svg>
-                  <div className="stat-item__value">{todayStats.breaks}m</div>
-                  <div className="stat-item__label">
-                    {t("timeTracking.breaks")}
-                  </div>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    {t("timeTracking.selectLocation")}
+                  </label>
+                  <Select.Root
+                    value={selectedLocation || undefined}
+                    onValueChange={setSelectedLocation}
+                  >
+                    <Select.Trigger className="location-selector__dropdown">
+                      <Select.Value
+                        placeholder={t("timeTracking.chooseLocation")}
+                      />
+                      <Select.Icon className="location-selector__icon">
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 12 12"
+                          fill="currentColor"
+                        >
+                          <path d="M6 9L1.5 4.5L2.55 3.45L6 6.9L9.45 3.45L10.5 4.5L6 9Z" />
+                        </svg>
+                      </Select.Icon>
+                    </Select.Trigger>
+                    <Select.Portal>
+                      <Select.Content className="location-selector__content">
+                        <Select.Viewport>
+                          {tenantLocations.map((location) => (
+                            <Select.Item
+                              key={location}
+                              value={location}
+                              className="location-selector__item"
+                            >
+                              <Select.ItemIndicator className="location-selector__indicator">
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 12 12"
+                                  fill="currentColor"
+                                >
+                                  <path
+                                    d="M10 3L4.5 8.5L2 6"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    fill="none"
+                                  />
+                                </svg>
+                              </Select.ItemIndicator>
+                              <Select.ItemText>{location}</Select.ItemText>
+                            </Select.Item>
+                          ))}
+                        </Select.Viewport>
+                      </Select.Content>
+                    </Select.Portal>
+                  </Select.Root>
                 </div>
-                {stats && (
+
+                <ClockButton
+                  isClockedIn={!!currentEntry}
+                  isLoading={actionLoading}
+                  isGettingLocation={gettingLocation}
+                  onClick={handleClockAction}
+                />
+
+                {!currentEntry && (
+                  <p className="time-entries-page__hint">
+                    {t("timeTracking.tapToClockIn")}
+                  </p>
+                )}
+              </div>
+
+              {/* Today's quick stats */}
+              <div className="time-entries-page__today-stats">
+                <h3 className="stats-title">{t("timeTracking.todayStats")}</h3>
+                <div className="stats-grid">
                   <div className="stat-item">
                     <svg
                       className="stat-item__icon"
@@ -741,62 +746,116 @@ export default function TimeEntriesPage() {
                       height="20"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#10b981"
+                      stroke="#6366f1"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     >
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
                     </svg>
                     <div className="stat-item__value">
-                      {stats.totalHours.toFixed(1)}h
+                      {todayStats.hours.toFixed(1)}h
                     </div>
                     <div className="stat-item__label">
-                      {t("timeTracking.thisWeek")}
+                      {t("timeTracking.hoursWorked")}
                     </div>
                   </div>
-                )}
+                  <div className="stat-item">
+                    <svg
+                      className="stat-item__icon"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                      <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                      <line x1="6" y1="1" x2="6" y2="4" />
+                      <line x1="10" y1="1" x2="10" y2="4" />
+                      <line x1="14" y1="1" x2="14" y2="4" />
+                    </svg>
+                    <div className="stat-item__value">{todayStats.breaks}m</div>
+                    <div className="stat-item__label">
+                      {t("timeTracking.breaks")}
+                    </div>
+                  </div>
+                  {stats && (
+                    <div className="stat-item">
+                      <svg
+                        className="stat-item__icon"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#10b981"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect
+                          x="3"
+                          y="4"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          ry="2"
+                        />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <div className="stat-item__value">
+                        {stats.totalHours.toFixed(1)}h
+                      </div>
+                      <div className="stat-item__label">
+                        {t("timeTracking.thisWeek")}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Right column: History */}
-          <div className="time-entries-page__history">
-            <h2 className="time-entries-page__section-title">
-              {t("timeTracking.recentEntries")}
-            </h2>
+            {/* Right column: History */}
+            <div className="time-entries-page__history">
+              <h2 className="time-entries-page__section-title">
+                {t("timeTracking.recentEntries")}
+              </h2>
 
-            {history.length === 0 ? (
-              <div className="time-entries-page__empty">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                <p>{t("timeTracking.noEntries")}</p>
-              </div>
-            ) : (
-              <div className="time-entries-page__history-list">
-                {history.map((entry) => (
-                  <TimeEntryCard
-                    key={entry.id}
-                    entry={entry}
-                    showEmployeeName={showTeamView}
-                  />
-                ))}
-              </div>
-            )}
+              {history.length === 0 ? (
+                <div className="time-entries-page__empty">
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <p>{t("timeTracking.noEntries")}</p>
+                </div>
+              ) : (
+                <div className="time-entries-page__history-list">
+                  {history.map((entry) => (
+                    <TimeEntryCard
+                      key={entry.id}
+                      entry={entry}
+                      showEmployeeName={showTeamView}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Early Clock-In Warning Dialog */}
         <EarlyClockInDialog

@@ -27,11 +27,13 @@ const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const TimeEntriesPage = lazy(() => import("./pages/TimeEntriesPage"));
 const SchedulingPage = lazy(() => import("./pages/SchedulingPage"));
+const AdvancedSchedulePage = lazy(() => import("./pages/AdvancedSchedulePage"));
 const LeaveRequestsPage = lazy(() => import("./pages/LeaveRequestsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const TenantsPage = lazy(() => import("./pages/TenantsPage"));
 const TenantBillingPage = lazy(() => import("./pages/TenantBillingPage"));
 const UpgradePage = lazy(() => import("./pages/UpgradePage"));
+const EmployeeProfilePage = lazy(() => import("./pages/EmployeeProfilePage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -232,6 +234,17 @@ function App() {
             />
 
             <Route
+              path="employees/:id"
+              element={
+                <ProtectedRoute requiredRoles={["OWNER", "ADMIN", "MANAGER"]}>
+                  <DashboardLayout>
+                    <EmployeeProfilePage />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="profile"
               element={
                 <ProtectedRoute>
@@ -259,6 +272,17 @@ function App() {
                 <ProtectedRoute>
                   <DashboardLayout>
                     <SchedulingPage />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="scheduling/advanced"
+              element={
+                <ProtectedRoute requiredRoles={["OWNER", "ADMIN", "MANAGER"]}>
+                  <DashboardLayout>
+                    <AdvancedSchedulePage />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

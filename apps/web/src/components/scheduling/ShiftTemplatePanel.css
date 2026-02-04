@@ -1,0 +1,329 @@
+/* ============================================================================
+ * ShiftTemplatePanel - Deputy-style shift template sidebar
+ * ============================================================================ */
+
+.template-panel {
+  width: 280px;
+  min-width: 280px;
+  background: var(--color-surface-default);
+  border-right: 1px solid var(--color-border-default);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  transition:
+    width var(--transition-normal),
+    min-width var(--transition-normal);
+}
+
+.template-panel.is-collapsed {
+  width: 48px;
+  min-width: 48px;
+}
+
+/* ============================================================================
+ * Header
+ * ============================================================================ */
+
+.template-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-subtle);
+}
+
+.template-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-default);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.is-collapsed .template-panel-title {
+  display: none;
+}
+
+.template-collapse-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.template-collapse-btn:hover {
+  background: var(--color-hover-overlay);
+  color: var(--color-text-default);
+}
+
+.is-collapsed .template-collapse-btn {
+  margin: 0 auto;
+}
+
+/* ============================================================================
+ * Hint text
+ * ============================================================================ */
+
+.template-panel-hint {
+  padding: 12px 16px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+/* ============================================================================
+ * Template list
+ * ============================================================================ */
+
+.template-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ============================================================================
+ * Template card (draggable)
+ * ============================================================================ */
+
+.template-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  cursor: grab;
+  transition: all var(--transition-fast);
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+}
+
+.template-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--template-color);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+.template-card:hover {
+  border-color: var(--color-border-emphasis);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.template-card:active {
+  cursor: grabbing;
+}
+
+.template-card.is-dragging {
+  opacity: 0.9;
+  box-shadow: var(--shadow-lg);
+  transform: scale(1.02);
+  z-index: 1000;
+  border-color: var(--color-accent-9);
+}
+
+/* ============================================================================
+ * Template card - color indicator
+ * ============================================================================ */
+
+.template-card-color {
+  width: 8px;
+  height: 32px;
+  background: var(--template-color);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+ * Template card - icon
+ * ============================================================================ */
+
+.template-card-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--template-color) 15%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--template-color);
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+ * Template card - info
+ * ============================================================================ */
+
+.template-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.template-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.template-time {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace;
+}
+
+.template-duration {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-weight: 500;
+}
+
+/* ============================================================================
+ * Template card - drag handle
+ * ============================================================================ */
+
+.template-drag-handle {
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-subtle);
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity var(--transition-fast);
+}
+
+.template-card:hover .template-drag-handle {
+  opacity: 0.7;
+}
+
+/* ============================================================================
+ * Footer
+ * ============================================================================ */
+
+.template-panel-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-subtle);
+}
+
+.template-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-subtle);
+}
+
+.legend-text {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* ============================================================================
+ * Dark mode adjustments
+ * ============================================================================ */
+
+[data-theme="dark"] .template-panel {
+  background: var(--color-surface-default);
+}
+
+[data-theme="dark"] .template-card {
+  background: var(--color-bg-subtle);
+}
+
+[data-theme="dark"] .template-card:hover {
+  background: var(--color-bg-muted);
+}
+
+/* ============================================================================
+ * Mobile responsiveness
+ * ============================================================================ */
+
+@media (max-width: 768px) {
+  .template-panel {
+    position: fixed;
+    left: 0;
+    top: 60px;
+    bottom: 0;
+    width: 260px;
+    min-width: 260px;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .template-panel.is-visible {
+    transform: translateX(0);
+  }
+
+  .template-panel.is-collapsed {
+    width: 260px;
+    min-width: 260px;
+    transform: translateX(-100%);
+  }
+
+  .is-collapsed .template-panel-title {
+    display: block;
+  }
+}
+
+/* ============================================================================
+ * Touch-friendly enhancements
+ * ============================================================================ */
+
+@media (hover: none) and (pointer: coarse) {
+  .template-card {
+    padding: 14px 14px;
+    min-height: 56px;
+  }
+
+  .template-card-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .template-name {
+    font-size: 14px;
+  }
+
+  .template-time {
+    font-size: 13px;
+  }
+}

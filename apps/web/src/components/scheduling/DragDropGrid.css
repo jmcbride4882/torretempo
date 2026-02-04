@@ -1,0 +1,498 @@
+/* ============================================================================
+ * DragDropGrid - Deputy-style scheduling grid
+ * ============================================================================ */
+
+.drag-drop-grid {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-height: 400px;
+}
+
+/* ============================================================================
+ * Header row
+ * ============================================================================ */
+
+.grid-header-row {
+  display: grid;
+  grid-template-columns: 200px repeat(7, 1fr);
+  border-bottom: 2px solid var(--color-border-default);
+  background: var(--color-bg-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.grid-header-cell {
+  padding: 12px 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-right: 1px solid var(--color-border-subtle);
+}
+
+.grid-header-cell:last-child {
+  border-right: none;
+}
+
+.grid-header-employee {
+  text-align: left;
+  padding-left: 16px;
+  font-weight: 600;
+  color: var(--color-text-default);
+}
+
+.grid-header-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.grid-header-day.is-today {
+  background: color-mix(in srgb, var(--color-accent-9) 10%, transparent);
+}
+
+.grid-header-day.is-weekend {
+  background: var(--color-bg-muted);
+  color: var(--color-text-subtle);
+}
+
+.header-day-name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.header-day-num {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-default);
+}
+
+.is-today .header-day-num {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent-9);
+  color: white;
+  border-radius: 50%;
+}
+
+/* ============================================================================
+ * Grid body
+ * ============================================================================ */
+
+.grid-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.grid-row {
+  display: grid;
+  grid-template-columns: 200px repeat(7, 1fr);
+  border-bottom: 1px solid var(--color-border-subtle);
+  min-height: 72px;
+}
+
+.grid-row:last-child {
+  border-bottom: none;
+}
+
+/* ============================================================================
+ * Employee cell
+ * ============================================================================ */
+
+.grid-employee-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--color-bg-subtle);
+  border-right: 1px solid var(--color-border-default);
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.grid-employee-cell.exceeds-max-hours {
+  background: color-mix(
+    in srgb,
+    var(--color-warning-9) 8%,
+    var(--color-bg-subtle)
+  );
+}
+
+.employee-avatar {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-9);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 50%;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.employee-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.employee-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-default);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.employee-hours {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.employee-hours.over-hours {
+  color: var(--color-warning-11);
+  font-weight: 600;
+}
+
+.employee-hours svg {
+  color: var(--color-warning-9);
+}
+
+/* ============================================================================
+ * Grid cell (droppable)
+ * ============================================================================ */
+
+.grid-cell {
+  padding: 6px;
+  border-right: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 72px;
+  transition: background-color var(--transition-fast);
+}
+
+.grid-cell:last-child {
+  border-right: none;
+}
+
+.grid-cell.is-today {
+  background: color-mix(in srgb, var(--color-accent-9) 5%, transparent);
+}
+
+.grid-cell.is-weekend {
+  background: var(--color-bg-subtle);
+}
+
+.grid-cell.is-drop-target {
+  background: color-mix(in srgb, var(--color-success-9) 15%, transparent);
+  outline: 2px dashed var(--color-success-9);
+  outline-offset: -2px;
+}
+
+.cell-drop-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 40px;
+  color: var(--color-success-9);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+ * Shift card (draggable)
+ * ============================================================================ */
+
+.grid-shift-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--color-surface-default);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  cursor: grab;
+  transition: all var(--transition-fast);
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+  min-height: 32px;
+}
+
+.grid-shift-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--shift-color);
+}
+
+.grid-shift-card:hover {
+  border-color: var(--color-border-emphasis);
+  box-shadow: var(--shadow-sm);
+}
+
+.grid-shift-card:active {
+  cursor: grabbing;
+}
+
+.grid-shift-card.is-selected {
+  border-color: var(--color-accent-9);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--color-accent-9) 30%, transparent);
+}
+
+.grid-shift-card.is-dragging {
+  opacity: 0.5;
+}
+
+/* Conflict indicators */
+.grid-shift-card.has-conflict-overlap {
+  border-color: var(--color-error-9);
+  background: color-mix(
+    in srgb,
+    var(--color-error-9) 8%,
+    var(--color-surface-default)
+  );
+}
+
+.grid-shift-card.has-conflict-rest {
+  border-color: var(--color-warning-9);
+  background: color-mix(
+    in srgb,
+    var(--color-warning-9) 8%,
+    var(--color-surface-default)
+  );
+}
+
+.grid-shift-color {
+  width: 6px;
+  height: 20px;
+  background: var(--shift-color);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.grid-shift-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-default);
+  white-space: nowrap;
+  font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace;
+}
+
+.grid-shift-role {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid-shift-conflict-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: var(--color-error-9);
+}
+
+.has-conflict-rest .grid-shift-conflict-icon {
+  color: var(--color-warning-9);
+}
+
+/* ============================================================================
+ * Drag overlay
+ * ============================================================================ */
+
+.drag-overlay-shift,
+.drag-overlay-template {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-surface-default);
+  border: 2px solid var(--color-accent-9);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  opacity: 0.95;
+  overflow: hidden;
+}
+
+.drag-overlay-shift::before,
+.drag-overlay-template::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--shift-color, var(--template-color));
+}
+
+.template-overlay-color {
+  width: 8px;
+  height: 24px;
+  background: var(--template-color);
+  border-radius: var(--radius-sm);
+}
+
+.template-overlay-time {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace;
+}
+
+/* ============================================================================
+ * Empty state
+ * ============================================================================ */
+
+.grid-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: var(--color-text-muted);
+  text-align: center;
+  gap: 12px;
+}
+
+.grid-empty svg {
+  color: var(--color-text-subtle);
+}
+
+.grid-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ============================================================================
+ * Dark mode
+ * ============================================================================ */
+
+[data-theme="dark"] .drag-drop-grid {
+  background: var(--color-surface-default);
+}
+
+[data-theme="dark"] .grid-shift-card {
+  background: var(--color-bg-subtle);
+}
+
+[data-theme="dark"] .drag-overlay-shift,
+[data-theme="dark"] .drag-overlay-template {
+  background: var(--color-bg-muted);
+}
+
+/* ============================================================================
+ * Mobile responsiveness
+ * ============================================================================ */
+
+@media (max-width: 768px) {
+  .grid-header-row {
+    grid-template-columns: 120px repeat(3, 1fr);
+  }
+
+  .grid-row {
+    grid-template-columns: 120px repeat(3, 1fr);
+  }
+
+  .grid-header-employee {
+    padding-left: 12px;
+  }
+
+  .grid-employee-cell {
+    padding: 8px 12px;
+  }
+
+  .employee-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+
+  .employee-name {
+    font-size: 12px;
+  }
+
+  .grid-cell {
+    padding: 4px;
+    min-height: 60px;
+  }
+
+  .grid-shift-card {
+    padding: 4px 6px;
+    min-height: 28px;
+  }
+
+  .grid-shift-time {
+    font-size: 10px;
+  }
+
+  .grid-shift-role {
+    display: none;
+  }
+}
+
+/* ============================================================================
+ * Touch-friendly enhancements
+ * ============================================================================ */
+
+@media (hover: none) and (pointer: coarse) {
+  .grid-shift-card {
+    padding: 10px 10px;
+    min-height: 44px;
+  }
+
+  .grid-cell {
+    min-height: 80px;
+    padding: 8px;
+  }
+}
+
+/* ============================================================================
+ * Horizontal scroll wrapper for narrow screens
+ * ============================================================================ */
+
+@media (max-width: 640px) {
+  .drag-drop-grid {
+    overflow-x: auto;
+  }
+
+  .grid-header-row,
+  .grid-row {
+    min-width: 600px;
+  }
+}

@@ -1,0 +1,331 @@
+/* ========================================
+   CSV IMPORT MODAL
+   ======================================== */
+
+.import-modal {
+  max-width: 700px;
+}
+
+/* Upload Section */
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  background: var(--color-bg-subtle, #f8fafc);
+  border: 2px dashed var(--color-border-default, #cbd5e1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-dropzone:hover {
+  border-color: var(--color-primary-7, #374151);
+  background: linear-gradient(
+    135deg,
+    rgba(55, 65, 81, 0.05) 0%,
+    rgba(75, 85, 99, 0.05) 100%
+  );
+}
+
+.upload-dropzone svg {
+  color: var(--color-primary-9, #374151);
+  margin-bottom: 1rem;
+}
+
+.upload-dropzone h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-default, #1e293b);
+  margin: 0 0 0.5rem 0;
+}
+
+.upload-dropzone p {
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+/* Template Section */
+.template-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: var(--color-bg-muted, #f1f5f9);
+  border-radius: 8px;
+}
+
+.template-section h4 {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-default, #1e293b);
+  margin: 0;
+}
+
+/* Format Info */
+.format-info {
+  padding: 1rem;
+  background: var(--color-surface-default, #ffffff);
+  border: 1px solid var(--color-border-subtle, #e2e8f0);
+  border-radius: 8px;
+}
+
+.format-info h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-default, #1e293b);
+  margin: 0 0 0.75rem 0;
+}
+
+.format-info ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.format-info li {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #64748b);
+  margin-bottom: 0.375rem;
+}
+
+.format-info code {
+  font-family: "Monaco", "Consolas", monospace;
+  background: var(--color-bg-subtle, #f8fafc);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  color: var(--color-primary-9, #374151);
+}
+
+/* Preview Section */
+.preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.preview-summary {
+  display: flex;
+  gap: 1rem;
+}
+
+.summary-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.summary-item.valid {
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.1) 0%,
+    rgba(52, 211, 153, 0.1) 100%
+  );
+}
+
+.summary-item.invalid {
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.1) 0%,
+    rgba(248, 113, 113, 0.1) 100%
+  );
+}
+
+.summary-item .count {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.summary-item.valid .count {
+  color: #059669;
+}
+
+.summary-item.invalid .count {
+  color: #dc2626;
+}
+
+.summary-item .label {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #64748b);
+  margin-top: 0.375rem;
+}
+
+/* Preview Table */
+.preview-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-subtle, #e2e8f0);
+  border-radius: 8px;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.preview-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--color-bg-subtle, #f8fafc);
+  border-bottom: 1px solid var(--color-border-subtle, #e2e8f0);
+}
+
+.preview-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text-default, #1e293b);
+  border-bottom: 1px solid var(--color-border-subtle, #e2e8f0);
+}
+
+.preview-table tr:last-child td {
+  border-bottom: none;
+}
+
+.preview-table tr.has-errors {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.status-valid,
+.status-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.status-valid {
+  color: #059669;
+}
+
+.status-error {
+  color: #dc2626;
+}
+
+.more-rows {
+  text-align: center;
+  padding: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.875rem;
+  background: var(--color-bg-subtle, #f8fafc);
+}
+
+/* Result Section */
+.result-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.result-icon {
+  margin-bottom: 1rem;
+}
+
+.result-icon.success svg {
+  color: #059669;
+}
+
+.result-icon.error svg {
+  color: #dc2626;
+}
+
+.result-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-default, #1e293b);
+  margin: 0 0 1rem 0;
+}
+
+.result-errors {
+  width: 100%;
+  text-align: left;
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.result-errors p {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #dc2626;
+  margin: 0 0 0.75rem 0;
+}
+
+.result-errors ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.result-errors li {
+  font-size: 0.8125rem;
+  color: #7f1d1d;
+  margin-bottom: 0.375rem;
+}
+
+/* Button Spinner */
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Dark Mode */
+[data-theme="dark"] .upload-dropzone,
+[data-theme="dark"] .template-section,
+[data-theme="dark"] .format-info,
+[data-theme="dark"] .preview-table-container {
+  background: var(--color-surface-default);
+  border-color: var(--color-border-default);
+}
+
+[data-theme="dark"] .preview-table th,
+[data-theme="dark"] .more-rows {
+  background: var(--color-bg-subtle);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .import-modal {
+    max-width: 100%;
+  }
+
+  .preview-summary {
+    flex-direction: column;
+  }
+
+  .upload-dropzone {
+    padding: 2rem 1rem;
+  }
+}
