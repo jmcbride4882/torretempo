@@ -1,12 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { employeeService } from "../services/employeeService";
 import type { Employee } from "../types/employee";
-import AddEmployeeModal from "../components/employees/AddEmployeeModal";
-import EditEmployeeModal from "../components/employees/EditEmployeeModal";
-import DeleteConfirmDialog from "../components/employees/DeleteConfirmDialog";
 import { useAuthorization } from "../hooks/useAuthorization";
 import "./EmployeesPage.css";
+
+// Lazy load modals
+const AddEmployeeModal = lazy(
+  () => import("../components/employees/AddEmployeeModal"),
+);
+const EditEmployeeModal = lazy(
+  () => import("../components/employees/EditEmployeeModal"),
+);
+const DeleteConfirmDialog = lazy(
+  () => import("../components/employees/DeleteConfirmDialog"),
+);
 
 export default function EmployeesPage() {
   const { t } = useTranslation();
@@ -237,42 +245,44 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      <AddEmployeeModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={() => {
-          setIsAddModalOpen(false);
-          loadEmployees();
-        }}
-      />
+      <Suspense fallback={null}>
+        <AddEmployeeModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={() => {
+            setIsAddModalOpen(false);
+            loadEmployees();
+          }}
+        />
 
-      <EditEmployeeModal
-        isOpen={isEditModalOpen}
-        employee={selectedEmployee}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setSelectedEmployee(null);
-        }}
-        onSuccess={() => {
-          setIsEditModalOpen(false);
-          setSelectedEmployee(null);
-          loadEmployees();
-        }}
-      />
+        <EditEmployeeModal
+          isOpen={isEditModalOpen}
+          employee={selectedEmployee}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedEmployee(null);
+          }}
+          onSuccess={() => {
+            setIsEditModalOpen(false);
+            setSelectedEmployee(null);
+            loadEmployees();
+          }}
+        />
 
-      <DeleteConfirmDialog
-        isOpen={isDeleteDialogOpen}
-        employee={selectedEmployee}
-        onClose={() => {
-          setIsDeleteDialogOpen(false);
-          setSelectedEmployee(null);
-        }}
-        onSuccess={() => {
-          setIsDeleteDialogOpen(false);
-          setSelectedEmployee(null);
-          loadEmployees();
-        }}
-      />
+        <DeleteConfirmDialog
+          isOpen={isDeleteDialogOpen}
+          employee={selectedEmployee}
+          onClose={() => {
+            setIsDeleteDialogOpen(false);
+            setSelectedEmployee(null);
+          }}
+          onSuccess={() => {
+            setIsDeleteDialogOpen(false);
+            setSelectedEmployee(null);
+            loadEmployees();
+          }}
+        />
+      </Suspense>
     </div>
   );
 }

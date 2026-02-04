@@ -9,8 +9,6 @@ import {
   parseISO,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { scheduleService } from "../services/scheduleService";
 import { employeeService } from "../services/employeeService";
 import { tenantService } from "../services/tenantService";
@@ -677,6 +675,12 @@ export default function SchedulingPage() {
 
       console.log("=== PDF Generation Started ===");
 
+      // Dynamically import PDF libraries only when needed
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
       // Find the calendar element
       const calendarElement = document.querySelector(
         ".schedule-calendar",
@@ -718,7 +722,7 @@ export default function SchedulingPage() {
         y: 0,
         scrollX: 0,
         scrollY: 0,
-        onclone: (clonedDoc) => {
+        onclone: (clonedDoc: Document) => {
           // Force full width in cloned document
           const clonedCalendar = clonedDoc.querySelector(
             ".schedule-calendar",
@@ -930,6 +934,9 @@ export default function SchedulingPage() {
       console.log("isMobile:", isMobile);
       console.log("Window width:", window.innerWidth);
 
+      // Dynamically import html2canvas only when needed
+      const { default: html2canvas } = await import("html2canvas");
+
       // Find the visible calendar (now mobile shows grid too!)
       const calendarElement = document.querySelector(
         ".schedule-calendar",
@@ -967,7 +974,7 @@ export default function SchedulingPage() {
         y: 0, // Start from top edge
         scrollX: 0, // Reset any scroll offset
         scrollY: 0,
-        onclone: (clonedDoc) => {
+        onclone: (clonedDoc: Document) => {
           // Remove ALL overflow restrictions in the cloned document
           const clonedCalendar = clonedDoc.querySelector(
             ".schedule-calendar",
@@ -998,7 +1005,7 @@ export default function SchedulingPage() {
 
           // Remove overflow from all rows
           const rows = clonedDoc.querySelectorAll(".calendar-row");
-          rows.forEach((row) => {
+          rows.forEach((row: Element) => {
             const rowEl = row as HTMLElement;
             rowEl.style.overflow = "visible";
             rowEl.style.width = `${fullCalendarWidth}px`;
@@ -1007,7 +1014,7 @@ export default function SchedulingPage() {
           // Ensure employee details are visible
           const employeeDetails =
             clonedDoc.querySelectorAll(".employee-details");
-          employeeDetails.forEach((el) => {
+          employeeDetails.forEach((el: Element) => {
             const element = el as HTMLElement;
             element.style.display = "flex";
             element.style.visibility = "visible";
