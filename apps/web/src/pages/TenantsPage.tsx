@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuthStore } from "../stores/authStore";
+import { apiClient } from "../services/api";
 import TenantModal from "../components/tenants/TenantModal";
 import DeleteConfirmModal from "../components/tenants/DeleteConfirmModal";
 import "./TenantsPage.css";
@@ -58,18 +59,8 @@ export default function TenantsPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/v1/platform/tenants", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      setTenants(result.data || []);
+      const response = await apiClient.get("/platform/tenants");
+      setTenants(response.data.data || []);
     } catch (err: any) {
       console.error("Failed to load tenants:", err);
       setError(err.message || "Error loading tenants");
@@ -127,27 +118,17 @@ export default function TenantsPage() {
   const handleDeleteConfirm = async () => {
     if (!tenantToDelete) return;
 
-    const response = await fetch(
-      `/api/v1/platform/tenants/${tenantToDelete.id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      },
-    );
+    try {
+      await apiClient.delete(`/platform/tenants/${tenantToDelete.id}`);
 
-    if (!response.ok) {
-      const result = await response.json();
-      throw new Error(
-        result.error || `HTTP ${response.status}: ${response.statusText}`,
-      );
+      // Reload tenant list after successful delete
+      loadTenants();
+      setIsDeleteModalOpen(false);
+      setTenantToDelete(null);
+    } catch (err: any) {
+      console.error("Failed to delete tenant:", err);
+      throw err;
     }
-
-    // Reload tenant list after successful delete
-    loadTenants();
-    setIsDeleteModalOpen(false);
-    setTenantToDelete(null);
   };
 
   const handleDeleteModalClose = () => {

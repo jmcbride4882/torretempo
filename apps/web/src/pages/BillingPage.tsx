@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useAuthStore } from "../stores/authStore";
+import { apiClient } from "../services/api";
 import type {
   Subscription,
   RevenueMetrics,
@@ -70,26 +71,16 @@ export default function BillingPage() {
     try {
       setMetricsLoading(true);
 
-      const response = await fetch("/api/v1/platform/billing/revenue", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      const response = await apiClient.get("/platform/billing/revenue");
       setMetrics({
-        mrr: result.data.mrr,
-        arr: result.data.arr,
-        activeTenants: result.data.metrics.activeTenants,
-        trialTenants: result.data.metrics.trialTenants,
-        suspendedTenants: result.data.metrics.suspendedTenants,
-        cancelledTenants: result.data.metrics.cancelledTenants,
-        totalTenants: result.data.metrics.totalTenants,
-        totalEmployees: result.data.metrics.totalEmployees,
+        mrr: response.data.data.mrr,
+        arr: response.data.data.arr,
+        activeTenants: response.data.data.metrics.activeTenants,
+        trialTenants: response.data.data.metrics.trialTenants,
+        suspendedTenants: response.data.data.metrics.suspendedTenants,
+        cancelledTenants: response.data.data.metrics.cancelledTenants,
+        totalTenants: response.data.data.metrics.totalTenants,
+        totalEmployees: response.data.data.metrics.totalEmployees,
       });
     } catch (err: unknown) {
       console.error("Failed to load revenue metrics:", err);
@@ -116,29 +107,18 @@ export default function BillingPage() {
         params.append("search", searchQuery);
       }
 
-      const response = await fetch(
-        `/api/v1/platform/billing/subscriptions?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        },
+      const response = await apiClient.get(
+        `/platform/billing/subscriptions?${params.toString()}`,
       );
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-
       // Map API response to Subscription interface
-      const mappedSubscriptions: Subscription[] = result.data.map(
+      const mappedSubscriptions: Subscription[] = response.data.data.map(
         (tenant: ApiSubscription) => mapApiToSubscription(tenant),
       );
 
       setSubscriptions(mappedSubscriptions);
-      setTotalItems(result.meta.total);
-      setTotalPages(Math.ceil(result.meta.total / itemsPerPage));
+      setTotalItems(response.data.meta.total);
+      setTotalPages(Math.ceil(response.data.meta.total / itemsPerPage));
     } catch (err: unknown) {
       console.error("Failed to load subscriptions:", err);
       const errorMessage =
