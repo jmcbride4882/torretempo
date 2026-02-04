@@ -18,6 +18,7 @@ import platformEmployeeRoutes from "./routes/platform-employee.routes";
 import platformUserRoutes from "./routes/platform-user.routes";
 import platformBillingRoutes from "./routes/platform-billing.routes";
 import stripePaymentRoutes from "./routes/stripe-payment.routes";
+import gocardlessPaymentRoutes from "./routes/gocardless-payment.routes";
 import roleRoutes from "./routes/role.routes";
 import userRoutes from "./routes/user.routes";
 import timeEntryRoutes from "./routes/timeEntry.routes";
@@ -72,6 +73,12 @@ app.use(
   authenticate,
   platformAdmin,
   stripePaymentRoutes,
+);
+app.use(
+  "/api/v1/platform/gocardless",
+  authenticate,
+  platformAdmin,
+  gocardlessPaymentRoutes,
 );
 
 // Protected routes (require authentication + tenant context)
