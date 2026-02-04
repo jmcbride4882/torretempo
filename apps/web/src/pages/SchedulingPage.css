@@ -722,3 +722,30 @@
    Mobile print: Uses same styles as desktop - print output is IDENTICAL
    Both mobile and desktop devices will print the full grid layout in landscape
 */
+
+/* Platform Admin Placeholder */
+.platform-admin-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 2rem;
+}
+
+.placeholder-content {
+  text-align: center;
+  max-width: 600px;
+}
+
+.placeholder-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1e293b;
+}
+
+.placeholder-content p {
+  font-size: 1rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}

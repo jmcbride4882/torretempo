@@ -50,8 +50,21 @@ interface ToastMessage {
 
 export default function SchedulingPage() {
   const { t } = useTranslation();
-  const { canManageEmployees } = useAuthorization();
+  const { canManageEmployees, isPlatformAdmin } = useAuthorization();
   const { user } = useAuthStore();
+
+  // Platform admins need tenant selection (future feature)
+  if (isPlatformAdmin()) {
+    return (
+      <div className="platform-admin-placeholder">
+        <div className="placeholder-content">
+          <h2>{t("common.platformAdmin")}</h2>
+          <p>{t("common.tenantSelectionRequired")}</p>
+          <p>🚧 {t("common.tenantSelectorComingSoon")}</p>
+        </div>
+      </div>
+    );
+  }
 
   // State
   const [schedule, setSchedule] = useState<Schedule | null>(null);

@@ -19,7 +19,10 @@
     "export": "Exportar",
     "import": "Importar",
     "optional": "opcional",
-    "submitting": "Enviando..."
+    "submitting": "Enviando...",
+    "platformAdmin": "Admin de Plataforma - Selección de Inquilino Requerida",
+    "tenantSelectionRequired": "Como administrador de plataforma, debe seleccionar un inquilino específico para ver sus datos.",
+    "tenantSelectorComingSoon": "Selector de inquilino próximamente..."
   },
   "auth": {
     "login": "Iniciar Sesión",

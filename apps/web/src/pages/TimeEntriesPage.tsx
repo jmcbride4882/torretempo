@@ -22,8 +22,22 @@ import "./TimeEntriesPage.css";
 export default function TimeEntriesPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const { canViewAllTimeEntries, canViewTeamTimeEntries } = useAuthorization();
+  const { canViewAllTimeEntries, canViewTeamTimeEntries, isPlatformAdmin } =
+    useAuthorization();
   const geolocation = useGeolocation();
+
+  // Platform admins need tenant selection (future feature)
+  if (isPlatformAdmin()) {
+    return (
+      <div className="platform-admin-placeholder">
+        <div className="placeholder-content">
+          <h2>{t("common.platformAdmin")}</h2>
+          <p>{t("common.tenantSelectionRequired")}</p>
+          <p>🚧 {t("common.tenantSelectorComingSoon")}</p>
+        </div>
+      </div>
+    );
+  }
 
   // State
   const [currentEntry, setCurrentEntry] = useState<TimeEntry | null>(null);
