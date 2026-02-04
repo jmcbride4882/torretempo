@@ -31,6 +31,7 @@ const AdvancedSchedulePage = lazy(() => import("./pages/AdvancedSchedulePage"));
 const LeaveRequestsPage = lazy(() => import("./pages/LeaveRequestsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const TenantsPage = lazy(() => import("./pages/TenantsPage"));
+const BillingPage = lazy(() => import("./pages/BillingPage"));
 const TenantBillingPage = lazy(() => import("./pages/TenantBillingPage"));
 const UpgradePage = lazy(() => import("./pages/UpgradePage"));
 const EmployeeProfilePage = lazy(() => import("./pages/EmployeeProfilePage"));
@@ -191,6 +192,17 @@ function App() {
                 <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
                   <DashboardLayout>
                     <LeaveRequestsPage />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/billing"
+              element={
+                <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+                  <DashboardLayout>
+                    <BillingPage />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
