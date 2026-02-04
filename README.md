@@ -23,6 +23,8 @@ Torre Tempo is an **enterprise-grade, multi-tenant SaaS** time tracking and work
 ✅ **Two-Tier RBAC** - Platform Admin + Tenant roles (Owner/Admin/Manager/Employee)  
 ✅ **Employee Management** - Full CRUD with role assignment and welcome emails  
 ✅ **Authentication** - JWT tokens with automatic refresh (15min access, 7d refresh)  
+✅ **Payment Processing** - Stripe (cards) + GoCardless (SEPA direct debit)  
+✅ **Billing Portal** - MRR/ARR metrics, subscription management, invoice tracking  
 ✅ **Internationalization** - Spanish/English with language switcher  
 ✅ **Progressive Web App** - Installable on all devices with offline support  
 ✅ **Tenant-Specific SMTP** - Each business configures own email server  
@@ -48,6 +50,7 @@ Torre Tempo is an **enterprise-grade, multi-tenant SaaS** time tracking and work
 - **Database:** PostgreSQL 15 (persistent volume)
 - **Cache:** Redis 7 (persistent volume)
 - **SSL:** Let's Encrypt (auto-renewal via Certbot)
+- **Payments:** Stripe + GoCardless APIs
 
 ### Architecture
 
@@ -71,6 +74,138 @@ Torre Tempo is an **enterprise-grade, multi-tenant SaaS** time tracking and work
             │ PostgreSQL   │    │    Redis     │
             │   Port 5432  │    │   Port 6379  │
             └──────────────┘    └──────────────┘
+                    │
+        ┌───────────┴────────────┐
+        │                        │
+┌───────▼────────┐    ┌──────────▼────────┐
+│  Stripe API    │    │  GoCardless API   │
+│  (Credit Cards)│    │  (SEPA Debit)     │
+└────────────────┘    └───────────────────┘
+```
+
+---
+
+## 💳 Payment Infrastructure
+
+### Supported Payment Methods
+
+Torre Tempo supports **dual payment providers** for maximum flexibility:
+
+#### 🌍 **Stripe** (Primary - Credit/Debit Cards)
+- **Use Case:** International customers, card payments
+- **Currencies:** EUR, USD, GBP (multi-currency support)
+- **Features:**
+  - Instant payment confirmation
+  - 3D Secure (SCA compliant)
+  - Subscription billing with automatic retry
+  - Webhook-driven payment updates
+  - Customer portal for card management
+
+#### 🇪🇺 **GoCardless** (EU - SEPA Direct Debit)
+- **Use Case:** European customers, bank transfers
+- **Coverage:** 34 European countries (SEPA zone)
+- **Features:**
+  - Lower transaction fees (0.3% vs 2.9% cards)
+  - Automatic mandate creation
+  - Direct debit collection
+  - Payment status webhooks
+  - Perfect for recurring subscriptions
+
+### Database Schema
+
+```sql
+-- Tenant payment provider links
+ALTER TABLE tenants ADD COLUMN stripe_customer_id VARCHAR(255);
+ALTER TABLE tenants ADD COLUMN stripe_subscription_id VARCHAR(255);
+ALTER TABLE tenants ADD COLUMN gocardless_customer_id VARCHAR(255);
+ALTER TABLE tenants ADD COLUMN gocardless_mandate_id VARCHAR(255);
+
+-- Payment transactions
+CREATE TABLE payments (
+  id UUID PRIMARY KEY,
+  tenant_id UUID REFERENCES tenants(id),
+  amount INTEGER NOT NULL,               -- Cents
+  currency VARCHAR(3) DEFAULT 'EUR',
+  status VARCHAR(50),                    -- pending, succeeded, failed
+  payment_method VARCHAR(50),            -- stripe, gocardless
+  stripe_payment_intent_id VARCHAR(255),
+  gocardless_payment_id VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Invoices
+CREATE TABLE invoices (
+  id UUID PRIMARY KEY,
+  tenant_id UUID REFERENCES tenants(id),
+  invoice_number VARCHAR(255) UNIQUE,
+  amount INTEGER NOT NULL,
+  status VARCHAR(50),                    -- draft, open, paid, void
+  period_start TIMESTAMP,
+  period_end TIMESTAMP,
+  due_date TIMESTAMP,
+  paid_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+### API Endpoints
+
+**Platform Admin Billing Routes:**
+
+```
+# Subscription Management
+GET    /api/v1/platform/billing/subscriptions   # List all subscriptions
+GET    /api/v1/platform/billing/revenue         # Calculate MRR/ARR
+PUT    /api/v1/platform/billing/subscriptions/:id  # Update subscription
+
+# Stripe Integration
+POST   /api/v1/platform/stripe/customers        # Create Stripe customer
+POST   /api/v1/platform/stripe/subscriptions    # Create subscription
+DELETE /api/v1/platform/stripe/subscriptions/:id   # Cancel subscription
+POST   /api/v1/platform/stripe/webhook          # Handle Stripe webhooks
+GET    /api/v1/platform/stripe/prices           # List pricing tiers
+
+# GoCardless Integration
+POST   /api/v1/platform/gocardless/customers    # Create customer
+POST   /api/v1/platform/gocardless/mandates     # Create SEPA mandate
+POST   /api/v1/platform/gocardless/payments     # Charge via direct debit
+DELETE /api/v1/platform/gocardless/mandates/:id  # Cancel mandate
+POST   /api/v1/platform/gocardless/webhook      # Handle GC webhooks
+```
+
+### Environment Variables
+
+```env
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# GoCardless Configuration
+GOCARDLESS_ACCESS_TOKEN=your_gocardless_token
+GOCARDLESS_ENVIRONMENT=sandbox  # or 'live'
+GOCARDLESS_WEBHOOK_SECRET=your_webhook_secret
+```
+
+### Webhook Configuration
+
+**Stripe Webhooks:**
+```
+URL: https://time.lsltgroup.es/api/v1/platform/stripe/webhook
+Events:
+  - customer.subscription.created
+  - customer.subscription.updated
+  - customer.subscription.deleted
+  - invoice.payment_succeeded
+  - invoice.payment_failed
+```
+
+**GoCardless Webhooks:**
+```
+URL: https://time.lsltgroup.es/api/v1/platform/gocardless/webhook
+Events:
+  - payments (all statuses)
+  - mandates (all statuses)
 ```
 
 ---
@@ -81,435 +216,4 @@ Torre Tempo is an **enterprise-grade, multi-tenant SaaS** time tracking and work
 
 | Email                     | Password      | Role               | Access Level                                 |
 | ------------------------- | ------------- | ------------------ | -------------------------------------------- |
-| `platform@torretempo.com` | `platform123` | **PLATFORM_ADMIN** | God mode - all tenants, platform settings    |
-| `admin@torretempo.com`    | `admin123`    | **OWNER**          | Business owner - full tenant access, billing |
-| `john@lsltgroup.es`       | _(existing)_  | **EMPLOYEE**       | Self-service - own data only                 |
-| `info@lsltgroup.es`       | _(existing)_  | **EMPLOYEE**       | Self-service - own data only                 |
-
-### Role Hierarchy
-
-```
-🌐 PLATFORM TIER (Software Owner)
-   └── PLATFORM_ADMIN - Full platform access across all tenants
-
-🏢 TENANT TIER (Per Business)
-   ├── OWNER - Business owner (billing, modules, full control)
-   ├── ADMIN - Tenant administrator (employee management, reports)
-   ├── MANAGER - Department manager (team scheduling, approvals)
-   └── EMPLOYEE - Regular staff (clock in/out, view schedule)
-```
-
----
-
-## 🚀 Quick Start (Local Development)
-
-### Prerequisites
-
-- **Node.js** 20 LTS
-- **PostgreSQL** 15+
-- **Redis** 7+
-- **Docker** + Docker Compose
-
-### 1. Clone & Install
-
-```bash
-git clone https://github.com/lsltapps/torre-tempo.git
-cd torre-tempo
-
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env with your JWT secrets and database credentials
-nano .env
-```
-
-### 2. Start Infrastructure
-
-```bash
-# Start PostgreSQL + Redis via Docker Compose
-docker-compose up -d
-
-# Verify services are running
-docker-compose ps
-```
-
-### 3. Install Dependencies
-
-```bash
-# Root workspace
-npm install
-```
-
-### 4. Database Setup
-
-```bash
-cd apps/api
-
-# Generate Prisma client
-npx prisma generate
-
-# Run migrations
-npx prisma migrate dev
-
-# Seed with demo data
-npm run db:seed
-```
-
-### 5. Start Development Servers
-
-```bash
-# From project root (starts both API + Web)
-npm run dev
-```
-
-**Access:**
-
-- **Frontend:** http://localhost:5173
-- **API:** http://localhost:3000
-- **Prisma Studio:** `cd apps/api && npx prisma studio`
-
----
-
-## 📁 Project Structure
-
-```
-torre-tempo/
-├── apps/
-│   ├── api/                    # Backend API (Node.js + Express + Prisma)
-│   │   ├── prisma/
-│   │   │   ├── schema.prisma   # Database schema
-│   │   │   └── seed.ts         # Demo data seeder
-│   │   ├── src/
-│   │   │   ├── middleware/     # Auth, tenant context, RBAC
-│   │   │   ├── routes/         # REST API endpoints
-│   │   │   ├── services/       # Business logic layer
-│   │   │   ├── locales/        # Backend i18n (email templates)
-│   │   │   ├── templates/      # Email HTML templates
-│   │   │   └── index.ts        # Express app entry point
-│   │   └── Dockerfile          # Production container image
-│   │
-│   ├── web/                    # Frontend SPA (React 18 + TypeScript)
-│   │   ├── public/
-│   │   │   ├── manifest.json   # PWA manifest
-│   │   │   └── sw.js           # Service worker (offline)
-│   │   ├── src/
-│   │   │   ├── components/     # Reusable UI components
-│   │   │   ├── pages/          # Route-level pages
-│   │   │   ├── hooks/          # Custom React hooks (useAuthorization)
-│   │   │   ├── services/       # API client layer
-│   │   │   ├── stores/         # Zustand state management
-│   │   │   ├── locales/        # Frontend i18n (Spanish/English)
-│   │   │   └── i18n/           # i18next configuration
-│   │   └── Dockerfile          # Production container image
-│   │
-│   └── mobile/                 # React Native app (Expo)
-│       └── App.tsx             # (Placeholder - future development)
-│
-├── docs/                       # 📚 Complete technical documentation
-│   ├── spec.md                 # 🔒 LOCKED - Product specification
-│   ├── rbac-matrix.md          # Role permissions matrix
-│   ├── api-contract.md         # REST API documentation
-│   ├── data-model.md           # Database schema docs
-│   ├── compliance.md           # Spanish labor law requirements
-│   └── scheduling-design.md    # Deputy-style scheduling spec
-│
-├── nginx/                      # Nginx reverse proxy configs
-│   └── nginx.prod.conf         # Production SSL + routing
-│
-├── docker-compose.prod.yml     # Production deployment
-├── docker-compose.yml          # Local development
-├── turbo.json                  # Turborepo monorepo config
-├── AGENTS.md                   # Developer knowledge base
-└── README.md                   # This file
-```
-
----
-
-## 🛠️ Tech Stack
-
-### Backend
-
-- **Runtime:** Node.js 20 LTS
-- **Framework:** Express 4
-- **ORM:** Prisma 5 (PostgreSQL 15)
-- **Cache/Queue:** Redis 7 + BullMQ
-- **Auth:** JWT (jsonwebtoken) + bcrypt
-- **Validation:** Zod schemas
-- **Email:** Nodemailer (tenant-specific SMTP)
-- **i18n:** i18next (Spanish/English)
-- **Logging:** Pino (structured JSON logs)
-- **Testing:** Jest + Supertest
-
-### Frontend
-
-- **Framework:** React 18 (TypeScript)
-- **Build Tool:** Vite 5
-- **State Management:** Zustand
-- **Router:** React Router 6
-- **HTTP Client:** Axios
-- **i18n:** react-i18next
-- **PWA:** Workbox (service worker + manifest)
-- **Testing:** Vitest + React Testing Library
-
-### Infrastructure
-
-- **Monorepo:** Turborepo
-- **Containerization:** Docker + Docker Compose
-- **Reverse Proxy:** Nginx (SSL termination)
-- **SSL Certificates:** Let's Encrypt (Certbot)
-- **Deployment:** VPS (Hetzner Cloud)
-- **CI/CD:** GitHub Actions (future)
-
----
-
-## 🔐 Security & Compliance
-
-### Authentication
-
-- **JWT tokens:** 15-minute access tokens, 7-day refresh tokens
-- **Password hashing:** bcrypt with salt rounds (10)
-- **Token storage:** HTTP-only cookies (production) / localStorage (dev)
-- **MFA support:** TOTP via speakeasy (optional per tenant)
-
-### Authorization (RBAC)
-
-- **Two-tier system:** Platform Admin + Tenant roles
-- **Middleware enforcement:** All routes protected by role checks
-- **Platform admin bypass:** God-mode access to all tenants
-- **Tenant isolation:** Row-level filtering in all queries
-
-### Data Protection
-
-- **Encryption at rest:** PII fields encrypted in database
-- **HTTPS only:** All production traffic over TLS 1.2+
-- **CORS:** Strict origin whitelisting
-- **Rate limiting:** Express-rate-limit (10 req/s API, 5 req/m login)
-- **SQL injection:** Parameterized queries via Prisma
-
-### Spanish Compliance (RDL 8/2019)
-
-- **Immutable audit trails:** Append-only time entries
-- **Event-only geolocation:** GPS captured only on clock in/out
-- **4-year retention:** Automatic enforcement
-- **Signed exports:** Digital signatures for labor inspections (add-on)
-
----
-
-## 📝 Available Scripts
-
-### Root (Monorepo)
-
-```bash
-npm run dev           # Start all apps in development
-npm run build         # Build all apps for production
-npm test              # Run all tests
-npm run lint          # Lint all packages
-npm run clean         # Clean build artifacts
-```
-
-### Backend (`apps/api`)
-
-```bash
-npm run dev           # Start dev server (hot reload)
-npm run build         # TypeScript compile
-npm start             # Production server
-npm test              # Jest tests
-npm run db:generate   # Generate Prisma client
-npm run db:migrate    # Run database migrations
-npm run db:seed       # Seed demo data
-npm run db:studio     # Open Prisma Studio (DB GUI)
-```
-
-### Frontend (`apps/web`)
-
-```bash
-npm run dev           # Vite dev server (http://localhost:5173)
-npm run build         # Production build
-npm run preview       # Preview production build
-npm test              # Vitest tests
-```
-
----
-
-## 🚢 Deployment
-
-### Production Deployment (VPS)
-
-```bash
-# 1. SSH to server
-ssh root@time.lsltgroup.es
-
-# 2. Pull latest code
-cd /opt/torre-tempo
-git pull origin main
-
-# 3. Rebuild containers
-docker-compose -f docker-compose.prod.yml build
-
-# 4. Restart services (zero-downtime)
-docker-compose -f docker-compose.prod.yml up -d
-
-# 5. Verify health
-docker ps
-curl https://time.lsltgroup.es/health
-```
-
-### Environment Variables (Production)
-
-```env
-# Database
-DATABASE_URL=postgresql://user:pass@postgres:5432/torre_tempo_prod
-
-# Redis
-REDIS_URL=redis://redis:6379
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-change-this
-REFRESH_TOKEN_SECRET=your-super-secret-refresh-key-change-this
-
-# CORS
-CORS_ORIGIN=https://time.lsltgroup.es
-
-# Node
-NODE_ENV=production
-```
-
-### SSL Certificate Renewal
-
-```bash
-# Certificates auto-renew via Certbot container
-# Manual renewal if needed:
-docker exec torre-tempo-certbot certbot renew
-docker-compose -f docker-compose.prod.yml restart nginx
-```
-
----
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm test
-
-# Watch mode
-cd apps/api && npm run test:watch
-
-# Coverage report
-cd apps/api && npm run test:coverage
-
-# E2E tests (future)
-cd apps/web && npm run test:e2e
-```
-
-**Coverage Target:** 80%+ on services, 70%+ overall
-
----
-
-## 📖 Documentation
-
-| Document                                       | Description                            |
-| ---------------------------------------------- | -------------------------------------- |
-| [`docs/spec.md`](docs/spec.md)                 | 🔒 **LOCKED** Product specification    |
-| [`docs/rbac-matrix.md`](docs/rbac-matrix.md)   | Complete RBAC permissions matrix       |
-| [`docs/api-contract.md`](docs/api-contract.md) | REST API endpoints & authentication    |
-| [`docs/data-model.md`](docs/data-model.md)     | PostgreSQL schema documentation        |
-| [`docs/compliance.md`](docs/compliance.md)     | Spanish labor law requirements         |
-| [`AGENTS.md`](AGENTS.md)                       | Developer knowledge base & conventions |
-
----
-
-## 🗺️ Roadmap
-
-### ✅ Phase 1: Foundation (COMPLETE)
-
-- [x] Multi-tenant architecture
-- [x] Two-tier RBAC system
-- [x] Employee management
-- [x] Authentication & authorization
-- [x] PWA with offline support
-- [x] Internationalization (ES/EN)
-- [x] Production deployment
-
-### 🚧 Phase 2: Time Tracking (IN PROGRESS)
-
-- [ ] Clock in/out functionality
-- [ ] Event-based geolocation
-- [ ] Time entry corrections workflow
-- [ ] Overtime calculations
-- [ ] Attendance reports
-
-### 📅 Phase 3: Scheduling (Q2 2026)
-
-- [ ] Deputy-style shift management
-- [ ] Drag-and-drop calendar UI
-- [ ] Shift templates & bulk operations
-- [ ] Conflict detection (all 7 types)
-- [ ] Schedule publishing & locking
-
-### 🌴 Phase 4: Leave Management (Q3 2026)
-
-- [ ] Leave request submission
-- [ ] Manager approval workflow
-- [ ] Leave balance tracking
-- [ ] Calendar integration
-- [ ] Compliance exports
-
-### 📊 Phase 5: Reporting & Analytics (Q4 2026)
-
-- [ ] Attendance reports
-- [ ] Payroll export (PDF/Excel)
-- [ ] Labor inspection signed exports
-- [ ] Dashboard analytics
-- [ ] Custom report builder
-
----
-
-## 📞 Support & Contact
-
-**Developer:** John McBride  
-**Company:** LSLT Apps (Lakeside La Torre Murcia Group SL)  
-**Website:** [lsltapps.com](https://lsltapps.com)  
-**Production:** [time.lsltgroup.es](https://time.lsltgroup.es)
-
-**For Issues:**
-
-- Check `docs/` folder for technical documentation
-- Review `AGENTS.md` for development guidelines
-- Check Docker logs: `docker-compose logs -f`
-
----
-
-## 📜 License & Copyright
-
-**© 2026 Lakeside La Torre (Murcia) Group SL**  
-**Designed and Developed by John McBride**
-
-All Rights Reserved - Proprietary Software
-
-This software and associated documentation are proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited.
-
----
-
-## 🎉 Acknowledgments
-
-Built with:
-
-- **React** - UI framework
-- **Express** - Backend framework
-- **Prisma** - Type-safe ORM
-- **PostgreSQL** - Primary database
-- **Redis** - Caching & job queue
-- **Vite** - Frontend build tool
-- **Turborepo** - Monorepo management
-
-**Design Principles:**
-
-- Mobile-first responsive design
-- Spanish labor law compliance by design
-- Zero-downtime deployments
-- Security-first architecture
-- Developer-friendly DX
-
----
-
-**🚀 Torre Tempo v3 - Time Tracking Done Right**
+| `platform@torretempo.com` | `platform123` | **PLATFORM_ADMIN** | God mode - all tenants, platform settings   

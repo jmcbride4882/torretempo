@@ -21,7 +21,7 @@ const geolocationSchema = z.object({
   latitude: z.number(),
   longitude: z.number(),
   accuracy: z.number(),
-  timestamp: z.string().datetime(),
+  timestamp: z.string(),
 });
 
 const clockInSchema = z.object({
@@ -38,8 +38,8 @@ const clockOutSchema = z.object({
 
 const historyQuerySchema = z.object({
   employeeId: z.string().uuid().optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   entryType: z.enum(["scheduled", "unscheduled"]).optional(),
   status: z.enum(["active", "corrected", "deleted"]).optional(),
   page: z.preprocess(
@@ -56,8 +56,8 @@ const historyQuerySchema = z.object({
 
 const statsQuerySchema = z.object({
   employeeId: z.string().uuid().optional(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
+  startDate: z.string(),
+  endDate: z.string(),
 });
 
 function getUserContext(req: any) {
