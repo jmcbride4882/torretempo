@@ -30,6 +30,8 @@ const SchedulingPage = lazy(() => import("./pages/SchedulingPage"));
 const LeaveRequestsPage = lazy(() => import("./pages/LeaveRequestsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const TenantsPage = lazy(() => import("./pages/TenantsPage"));
+const TenantBillingPage = lazy(() => import("./pages/TenantBillingPage"));
+const UpgradePage = lazy(() => import("./pages/UpgradePage"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -279,6 +281,28 @@ function App() {
                 <ProtectedRoute requiredRoles={["OWNER", "ADMIN", "MANAGER"]}>
                   <DashboardLayout>
                     <SettingsPage />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="billing"
+              element={
+                <ProtectedRoute requiredRoles={["OWNER", "ADMIN"]}>
+                  <DashboardLayout>
+                    <TenantBillingPage />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="billing/upgrade"
+              element={
+                <ProtectedRoute requiredRoles={["OWNER", "ADMIN"]}>
+                  <DashboardLayout>
+                    <UpgradePage />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

@@ -269,6 +269,90 @@
     "noShiftsToday": "You have no scheduled shifts today",
     "startUnscheduledShift": "Start Unscheduled Shift"
   },
+  "billing": {
+    "tier": "Tier",
+    "plan": "Plan",
+    "month": "month",
+    "customPricing": "Custom pricing",
+    "accessDenied": "Access Denied",
+    "accessDeniedDescription": "You don't have permission to view billing information. Please contact your administrator.",
+    "overview": {
+      "title": "Billing & Subscription",
+      "subtitle": "Manage your subscription, view usage, and explore add-on modules",
+      "currentPlan": "Current Plan",
+      "employeeUsage": "Employee Usage",
+      "employees": "employees",
+      "activeModules": "Active Modules",
+      "modulesEnabled": "enabled",
+      "noModules": "No add-on modules enabled",
+      "browseModules": "Browse Modules",
+      "requestInvoice": "Request Invoice",
+      "changePlan": "Change Plan",
+      "upgradePlan": "Upgrade Plan",
+      "nextBilling": "Next billing",
+      "usageWarning": "You're approaching your employee limit. Consider upgrading.",
+      "increaseLimit": "Increase Limit",
+      "invoiceRequestSent": "Invoice request sent! We'll email you within 24 hours."
+    },
+    "trial": {
+      "title": "Free Trial",
+      "daysRemaining": "{{days}} days remaining",
+      "endsOn": "ends on",
+      "activateNow": "Activate Now"
+    },
+    "status": {
+      "trial": "Trial",
+      "active": "Active",
+      "suspended": "Suspended",
+      "cancelled": "Cancelled"
+    },
+    "locked": {
+      "title": "Feature Locked",
+      "featureLockedTitle": "This Feature is Locked",
+      "description": "Upgrade your plan to unlock this feature and boost your productivity.",
+      "upgradeButton": "Upgrade Now",
+      "learnMore": "Learn More"
+    },
+    "upgrade": {
+      "title": "Upgrade Your Plan",
+      "subtitle": "Choose the perfect plan for your business needs",
+      "comparePlans": "Compare Plans",
+      "addOnModules": "Add-On Modules",
+      "mostPopular": "Most Popular",
+      "upToEmployees": "Up to {{count}} employees",
+      "unlimitedEmployees": "Unlimited employees",
+      "includedModules": "Included modules",
+      "otherModules": "Other Add-On Modules",
+      "checkoutComingSoon": "Checkout coming soon! Contact sales@torretempo.com",
+      "moduleCheckoutComingSoon": "Module purchase coming soon! Contact sales@torretempo.com",
+      "faq": {
+        "title": "Frequently Asked Questions",
+        "q1": "Can I change my plan at any time?",
+        "a1": "Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any differences.",
+        "q2": "What payment methods do you accept?",
+        "a2": "We accept all major credit cards (Visa, Mastercard, Amex) and SEPA direct debit for EU customers.",
+        "q3": "Is there a free trial?",
+        "a3": "Yes! All new accounts start with a 30-day free trial with full access to all features. No credit card required.",
+        "q4": "What happens when I exceed my employee limit?",
+        "a4": "You'll receive a notification and have 7 days to upgrade your plan. During this time, you can continue using all features."
+      }
+    },
+    "modules": {
+      "add": "Add",
+      "addModule": "Add Module",
+      "requiredBadge": "Required for Spain",
+      "compliance": {
+        "feature1": "RDL 8/2019 Signed PDF Exports",
+        "feature2": "4-Year Data Retention",
+        "feature3": "Labor Inspection Ready"
+      }
+    },
+    "compliance": {
+      "title": "RDL 8/2019 Compliance Pack",
+      "description": "Spanish labor law requires businesses to maintain accurate time records. Our compliance pack ensures you're always audit-ready with signed exports and 4-year data retention.",
+      "learnMore": "Learn More"
+    }
+  },
   "timeTracking": {
     "clockIn": "Clock In",
     "clockOut": "Clock Out",

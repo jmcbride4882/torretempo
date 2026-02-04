@@ -269,6 +269,90 @@
     "noShiftsToday": "No tienes turnos programados hoy",
     "startUnscheduledShift": "Iniciar Turno No Programado"
   },
+  "billing": {
+    "tier": "Nivel",
+    "plan": "Plan",
+    "month": "mes",
+    "customPricing": "Precio personalizado",
+    "accessDenied": "Acceso Denegado",
+    "accessDeniedDescription": "No tienes permiso para ver la informacion de facturacion. Por favor, contacta con tu administrador.",
+    "overview": {
+      "title": "Facturacion y Suscripcion",
+      "subtitle": "Gestiona tu suscripcion, consulta el uso y explora los modulos adicionales",
+      "currentPlan": "Plan Actual",
+      "employeeUsage": "Uso de Empleados",
+      "employees": "empleados",
+      "activeModules": "Modulos Activos",
+      "modulesEnabled": "activos",
+      "noModules": "No hay modulos adicionales activos",
+      "browseModules": "Explorar Modulos",
+      "requestInvoice": "Solicitar Factura",
+      "changePlan": "Cambiar Plan",
+      "upgradePlan": "Mejorar Plan",
+      "nextBilling": "Proxima facturacion",
+      "usageWarning": "Te estas acercando al limite de empleados. Considera actualizar tu plan.",
+      "increaseLimit": "Aumentar Limite",
+      "invoiceRequestSent": "Solicitud de factura enviada. Te enviaremos un correo en 24 horas."
+    },
+    "trial": {
+      "title": "Prueba Gratuita",
+      "daysRemaining": "{{days}} dias restantes",
+      "endsOn": "termina el",
+      "activateNow": "Activar Ahora"
+    },
+    "status": {
+      "trial": "Prueba",
+      "active": "Activo",
+      "suspended": "Suspendido",
+      "cancelled": "Cancelado"
+    },
+    "locked": {
+      "title": "Funcion Bloqueada",
+      "featureLockedTitle": "Esta Funcion esta Bloqueada",
+      "description": "Actualiza tu plan para desbloquear esta funcion y aumentar tu productividad.",
+      "upgradeButton": "Mejorar Ahora",
+      "learnMore": "Mas Informacion"
+    },
+    "upgrade": {
+      "title": "Mejora Tu Plan",
+      "subtitle": "Elige el plan perfecto para las necesidades de tu negocio",
+      "comparePlans": "Comparar Planes",
+      "addOnModules": "Modulos Adicionales",
+      "mostPopular": "Mas Popular",
+      "upToEmployees": "Hasta {{count}} empleados",
+      "unlimitedEmployees": "Empleados ilimitados",
+      "includedModules": "Modulos incluidos",
+      "otherModules": "Otros Modulos Adicionales",
+      "checkoutComingSoon": "Pago proximo! Contacta con sales@torretempo.com",
+      "moduleCheckoutComingSoon": "Compra de modulos proximamente! Contacta con sales@torretempo.com",
+      "faq": {
+        "title": "Preguntas Frecuentes",
+        "q1": "Puedo cambiar mi plan en cualquier momento?",
+        "a1": "Si! Puedes actualizar o reducir tu plan en cualquier momento. Los cambios son inmediatos y prorratearemos las diferencias.",
+        "q2": "Que metodos de pago aceptais?",
+        "a2": "Aceptamos todas las tarjetas principales (Visa, Mastercard, Amex) y domiciliacion bancaria SEPA para clientes de la UE.",
+        "q3": "Hay una prueba gratuita?",
+        "a3": "Si! Todas las cuentas nuevas empiezan con 30 dias de prueba gratuita con acceso completo. No se requiere tarjeta de credito.",
+        "q4": "Que pasa si supero el limite de empleados?",
+        "a4": "Recibiras una notificacion y tendras 7 dias para actualizar tu plan. Durante este tiempo, puedes seguir usando todas las funciones."
+      }
+    },
+    "modules": {
+      "add": "Anadir",
+      "addModule": "Anadir Modulo",
+      "requiredBadge": "Obligatorio en Espana",
+      "compliance": {
+        "feature1": "Exportaciones PDF Firmadas RDL 8/2019",
+        "feature2": "Retencion de Datos 4 Anos",
+        "feature3": "Preparado para Inspeccion Laboral"
+      }
+    },
+    "compliance": {
+      "title": "Pack de Cumplimiento RDL 8/2019",
+      "description": "La ley laboral espanola requiere que las empresas mantengan registros de tiempo precisos. Nuestro pack de cumplimiento garantiza que siempre estes preparado para auditorias con exportaciones firmadas y retencion de datos de 4 anos.",
+      "learnMore": "Mas Informacion"
+    }
+  },
   "timeTracking": {
     "clockIn": "Fichar Entrada",
     "clockOut": "Fichar Salida",
