@@ -74,6 +74,84 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
 
+        {/* Platform Admin Routes (god-mode, no tenant context) */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+              <DashboardLayout>
+                <DashboardPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tenants"
+          element={
+            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+              <DashboardLayout>
+                <TenantsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+              <DashboardLayout>
+                <EmployeesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/time-entries"
+          element={
+            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+              <DashboardLayout>
+                <TimeEntriesPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/scheduling"
+          element={
+            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+              <DashboardLayout>
+                <SchedulingPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/leave-requests"
+          element={
+            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+              <DashboardLayout>
+                <LeaveRequestsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute requiredRoles={["PLATFORM_ADMIN"]}>
+              <DashboardLayout>
+                <SettingsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* Tenant-scoped Routes (/t/:tenantSlug/*) */}
         <Route path="/t/:tenantSlug" element={<TenantLayout />}>
           {/* Protected Routes with Dashboard Layout */}
